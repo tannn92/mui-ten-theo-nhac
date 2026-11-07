@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Bản thử 22: bé nhảy theo C.A.C</title>
+<title>Bản thử 23: bé nhún theo nhạc</title>
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="theme-color" content="#8fdcff">
@@ -14,8 +14,8 @@
   window.IOS = /iPad|iPhone/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   if (!IOS) document.head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="manifest.webmanifest">');
 </script>
-<script src="sfx.js?v=0711.2239"></script>
-<script src="dance.js?v=0711.2239"></script>
+<script src="sfx.js?v=0711.2323"></script>
+<script src="dance.js?v=0711.2323"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;background:#2b1d4f;overflow:hidden;touch-action:none;font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif}
@@ -129,20 +129,21 @@
 
 <div id="menu">
   <div class="panel">
-    <h1>Bản thử 22: bé nhảy theo C.A.C</h1>
-    <p class="sub">Dễ và Vừa: mũi tên cam theo beat, dày lên ở đoạn bốc, thưa ở đoạn chùng. Khó: mũi tên hồng theo từng chữ hát. Từ 4:00, mũi tên tím theo tiếng synth (Vừa và Khó). Hàng mũi tên đi theo giai điệu. Mũi tên chạy từ hai mép vào vòng hoa ở giữa; bấm vào nút mờ ở rìa (chạm đâu trên nửa đó cũng được), hoặc phím W, S, ↑, ↓. Bé và 4 bạn nhảy theo người đứng giữa của C.A.C.</p>
+    <h1>Bản thử 23: bé nhún theo nhạc</h1>
+    <p class="sub">Dễ và Vừa: mũi tên cam theo beat, dày lên ở đoạn bốc, thưa ở đoạn chùng. Khó: mũi tên hồng theo từng chữ hát. Từ 4:00, mũi tên tím theo tiếng synth (Vừa và Khó). Hàng mũi tên đi theo giai điệu. Mũi tên chạy từ hai mép vào vòng hoa ở giữa; bấm vào nút mờ ở rìa (chạm đâu trên nửa đó cũng được), hoặc phím W, S, ↑, ↓. Bé và 4 bạn nhún, đưa tay nhẹ nhàng theo nhịp; bé hát theo lời, chớp mắt, nháy mắt. Chọn đồ cho bé ở dưới.</p>
     <p class="sub">Phiên bản <b id="ver"></b> <button id="checkVer" class="from">Kiểm tra bản mới</button> <span id="verMsg"></span></p>
     <p id="result"></p>
     <div id="tapsBox" class="hide"><textarea id="taps" readonly></textarea><button id="copyTaps" class="from">Chép</button></div>
     <div id="songs">Đang tải…</div>
     <div class="sounds">Bắt đầu từ: <button class="from on" data-from="0">0:00</button><button class="from" data-from="60">1:00</button><button class="from" data-from="120">2:00</button><button class="from" data-from="180">3:00</button><button class="from" data-from="240">4:00</button></div>
+    <div class="sounds" id="outfitRow" hidden>Đồ của bé: <span id="outfits"></span></div>
     <div class="sounds">Tiếng bấm: <b id="sndName"></b> · <a id="sndLink" href="sfx.html">nghe và chọn tiếng khác</a></div>
     <label><input type="checkbox" id="tick"> Bật tiếng tick tự kêu khi mũi tên chạm tâm (thay cho tiếng bấm)</label>
   </div>
 </div>
 
 <script>
-const V = '0711.2239';  // stamped by the deploy build
+const V = '0711.2323';  // stamped by the deploy build
 // Two rows, low on the screen where hands hold an iPad: 560 and 710. A touch above 635 is the upper row.
 const SPLIT_Y = 635,
   
@@ -245,13 +246,13 @@ async function loadList() {
 
 let DANCE = null;
 async function loadDance() {
-  try {
+  if (V.startsWith('__')) {   // on this Mac (not built): the plain pictures
     const r = await fetch(`dance/manifest.json?v=${V}`);
     if (r.ok) {
       const man = await r.json();
       return { files: Object.fromEntries(man.files.map(n => [n, `dance/${n}?v=${V}`])), json: async n => (await fetch(`dance/${n}?v=${V}`)).json() };
     }
-  } catch (e) { /* not on this Mac: the public file below */ }
+  }
   const bytes = await fetch(`dance.bin?v=${V}`).then(r => r.arrayBuffer());
   const key = await crypto.subtle.importKey('raw', keyBytes(), 'AES-GCM', false, ['decrypt']);
   const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(bytes, 0, 12) }, key, new Uint8Array(bytes, 12));
@@ -281,7 +282,7 @@ async function start(s, level) {
   const buffer = await ctx.decodeAudioData(data);
   chart = c;
   await danceReady;
-  Dance.setSong(DANCE ? await DANCE.json(`moves/${s.slug}.json`).catch(() => null) : null, c);
+  Dance.setSong(DANCE ? await DANCE.json(`moves/${s.slug}.groove.json`).catch(() => null) : null, c);   // the gentle beat dance
   $('notes').textContent = '';
   recording = level === 'rec'; taps = [];
   notes = recording ? [] : chart.levels[level].map(n => ({ ...n, el: null, done: n.t < startFrom }));  // arrows before the start are gone
@@ -454,7 +455,16 @@ const fromLink = /[?&]from=(\d+)/.exec(location.search);  // a link can open str
 if (fromLink) pickFrom(+fromLink[1]);
 
 saveKeyFromLink();
-danceReady = loadDance().then(b => { DANCE = b; return Dance.init($('stage'), b); }).catch(e => console.warn('dance', e));
+function showOutfits() {   // one button per outfit; the choice is kept on this device
+  const box = $('outfits'); box.textContent = '';
+  for (const o of Dance.outfits) {
+    const b = document.createElement('button'); b.className = 'from' + (o.id === Dance.outfit ? ' on' : ''); b.textContent = o.name;
+    b.addEventListener('click', () => { Dance.setOutfit(o.id); box.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); });
+    box.appendChild(b);
+  }
+  $('outfitRow').hidden = Dance.outfits.length < 2;
+}
+danceReady = loadDance().then(b => { DANCE = b; return Dance.init($('stage'), b); }).then(showOutfits).catch(e => console.warn('dance', e));
 requestAnimationFrame(idleLoop);
 $('sndName').textContent = SFX.BY_ID[hitKind].name;
 $('sndLink').href = 'sfx.html' + (IOS ? location.hash : '');

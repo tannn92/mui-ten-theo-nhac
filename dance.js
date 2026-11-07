@@ -4,7 +4,8 @@
 // (the center changes often), her body bows, crouches and leans with theirs, and her braids swing.
 window.Dance = (() => {
 const VW = 1180, VH = 820, HEAD = 1.0, ARM_Q = 1.3, LEG_Q = 1.1;
-let NECK = null, D = null, IM = {}, BG = null, cv = null, ctx = null, MV = null, beats = [], downs = [], GIRL = null, CREW = [], lastT = null, ready = false;
+const wearOf = id => Object.entries(D.wear).filter(([k]) => k.startsWith(id + '/')).map(([key, w]) => ({ key, ...w }));   // an outfit: its pieces
+let OVERRIDE = null, OUTFIT = 'blue', NECK = null, D = null, IM = {}, BG = null, cv = null, ctx = null, MV = null, beats = [], downs = [], GIRL = null, CREW = [], lastT = null, ready = false;
 const mul = (a, b) => [a[0]*b[0]+a[2]*b[1], a[1]*b[0]+a[3]*b[1], a[0]*b[2]+a[2]*b[3], a[1]*b[2]+a[3]*b[3], a[0]*b[4]+a[2]*b[5]+a[4], a[1]*b[4]+a[3]*b[5]+a[5]];
 const T = (x, y) => [1, 0, 0, 1, x, y];
 const Rr = r => { const c = Math.cos(r), s = Math.sin(r); return [c, s, -s, c, 0, 0]; };
@@ -89,7 +90,7 @@ class Limb {
         const ov = 1.6, ih = L.img.height;
         const ly0 = Math.max(0, (sg.y0 - ov - L.y) / L.s), ly1 = Math.min(ih, (sg.y1 + ov - L.y) / L.s);
         if (ly1 <= ly0) continue;
-        out.push({ z: L.zOf((sg.y0 + sg.y1) / 2), img: L.img, m: mul(base, mul(T(L.x, L.y), S(L.s))), r: [0, ly0, L.img.width, ly1 - ly0] });
+        out.push({ z: L.zOf((sg.y0 + sg.y1) / 2), img: L.img, m: mul(base, mul(T(L.x, L.y), L.post ? mul(S(L.s), L.post) : S(L.s))), r: [0, ly0, L.img.width, ly1 - ly0] });
       }
     }
     return out;
@@ -102,7 +103,7 @@ const norm = a => ((a + 540) % 360) - 180;
 class Dancer {
   constructor({ heads, headScale, wear, x, floor, scale, braids = false, step = 3 }) {
     Object.assign(this, { heads, headScale, x, floor, scale, braids, step });
-    this.wear = Object.entries(D.wear).filter(([k]) => k.startsWith(wear + '/')).map(([key, w]) => ({ key, ...w }));
+    this.wear = wearOf(wear);
     this.limbs = { arm_l: new Limb('arm_l'), arm_r: new Limb('arm_r'), leg_l: new Limb('leg_l'), leg_r: new Limb('leg_r'), torso: new Limb('torso') };
     this.braid = { l: null, r: null };
     this.bend = { arm_l: {}, arm_r: {}, leg_l: {}, leg_r: {} };
@@ -150,7 +151,7 @@ class Dancer {
     const upArm = {};
     for (const s of ['l', 'r']) {
       const limb = this.limbs['arm_' + s], Sh = at(Mc, bj['shoulder_' + s]), q = ARM_Q;
-      let W = [Sh[0] + TC * (p['hd_' + s] * dn[0] + p['hs_' + s] * sd[0]), Sh[1] + TC * (p['hd_' + s] * dn[1] + p['hs_' + s] * sd[1])];
+      let W = p.arm ? Sh.slice() : [Sh[0] + TC * (p['hd_' + s] * dn[0] + p['hs_' + s] * sd[0]), Sh[1] + TC * (p['hd_' + s] * dn[1] + p['hs_' + s] * sd[1])];
       // keep the hand off her eyes, nose and mouth smoothly: near the face, the hand's spot is eased outward around it,
       // so a hand moving past her face goes round it instead of across, and nothing jumps
       const inv = m => { const det = m[0] * m[3] - m[1] * m[2]; return [m[3] / det, -m[1] / det, -m[2] / det, m[0] / det, (m[2] * m[5] - m[3] * m[4]) / det, (m[1] * m[4] - m[0] * m[5]) / det]; };
@@ -192,6 +193,12 @@ class Dancer {
       // aDeg: the upper arm's direction (90 = straight down), rDeg: the elbow bend. Above 0 = further out than an arm goes.
       const outBy = (aDeg, rDeg) => { const h = clamp(1 - Math.abs(norm(aDeg - 90)) / 50, 0, 1); return -out * rDeg - (150 - 110 * h); };
       const unnatural = (E, Wt) => { const a = Math.atan2(E[1] - Sh[1], E[0] - Sh[0]); return outBy(a / DEG, norm((Math.atan2(Wt[1] - E[1], Wt[0] - E[0]) - a) / DEG)) > 0; };
+      let B, up;
+      if (p.arm) {   // the beat dance: a designed pose, turned with her chest: [upper arm direction, elbow bend, wrist bend]
+        const [ua, rel, wb] = p.arm[s], a1 = (ua + che) * DEG, a2 = a1 + rel * DEG;
+        B = limb.bones(Sh, [a1, a2, a2 + (limb.rest[2] - limb.rest[1]) + wb * DEG], q);
+        up = at(B[1].m, limb.J[2])[1] < Sh[1] - 10;
+      } else {
       // 1) a spot the forearm can reach without crossing her face: if neither elbow can, move it out to her own side
       for (let k = 0; k < 10; k++) {
         const Wt = at(Mh, hp_), upNow = Wt[1] < Sh[1] - 10, c = sides(Wt);
@@ -200,7 +207,7 @@ class Dancer {
       }
       // 2) the hand glides to that spot (a quick critically damped follow): it never jumps between frames
       W = this.follow('hand_' + s, at(Mh, hp_), dt, 26);
-      const up = W[1] < Sh[1] - 10;
+      up = W[1] < Sh[1] - 10;
       // 3) the elbow takes the dancer's way unless that one crosses her face or goes into her head; side changes glide 0.3 s
       const A = limb.reach(Sh, W, p['eb_' + s], out, st, dt, q_, (E, Wt) => (!elbowOk(E, Wt, up) ? 2 : 0) + (unnatural(E, Wt) ? 1 : 0));
       // 4) the shoulder turns at most 750 degrees a second and the elbow bends at most 450: the forearm never jumps,
@@ -259,7 +266,8 @@ class Dancer {
       if (clearAt(wb)) st.wrist = wb;
       else { const alt = handClear(wr, fdir, wb); st.wrist = alt === null ? wb : alt; }
       const wbUse = st.wrist;
-      const B = limb.bones(Sh, [Lm[0], Lm[1], Lm[1] + (limb.rest[2] - limb.rest[1]) + wbUse * DEG], q_);
+      B = limb.bones(Sh, [Lm[0], Lm[1], Lm[1] + (limb.rest[2] - limb.rest[1]) + wbUse * DEG], q_);
+      }
       const crosses = B => { const e = at(B[0].m, limb.J[1]), w_ = at(B[1].m, limb.J[2]), t_ = at(B[2].m, limb.J[3]); return segOver(e, w_, 1.0) || segOver(w_, t_, 1.0) || acrossFace(e, w_); };
       // an arm up by her head is drawn whole in front of her hair, never half behind her head
       upArm[s] = up || inHead(at(B[0].m, limb.J[1])) || inHead(at(B[1].m, limb.J[2]));
@@ -285,9 +293,15 @@ class Dancer {
         geo['arm_' + s] = [a / DEG, b / DEG];
       }
     }
-    const crouch = this.spring('crouch', clamp(1 - Math.max(0, 0.95 - p.lq), 0.65, 1), dt, 360, 32);
+    const crouch = this.spring('crouch', p.arm ? clamp(p.lq, 0.8, 1) : clamp(1 - Math.max(0, 0.95 - p.lq), 0.65, 1), dt, p.arm ? 900 : 360, p.arm ? 55 : 32);
     for (const s of ['l', 'r']) {   // legs: thighs stay below the hips, knees bend at most 70 degrees, feet flat
       const limb = this.limbs['leg_' + s], Hp = at(Mp, bj['hip_' + s]);
+      if (p.leg) {
+        const [th, rel, qq] = p.leg[s], a1 = (th + pel) * DEG, a2 = a1 + rel * DEG;
+        LB['leg_' + s] = limb.bones(Hp, [a1, a2, limb.rest[2] + ((p.foot && p.foot[s]) || 0) * DEG], LEG_Q * crouch * qq);
+        geo['leg_' + s] = [th, th + rel];
+        continue;
+      }
       const th0 = clamp(norm(p['th_' + s]), 8, 172), bend0 = clamp(norm(p['sn_' + s] - p['th_' + s]), -85, 85);
       const Lg = this.limit('leg_' + s, [th0 * DEG, (th0 + bend0) * DEG], dt), th = Lg[0] / DEG, bend = norm((Lg[1] - Lg[0]) / DEG);
       LB['leg_' + s] = limb.bones(Hp, [Lg[0], Lg[1], limb.rest[2]], LEG_Q * crouch);
@@ -305,7 +319,15 @@ class Dancer {
     // the body and what is worn on it bend together at the waist
     const TB = [{ m: Mc, th: che * DEG }, { m: Mp, th: pel * DEG }, { m: Mp, th: pel * DEG }];
     const tl = [{ img: IM['body/body'], x: 0, y: 0, s: 1, zOf: () => 30 }];
-    for (const w of this.wear) if (w.bone === 'body') tl.push({ img: IM[w.key], x: w.x, y: w.y, s: w.s, zOf: () => w.z });
+    const swingR = this.spring('skirtR', pel + che * 0.5, dt, 70, 6) - (pel + che * 0.5), swingY = this.spring('skirtY', crouch, dt, 110, 9) - crouch;
+    for (const w of this.wear) if (w.bone === 'body') {
+      const L = { img: IM[w.key], x: w.x, y: w.y, s: w.s, zOf: () => w.z };
+      if (/\/(skirt|bottom)$/.test(w.key)) {   // a skirt swings from its waistband
+        const cx = L.img.width / 2;
+        L.post = mul(T(cx, 0), mul(R(clamp(swingR * 1.6, -7, 7)), mul(S(1 + clamp(swingY, -0.03, 0.03), 1 - clamp(swingY * 2.5, -0.06, 0.06)), T(-cx, 0))));
+      }
+      tl.push(L);
+    }
     for (const o of this.limbs.torso.ops(TB, tl, 3, 1)) ops.push(o);
     add(44, hk, Mh);
     ops.push({ z: 31.5, img: NECK.img, m: Mneck });   // under the collar, under the chin
@@ -394,11 +416,129 @@ function poseAt(t) {
   if (w > 0) for (const k in idle) p[k] = ANG.has(k) ? p[k] + norm(idle[k] - p[k]) * w : p[k] + (idle[k] - p[k]) * w;
   return p;
 }
-function faceAt(t) {
-  const bt = beatAt(t), bar = barAt(t);
-  if (MV && MV.sing && MV.sing.some(([a, b]) => t >= a && t <= b)) return Math.floor(bt.n / 2) % 2 === 0 ? 'sing' : 'smile';
-  if (bar.i % 4 === 3 && t - bar.t0 < 0.5) return 'wink';
-  return 'smile';
+// ---- her face: the mouth opens on each sung word (a happy open mouth, now and then a round 'oh', eyes closed on a long
+// note), a gentle closed smile between words and in calm parts, a big smile in the liveliest parts, a blink every few
+// seconds and now and then a wink. Every face is the same head with only the eyes and mouth changed, so nothing jumps.
+const BLINKS = (() => { const r = []; let t = 1.1; for (let k = 0; t < 600; k++) { r.push(t); t += 2.3 + 2.7 * rnd(k * 3.7 + 0.9); } return r; })();
+function lastAtOrBefore(arr, t, key = x => x) {
+  if (!arr.length || key(arr[0]) > t) return -1;
+  let lo = 0, hi = arr.length - 1;
+  while (lo < hi) { const m = (lo + hi + 1) >> 1; if (key(arr[m]) <= t) lo = m; else hi = m - 1; }
+  return lo;
+}
+function blinking(t) { const k = lastAtOrBefore(BLINKS, t); return k >= 0 && t - BLINKS[k] < 0.14; }
+let FACES = null;   // the song's faces, worked out once per song, 30 a second, with no face shown for less than 0.1 s
+function buildFaces(duration) {
+  const raw = [];
+  for (let i = 0; i <= Math.ceil(duration * 30) + 30; i++) raw.push(rawFace(i / 30));
+  for (let pass = 0; pass < 3; pass++) {   // a face that would show for 1 or 2 frames takes the face before it
+    let s = 0;
+    for (let i = 1; i <= raw.length; i++) if (i === raw.length || raw[i] !== raw[s]) { if (i - s < 3 && s > 0) raw.fill(raw[s - 1], s, i); s = i; }
+  }
+  return raw;
+}
+function faceAt(t, playing) {
+  if (!playing || !MV) return blinking(t) ? 'blink' : 'shut';
+  if (FACES && MV.kind === 'groove') return FACES[clamp(Math.round(t * 30), 0, FACES.length - 1)];
+  return rawFace(t);
+}
+function rawFace(t) {
+  const bar = barAt(t);
+  if (MV.kind !== 'groove') {   // the old dancer-following moves
+    const bt = beatAt(t);
+    if (MV.sing && MV.sing.some(([a, b]) => t >= a && t <= b)) return Math.floor(bt.n / 2) % 2 === 0 ? 'sing' : 'smile';
+    if (bar.i % 4 === 3 && t - bar.t0 < 0.5) return 'wink';
+    return 'smile';
+  }
+  const W = MV.words || [], k = lastAtOrBefore(W, t, w => w[0]);
+  if (k >= 0) {
+    const [a, b] = W[k], next = W[k + 1] ? W[k + 1][0] : Infinity;
+    const end = next - b < 0.09 ? next : b;   // two words almost touching: the mouth stays open between them
+    if (t < end) return (b - a > 0.7 && t - a > 0.3) ? 'sing' : (k % 3 === 2 ? 'oh' : 'smile');
+  }
+  const between = k >= 0 && (W[k + 1] ? W[k + 1][0] : Infinity) - t < 0.5 && t - W[k][1] < 0.6;   // a short pause inside a sung line
+  const e = (MV.energy || [])[bar.i] ?? 0.4, open = e >= 0.7 && !between;
+  if (!between && e >= 0.5 && bar.i % 8 === 7 && t - bar.t0 < 0.45) return 'wink';
+  if (blinking(t)) return open ? 'sing' : 'blink';
+  return open ? 'smile' : 'shut';
+}
+
+// ---- the beat dance (no video): gentle designed moves that land on the beat, chosen by how lively the music is.
+// Arm poses for her right arm (screen right), degrees with y down: [upper arm direction (0 out, 90 down), elbow bend,
+// wrist bend]. The left arm is the mirror image. Every pose and every way between two poses keeps the elbow natural.
+const ARM = {
+  down: [84, 10, 0], downOut: [72, 6, 0], downIn: [92, 16, 0], hip: [40, 102, 8], chest: [76, 124, -8], clap: [72, 130, -14],
+  cheek: [18, -112, 10], ear: [-4, -92, 0], vUp: [-38, -14, 0], out: [10, -8, 0], outLow: [44, -2, 0], point: [-22, -6, 0],
+  wave: [-8, -76, 0],
+};
+const ease = x => { x = clamp(x, 0, 1); return 0.5 - 0.5 * Math.cos(Math.PI * x); };   // soft in, soft out: never a snap
+const mixP = (a, b, w) => a.map((v, i) => v + (b[i] - v) * w);
+// a list of poses, one per beat: hold each pose, then move in the second half of the beat so the next one lands on its beat
+function seq(u, keys) {
+  const j = Math.ceil(u - 1e-9), L = keys.length, prev = keys[((j - 1) % L + L) % L], next = keys[(j % L + L) % L];
+  return mixP(prev, next, ease((u - (j - 1) - 0.25) / 0.75));   // hold a quarter beat, then move for the rest
+}
+const STYLES = {
+  sway: u => { const w = 0.5 + 0.5 * Math.sin(Math.PI * u); return { r: mixP(ARM.downIn, ARM.downOut, w), l: mixP(ARM.downIn, ARM.downOut, 1 - w) }; },
+  clap: u => { const k = [ARM.outLow, ARM.clap]; return { r: seq(u, k), l: seq(u, k) }; },
+  wave: u => {
+    const side = ease(u - 3);   // the right hand waves for 4 beats, then the left: the change takes the whole 4th beat
+    const wav = [...ARM.wave]; wav[1] += 12 * Math.sin(2 * Math.PI * u);   // the hand tips outward and back, away from her face
+    return { r: mixP(wav, ARM.hip, side), l: mixP(ARM.hip, wav, side) };
+  },
+  cheer: u => { const pump = 0.5 + 0.5 * Math.cos(2 * Math.PI * (u % 1)), v = [...ARM.vUp]; v[0] -= 9 * pump; return { r: v, l: v }; },
+  cute: u => ({ r: ARM.cheek, l: ARM.cheek, tilt: 9 * Math.sin(Math.PI * u) }),
+  point: u => ({ r: seq(u / 2, [ARM.point, ARM.hip]), l: seq(u / 2, [ARM.hip, ARM.point]) }),
+  roll: u => ({ r: seq(u, [ARM.chest, ARM.outLow]), l: seq(u, [ARM.outLow, ARM.chest]) }),
+};
+const BY_LEVEL = [['sway', 'cute', 'sway', 'cute'], ['clap', 'wave', 'sway', 'point', 'clap', 'wave'], ['cheer', 'point', 'clap', 'roll', 'wave']];
+function blockStyle(k) {   // a 2-bar block's moves: from its liveliness, never the same as the block before
+  if (k < 0 || !MV || !MV.energy) return { name: 'sway', e: 0.2 };   // no song yet (the menu): a gentle sway
+  const e = ((MV.energy[2 * k] ?? 0.3) + (MV.energy[2 * k + 1] ?? MV.energy[2 * k] ?? 0.3)) / 2;
+  const list = BY_LEVEL[e < 0.33 ? 0 : e < 0.7 ? 1 : 2];
+  let name = list[Math.floor(rnd(k * 7.3 + 1.1) * list.length)];
+  if (k > 0) { const before = blockStyle.cache[k - 1] ?? blockStyle(k - 1).name; if (before === name) name = list[(list.indexOf(name) + 1) % list.length]; }
+  blockStyle.cache[k] = name;
+  return { name, e };
+}
+blockStyle.cache = [];
+function beatIndex(time) {   // the beat nearest to a time
+  let lo = 0, hi = beats.length - 1;
+  while (lo < hi) { const m = (lo + hi) >> 1; if (beats[m] < time) lo = m + 1; else hi = m; }
+  return lo > 0 && Math.abs(beats[lo - 1] - time) < Math.abs(beats[lo] - time) ? lo - 1 : lo;
+}
+function groovePose(t, mirror) {
+  const bt = beatAt(t), n = bt.n, bar = barAt(t);
+  const first = beats[0] ?? 0, last = beats[beats.length - 1] ?? 1e9;
+  // the music's beats; before the first one and after the last she sways gently on her own
+  const k = Math.floor(bar.i / 2), st = blockStyle(k), nx = blockStyle(k + 1);
+  // where this 2-bar block starts and how many beats it really has (a bar the beat finder saw as 3 or 5 beats is fine)
+  const b0 = downs.length ? beatIndex(downs[Math.min(2 * k, downs.length - 1)]) : 8 * k;
+  const b1 = downs.length && 2 * k + 2 < downs.length ? beatIndex(downs[2 * k + 2]) : b0 + 8;
+  const u = n - b0, LEN = Math.max(b1 - b0, 2);
+  // the last beat of a block is the change: the old moves stop where they are and she moves cleanly into the new ones,
+  // which land on the next block's first beat
+  let arms = STYLES[st.name](Math.min(u, LEN - 1));
+  if (u > LEN - 1) { const b2 = STYLES[nx.name](0), w = ease(u - (LEN - 1)); arms = { r: mixP(arms.r, b2.r, w), l: mixP(arms.l, b2.l, w), tilt: (arms.tilt || 0) * (1 - w) + (b2.tilt || 0) * w }; }
+  let e = st.e;
+  const outside = t < first - 0.2 || t > last;
+  if (t < first - 0.2) { arms = STYLES.sway(n); e = 0.15; }
+  if (t > last) { const w = ease((t - last) / 0.6); arms = { r: mixP(arms.r, ARM.vUp, w), l: mixP(arms.l, ARM.vUp, w), tilt: (arms.tilt || 0) * (1 - w) }; }   // the end: both arms up, held
+  // the body: down on every beat, the weight from side to side, knees soft
+  const ph = bt.ph, drop = Math.exp(-((ph / 0.3) ** 2)) + Math.exp(-(((1 - ph) / 0.2) ** 2));
+  const bounce = (0.035 + 0.04 * e) * clamp(drop, 0, 1) * (t > last ? Math.max(0, 1 - (t - last) / 0.6) : 1);
+  const sx = Math.sin(Math.PI * n) * (0.6 + 0.6 * e) * (mirror ? -1 : 1);   // the weight: + = on her right foot
+  const mirrorP = p => [180 - p[0], -p[1], -p[2]];
+  const give = q => q[0] > 30 ? [q[0], q[1] + Math.sign(q[1] || 1) * 60 * bounce, q[2]] : q;   // a low arm's elbow gives a little on the bounce
+  const R = give(arms.r), L = give(arms.l);
+  const pose = {
+    arm: mirror ? { r: L, l: mirrorP(R) } : { r: R, l: mirrorP(L) },
+    hip: 4 * sx, spine: -2 * sx, tq: 1, lq: 1 - bounce,
+    head: 4 * Math.sin(Math.PI * n - 0.6) + (arms.tilt || 0) * (mirror ? -1 : 1),
+    leg: { r: [85 + 5 * sx, 1, sx < 0 ? 1 + 0.06 * sx : 1], l: [95 + 5 * sx, -1, sx > 0 ? 1 - 0.06 * sx : 1] },
+    foot: { r: sx < 0 ? 6 * sx : 0, l: sx > 0 ? 6 * sx : 0 },
+  };
+  return pose;
 }
 
 // ---- the stage: a fixed view (the game's rings and arrows sit on top), soft lights on the beat
@@ -446,9 +586,11 @@ function draw(t) {
   const k = Math.min(W / VW, H / VH), screen = [k, 0, 0, k, (W - VW * k) / 2, (H - VH * k) / 2];
   const keep = { MV, beats, downs };
   if (!playingNow) { MV = null; beats = []; downs = []; }
-  const bt = beatAt(songT), p = poseAt(songT), face = playingNow ? faceAt(songT) : 'smile';
+  const bt = beatAt(songT), face = faceAt(songT, playingNow);
+  const grooving = !MV || MV.kind === 'groove';
+  const p = OVERRIDE ? OVERRIDE(songT) : grooving ? groovePose(songT, false) : poseAt(songT);
   drawScene(screen, songT, bt);
-  for (const c of CREW) c.draw(screen, p, 'smile', dt);
+  CREW.forEach((c, k) => c.draw(screen, grooving ? groovePose(songT - 0.02 * (k % 2 + 1), k < 2) : p, 'smile', dt));
   GIRL.draw(screen, p, face, dt);
   drawSparkles(screen, songT, bt);
   if (!playingNow) ({ MV, beats, downs } = keep);
@@ -471,16 +613,22 @@ async function init(canvas, bundle) {
   await Promise.all(Object.keys(D.sizes).map(async k => { IM[k] = await load(bundle.files[k + '.webp']); }));
   BG = await load(bundle.files['stage.webp']).catch(() => null);
   NECK = makeNeck(D.neck || { skin: '#fed6be', shade: '#e4af98', line: '#310501' });
-  const crewHead = n => ({ smile: 'crew/' + n, sing: 'crew/' + n, wink: 'crew/' + n }), hs = n => D.joints['crew/' + n].scale_vs_girl;
+  const crewHead = n => Object.fromEntries(['smile', 'sing', 'wink', 'shut', 'blink', 'oh'].map(f => [f, 'crew/' + n])), hs = n => D.joints['crew/' + n].scale_vs_girl;
   CREW = ['head_spiky', 'head_ponytail', 'head_buns', 'head_sidepart'].map((n, i) =>
     new Dancer({ heads: crewHead(n), headScale: hs(n), wear: 'crew', ...CREW_AT[i], step: 6 }));
-  GIRL = new Dancer({ heads: { smile: 'body/head2_smile', sing: 'body/head2_sing', wink: 'body/head2_wink' }, headScale: D.joints['body/head2_smile'].scale_vs_old,
-    wear: 'blue', ...GIRL_AT, braids: true, step: 3 });
+  const saved = localStorage.getItem('spike-outfit');   // the outfit she wore last time on this device
+  OUTFIT = (D.outfits || []).some(o => o.id === saved) ? saved : ((D.outfits || [])[0] || { id: 'blue' }).id;
+  GIRL = new Dancer({ heads: Object.fromEntries(['smile', 'sing', 'wink', 'shut', 'blink', 'oh'].map(f => [f, 'body/head2_' + f])), headScale: D.joints['body/head2_smile'].scale_vs_old,
+    wear: OUTFIT, ...GIRL_AT, braids: true, step: 3 });
   const fit = () => { const r = Math.min(devicePixelRatio || 1, 2); cv.width = Math.round(innerWidth * r); cv.height = Math.round(innerHeight * r); };
   fit(); addEventListener('resize', fit);
   ready = true;
 }
-function setSong(moves, chart) { MV = moves; beats = chart?.beats || []; downs = chart?.downbeats || []; lastT = null; }
-function audit(t) { draw(t); return { girl: GIRL.last, crew: CREW.map(c => c.last) }; }
-return { init, setSong, draw, audit, get ready() { return ready; }, get hasMoves() { return !!MV; } };
+function setOutfit(id) {   // a new outfit is only other pieces on the same body: her moves and everything else stay
+  if (!D || !(D.outfits || []).some(o => o.id === id)) return;
+  OUTFIT = id; GIRL.wear = wearOf(id); localStorage.setItem('spike-outfit', id);
+}
+function setSong(moves, chart) { MV = moves; beats = chart?.beats || []; downs = chart?.downbeats || []; lastT = null; blockStyle.cache = []; FACES = null; if (MV && MV.kind === 'groove') FACES = buildFaces(chart?.duration || (beats[beats.length - 1] || 0) + 5); }
+function audit(t) { draw(t); return { girl: GIRL.last, crew: CREW.map(c => c.last), face: faceAt(t, true) }; }
+return { init, setSong, setOutfit, ARM, STYLES, groovePose, styleAt: t => { const k = Math.floor(barAt(t).i / 2); return blockStyle(k).name + '>' + blockStyle(k + 1).name; }, setOverride: f => { OVERRIDE = f; }, get outfits() { return (D && D.outfits) || []; }, get outfit() { return OUTFIT; }, draw, audit, get ready() { return ready; }, get hasMoves() { return !!MV; } };
 })();
