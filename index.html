@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Bản thử: mũi tên theo nhạc</title>
+<title>Bản thử 2: mũi tên theo tiếng hát</title>
 <link rel="icon" href="data:,">
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
@@ -147,8 +147,8 @@
 
 <div id="menu">
   <div class="panel">
-    <h1>Bản thử: mũi tên theo nhạc</h1>
-    <p class="sub">Hình nháp. Chạm nửa trái hoặc nửa phải màn hình, hoặc phím ← →.</p>
+    <h1>Bản thử 2: theo tiếng hát</h1>
+    <p class="sub">Mũi tên hồng theo tiếng hát, mũi tên cam theo beat. Chạm nửa trái hoặc nửa phải màn hình, hoặc phím ← →.</p>
     <p id="result"></p>
     <div id="songs">Đang tải…</div>
     <label><input type="checkbox" id="tick"> Bật tiếng tick đúng lúc mũi tên chạm tâm</label>
@@ -156,6 +156,7 @@
 </div>
 
 <script>
+const V = '2';
 const TRAVEL = 2.4, Y = 475, GOOD = [[0.10, 'Tuyệt!', 100], [0.20, 'Giỏi quá!', 70], [0.30, 'Được!', 40]];
 const X = { L: [-110, 330], R: [1290, 850] };
 const $ = id => document.getElementById(id);
@@ -176,7 +177,7 @@ function keyBytes() {
   return Uint8Array.from(bin, ch => ch.charCodeAt(0));
 }
 async function audioBytes(base, c) {
-  const bytes = await fetch(base + c.audio).then(r => r.arrayBuffer());
+  const bytes = await fetch(`${base}${c.audio}?v=${V}`).then(r => r.arrayBuffer());
   if (!c.encrypted) return bytes;
   const key = await crypto.subtle.importKey('raw', keyBytes(), 'AES-GCM', false, ['decrypt']);
   return crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(bytes, 0, 12) }, key, new Uint8Array(bytes, 12));
@@ -186,14 +187,14 @@ function audioClock() { return ctx.currentTime - startAt; }
 function heardClock() { return audioClock() - (ctx.outputLatency || 0); }
 
 async function loadList() {
-  const list = (await (await fetch('songs/index.json')).json()).songs;
+  const list = (await (await fetch(`songs/index.json?v=${V}`)).json()).songs;
   const box = $('songs'); box.textContent = '';
   for (const s of list) {
     const head = document.createElement('p');
     head.className = 'sub';
     head.textContent = `${s.title} · ${Math.floor(s.duration / 60)}:${String(Math.round(s.duration % 60)).padStart(2, '0')} · ${Math.round(s.bpm)} BPM`;
     box.appendChild(head);
-    for (const [key, label] of [['de', 'Dễ'], ['vua', 'Vừa']]) {
+    for (const [key, label] of [['de', 'Dễ'], ['vua', 'Vừa'], ['kho', 'Khó']]) {
       const b = document.createElement('button');
       b.className = 'song';
       b.dataset.level = key;
@@ -213,7 +214,7 @@ async function start(s, level) {
   await ctx.resume();
   $('result').textContent = 'Đang tải bài…';
   const base = `songs/${s.slug}/`;
-  const c = await fetch(base + 'chart.json').then(r => r.json());
+  const c = await fetch(`${base}chart.json?v=${V}`).then(r => r.json());
   let data;
   try {
     data = await audioBytes(base, c);
@@ -269,6 +270,7 @@ function makeNote(n) {
   u.setAttribute('href', n.side === 'L' ? '#arrowL' : '#arrowR');
   u.setAttribute('transform', 'scale(1.2)');
   g.appendChild(u);
+  if (n.src === 'v') { g.style.setProperty('--arrow', '#ff5f9e'); g.style.setProperty('--edge', '#c2286a'); }
   $('notes').appendChild(g);
   n.el = g;
 }
