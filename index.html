@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Bản thử 21: nhìn giữa, bấm ở rìa, hàng nút thấp</title>
+<title>Bản thử 22: bé nhảy theo C.A.C</title>
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="theme-color" content="#8fdcff">
@@ -14,10 +14,12 @@
   window.IOS = /iPad|iPhone/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   if (!IOS) document.head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="manifest.webmanifest">');
 </script>
-<script src="sfx.js?v=0711.1910"></script>
+<script src="sfx.js?v=0711.2239"></script>
+<script src="dance.js?v=0711.2239"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%;background:#8fdcff;overflow:hidden;touch-action:none;font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif}
+  html,body{height:100%;background:#2b1d4f;overflow:hidden;touch-action:none;font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif}
+  #stage{position:fixed;inset:0;width:100%;height:100%;display:block}
   #scene{position:fixed;inset:0;width:100%;height:100%;display:block}
   .say{font:800 66px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;paint-order:stroke;stroke:#fff;stroke-width:14px;stroke-linejoin:round;fill:#21985a;opacity:0}
   .hudtext{font:800 34px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;fill:#2f9e62}
@@ -46,6 +48,7 @@
 </style>
 </head>
 <body>
+<canvas id="stage"></canvas>
 <svg id="scene" viewBox="0 0 1180 820" preserveAspectRatio="xMidYMid meet"
      style="--arrow:#ff9d2e;--edge:#c8640a;--ring:#ffffff;--ring2:#ffe36b;--ringfill:rgba(255,255,255,.55);--lane:rgba(255,255,255,.55);--burst:#fff;--hair:#6a4128;--dress:#ffd23f;--dress2:#fff4bf;--skin:#ffdcc4;--shoe:#ff8a3c;--ui:#fff;--uit:#2f9e62;--padedge:#57c26f">
   <defs>
@@ -85,62 +88,7 @@
       <circle r="94" fill="var(--ui)"/>
       <circle r="94" fill="none" stroke="var(--padedge)" stroke-width="9"/>
     </g>
-    <g id="girl">
-      <ellipse cx="0" cy="-2" rx="118" ry="16" fill="#000" opacity=".1"/>
-      <circle cx="-84" cy="-374" r="38" fill="var(--hair)"/>
-      <circle cx="84" cy="-374" r="38" fill="var(--hair)"/>
-      <ellipse cx="0" cy="-296" rx="98" ry="100" fill="var(--hair)"/>
-      <rect x="-40" y="-92" width="26" height="82" rx="13" fill="var(--skin)"/>
-      <rect x="14" y="-92" width="26" height="82" rx="13" fill="var(--skin)"/>
-      <ellipse cx="-32" cy="-9" rx="31" ry="15" fill="var(--shoe)"/>
-      <ellipse cx="32" cy="-9" rx="31" ry="15" fill="var(--shoe)"/>
-      <path d="M-46,-200 Q-104,-196 -130,-262" fill="none" stroke="var(--skin)" stroke-width="26" stroke-linecap="round"/>
-      <path d="M46,-200 Q108,-184 124,-128" fill="none" stroke="var(--skin)" stroke-width="26" stroke-linecap="round"/>
-      <path d="M-42,-224 Q0,-204 42,-224 L56,-160 Q100,-104 114,-66 Q0,-28 -114,-66 Q-100,-104 -56,-160 Z" fill="var(--dress)"/>
-      <path d="M-114,-66 Q-85,-40 -57,-54 Q-29,-30 0,-48 Q29,-30 57,-54 Q85,-40 114,-66 Q0,-28 -114,-66 Z" fill="var(--dress2)"/>
-      <path d="M-55,-160 Q0,-142 55,-160" fill="none" stroke="var(--dress2)" stroke-width="15" stroke-linecap="round"/>
-      <circle cx="-52" cy="-212" r="23" fill="var(--dress2)"/>
-      <circle cx="52" cy="-212" r="23" fill="var(--dress2)"/>
-      <ellipse cx="0" cy="-292" rx="84" ry="80" fill="var(--skin)"/>
-      <path d="M-91,-286 Q-93,-384 0,-386 Q93,-384 91,-286 Q76,-338 34,-345 Q4,-318 -28,-347 Q-72,-336 -91,-286 Z" fill="var(--hair)"/>
-      <ellipse cx="-36" cy="-284" rx="11" ry="15" fill="#3b2a2a"/>
-      <circle cx="-32" cy="-290" r="4.5" fill="#fff"/>
-      <ellipse cx="36" cy="-284" rx="11" ry="15" fill="#3b2a2a"/>
-      <circle cx="40" cy="-290" r="4.5" fill="#fff"/>
-      <ellipse cx="-57" cy="-256" rx="15" ry="9" fill="#ff8fa3" opacity=".65"/>
-      <ellipse cx="57" cy="-256" rx="15" ry="9" fill="#ff8fa3" opacity=".65"/>
-      <path d="M-16,-254 Q0,-232 16,-254 Z" fill="#d9536f" stroke="#d9536f" stroke-width="5" stroke-linejoin="round"/>
-    </g>
-    <g id="cloud" fill="#fff">
-      <circle cx="-58" cy="6" r="34"/><circle cx="-14" cy="-16" r="46"/><circle cx="40" cy="-4" r="38"/><circle cx="78" cy="12" r="24"/>
-      <rect x="-88" y="6" width="190" height="32" rx="16"/>
-    </g>
-    <g id="flower">
-      <circle cy="-11" r="8"/><circle cx="10.5" cy="-3.4" r="8"/><circle cx="6.5" cy="9" r="8"/><circle cx="-6.5" cy="9" r="8"/><circle cx="-10.5" cy="-3.4" r="8"/>
-      <circle r="6" fill="#ffd23f"/>
-    </g>
   </defs>
-
-  <rect x="-400" y="-300" width="1980" height="1420" fill="url(#b-bg)"/>
-  <g transform="translate(255 150) scale(.66)">
-    <circle r="96" fill="none" stroke="#ffd54a" stroke-width="24" stroke-dasharray="1 49" stroke-linecap="round"/>
-    <circle r="66" fill="#ffd23f"/>
-  </g>
-  <use href="#cloud" transform="translate(880 190) scale(1.15)"/>
-  <use href="#cloud" transform="translate(470 150) scale(.7)" opacity=".9"/>
-  <use href="#cloud" transform="translate(1080 150) scale(.5)" opacity=".85"/>
-  <path d="M-400,520 L0,500 Q260,380 620,478 T1180,440 L1580,440 V1120 H-400 Z" fill="#b5e88a"/>
-  <path d="M-400,640 L0,620 Q300,530 590,572 T1180,600 L1580,600 V1120 H-400 Z" fill="#83d765"/>
-  <ellipse cx="590" cy="656" rx="280" ry="58" fill="#5cbc4a"/>
-  <ellipse cx="590" cy="646" rx="280" ry="58" fill="#9be878"/>
-  <g fill="#ff8fb8">
-    <use href="#flower" transform="translate(372 648)"/><use href="#flower" transform="translate(800 640)"/>
-    <use href="#flower" transform="translate(300 752) scale(1.2)"/><use href="#flower" transform="translate(860 770) scale(1.2)"/>
-  </g>
-  <g fill="#fff">
-    <use href="#flower" transform="translate(440 678) scale(.85)"/><use href="#flower" transform="translate(735 684) scale(.85)"/>
-    <use href="#flower" transform="translate(500 770)"/><use href="#flower" transform="translate(690 776)"/>
-  </g>
 
   <g fill="var(--lane)">
     <rect x="-60" y="515" width="435" height="90" rx="45"/><rect x="-60" y="665" width="435" height="90" rx="45"/>
@@ -162,7 +110,6 @@
   <g transform="translate(330 710) scale(.72)"><g id="burstLD" opacity="0"><use href="#burstArt"/></g></g>
   <g transform="translate(850 560) scale(.72)"><g id="burstRU" opacity="0"><use href="#burstArt"/></g></g>
   <g transform="translate(850 710) scale(.72)"><g id="burstRD" opacity="0"><use href="#burstArt"/></g></g>
-  <g transform="translate(590 640)"><g id="dancer"><use href="#girl"/></g></g>
   <g transform="translate(590 186)"><text id="say" class="say" text-anchor="middle"></text></g>
 
   <g id="stopBtn" transform="translate(66 62)">
@@ -182,8 +129,8 @@
 
 <div id="menu">
   <div class="panel">
-    <h1>Bản thử 21: nhìn giữa, bấm ở rìa, hàng nút thấp</h1>
-    <p class="sub">Dễ và Vừa: mũi tên cam theo beat, dày lên ở đoạn bốc, thưa ở đoạn chùng. Khó: mũi tên hồng theo từng chữ hát. Từ 4:00, mũi tên tím theo tiếng synth (Vừa và Khó). Hàng mũi tên đi theo giai điệu. Mũi tên chạy từ hai mép vào vòng hoa ở giữa; bấm vào nút mờ ở rìa (chạm đâu trên nửa đó cũng được), hoặc phím W, S, ↑, ↓.</p>
+    <h1>Bản thử 22: bé nhảy theo C.A.C</h1>
+    <p class="sub">Dễ và Vừa: mũi tên cam theo beat, dày lên ở đoạn bốc, thưa ở đoạn chùng. Khó: mũi tên hồng theo từng chữ hát. Từ 4:00, mũi tên tím theo tiếng synth (Vừa và Khó). Hàng mũi tên đi theo giai điệu. Mũi tên chạy từ hai mép vào vòng hoa ở giữa; bấm vào nút mờ ở rìa (chạm đâu trên nửa đó cũng được), hoặc phím W, S, ↑, ↓. Bé và 4 bạn nhảy theo người đứng giữa của C.A.C.</p>
     <p class="sub">Phiên bản <b id="ver"></b> <button id="checkVer" class="from">Kiểm tra bản mới</button> <span id="verMsg"></span></p>
     <p id="result"></p>
     <div id="tapsBox" class="hide"><textarea id="taps" readonly></textarea><button id="copyTaps" class="from">Chép</button></div>
@@ -195,7 +142,7 @@
 </div>
 
 <script>
-const V = '0711.1910';  // stamped by the deploy build
+const V = '0711.2239';  // stamped by the deploy build
 // Two rows, low on the screen where hands hold an iPad: 560 and 710. A touch above 635 is the upper row.
 const SPLIT_Y = 635,
   
@@ -296,6 +243,26 @@ async function loadList() {
   return list;
 }
 
+let DANCE = null;
+async function loadDance() {
+  try {
+    const r = await fetch(`dance/manifest.json?v=${V}`);
+    if (r.ok) {
+      const man = await r.json();
+      return { files: Object.fromEntries(man.files.map(n => [n, `dance/${n}?v=${V}`])), json: async n => (await fetch(`dance/${n}?v=${V}`)).json() };
+    }
+  } catch (e) { /* not on this Mac: the public file below */ }
+  const bytes = await fetch(`dance.bin?v=${V}`).then(r => r.arrayBuffer());
+  const key = await crypto.subtle.importKey('raw', keyBytes(), 'AES-GCM', false, ['decrypt']);
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(bytes, 0, 12) }, key, new Uint8Array(bytes, 12));
+  const n = new DataView(plain).getUint32(0, true), head = JSON.parse(new TextDecoder().decode(new Uint8Array(plain, 4, n)));
+  const files = {};
+  for (const f of head.files) files[f.name] = URL.createObjectURL(new Blob([new Uint8Array(plain, 4 + n + f.at, f.len)], { type: f.type }));
+  return { files, json: async name => { if (!files[name]) throw new Error('no ' + name); return (await fetch(files[name])).json(); } };
+}
+let danceReady = null;
+function idleLoop() { if (!playing) Dance.draw(null); requestAnimationFrame(idleLoop); }
+
 async function start(s, level) {
   ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
   await ctx.resume();
@@ -313,6 +280,8 @@ async function start(s, level) {
   }
   const buffer = await ctx.decodeAudioData(data);
   chart = c;
+  await danceReady;
+  Dance.setSong(DANCE ? await DANCE.json(`moves/${s.slug}.json`).catch(() => null) : null, c);
   $('notes').textContent = '';
   recording = level === 'rec'; taps = [];
   notes = recording ? [] : chart.levels[level].map(n => ({ ...n, el: null, done: n.t < startFrom }));  // arrows before the start are gone
@@ -403,8 +372,7 @@ function frame() {
   while (lo < hi) { const m = (lo + hi + 1) >> 1; if (b[m] <= now) lo = m; else hi = m - 1; }
   const next = b[lo + 1] ?? b[lo] + 0.5;
   const phase = Math.min(Math.max((now - b[lo]) / (next - b[lo]), 0), 1);
-  const lean = (lo % 2 ? 1 : -1) * Math.cos(Math.PI * phase) * 5;
-  $('dancer').setAttribute('transform', `translate(0 ${-16 * Math.sin(Math.PI * phase)}) rotate(${lean})`);
+  Dance.draw(now);
   $('bar').setAttribute('width', String(388 * Math.min(Math.max(now, 0) / chart.duration, 1)));
   const sec = Math.floor(Math.max(now, 0));
   if (sec !== shownSec) { shownSec = sec; $('clock').textContent = `${mmss(sec)} / ${mmss(chart.duration)}`; }
@@ -464,7 +432,7 @@ window.addEventListener('keydown', e => {
 $('stopBtn').addEventListener('pointerdown', e => { e.stopPropagation(); if (playing) finish(true); });
 document.addEventListener('gesturestart', e => e.preventDefault());
 
-window.spike = { geo: { SPEED, SPLIT_Y, LANES }, get state() { return { playing, now: ctx ? heardClock() : 0, score, hits, total: notes.length, live: $('notes').childElementCount, tick: tickNext }; }, tap };
+window.spike = { geo: { SPEED, SPLIT_Y, LANES }, get state() { return { dance: Dance.ready, danceMoves: Dance.hasMoves, playing, now: ctx ? heardClock() : 0, score, hits, total: notes.length, live: $('notes').childElementCount, tick: tickNext }; }, tap };
 $('copyTaps').addEventListener('click', () => { $('taps').select(); navigator.clipboard?.writeText($('taps').value).catch(() => {}); document.execCommand?.('copy'); });
 function pickFrom(sec) {
   startFrom = sec;
@@ -486,6 +454,8 @@ const fromLink = /[?&]from=(\d+)/.exec(location.search);  // a link can open str
 if (fromLink) pickFrom(+fromLink[1]);
 
 saveKeyFromLink();
+danceReady = loadDance().then(b => { DANCE = b; return Dance.init($('stage'), b); }).catch(e => console.warn('dance', e));
+requestAnimationFrame(idleLoop);
 $('sndName').textContent = SFX.BY_ID[hitKind].name;
 $('sndLink').href = 'sfx.html' + (IOS ? location.hash : '');
 checkVersion().then(loadList);
