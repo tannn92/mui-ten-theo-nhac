@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Bản thử 12: Vừa dồn nhịp ở đoạn bốc</title>
+<title>Bản thử 13: hiện phút giây</title>
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="theme-color" content="#8fdcff">
@@ -20,6 +20,7 @@
   #scene{position:fixed;inset:0;width:100%;height:100%;display:block}
   .say{font:800 66px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;paint-order:stroke;stroke:#fff;stroke-width:14px;stroke-linejoin:round;fill:#21985a;opacity:0}
   .hudtext{font:800 34px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;fill:#2f9e62}
+  .clock{font:800 26px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;fill:#2f9e62;paint-order:stroke;stroke:#fff;stroke-width:8px;stroke-linejoin:round;font-variant-numeric:tabular-nums}
   #menu{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(20,70,90,.38);padding:20px}
   #menu.hide{display:none}
   .panel{background:#fff;border-radius:26px;padding:22px 24px;width:min(560px,100%);max-height:92vh;overflow:auto;touch-action:pan-y;box-shadow:0 14px 40px rgba(0,0,0,.2)}
@@ -157,6 +158,7 @@
   </g>
   <rect x="390" y="50" width="400" height="24" rx="12" fill="var(--ui)"/>
   <rect id="bar" x="396" y="56" width="0" height="12" rx="6" fill="var(--uit)"/>
+  <text id="clock" class="clock" x="590" y="106" text-anchor="middle"></text>
   <g transform="translate(1000 62)">
     <rect x="-130" y="-36" width="284" height="72" rx="36" fill="var(--ui)"/>
     <text id="score" class="hudtext" x="-104" y="12">0</text>
@@ -166,7 +168,7 @@
 
 <div id="menu">
   <div class="panel">
-    <h1>Bản thử 12: Vừa dồn nhịp ở đoạn bốc</h1>
+    <h1>Bản thử 13: hiện phút giây</h1>
     <p class="sub">Mũi tên hồng theo từng chữ hát, mũi tên cam theo beat lúc không có lời. Cùng nốt cùng hàng, nốt lên thì mũi tên lên. Chạm vào vòng tròn, hoặc phím W, S, ↑, ↓.</p>
     <p id="result"></p>
     <div id="songs">Đang tải…</div>
@@ -175,7 +177,7 @@
 </div>
 
 <script>
-const V = '1107-162553';  // stamped by the deploy build
+const V = '1107-163625';  // stamped by the deploy build
 const TRAVEL = 2.4, SPLIT_Y = 445, 
   // Seconds from the ring centre, matched to what the eye sees at 183 units a second:
   // the white dot, the yellow disc, the white ring, and the arrow still touching the ring.
@@ -185,7 +187,9 @@ const LANES = { LU: [-110, 330, 335], LD: [-110, 330, 555], RU: [1290, 850, 335]
 const $ = id => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
 let ctx, source, chart, notes = [], startAt = 0, playing = false, tickNext = 0, firstLive = 0;
-let score = 0, hits = 0, tally = {}, master, musicGain, noiseBuf;
+let score = 0, hits = 0, tally = {}, master, musicGain, noiseBuf, shownSec = -1;
+// minutes:seconds of what the player hears, so feedback can name the moment
+function mmss(s) { s = Math.floor(Math.max(s, 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
 
 // The music on the public site is encrypted. The key lives only in the private link.
 function saveKeyFromLink() {
@@ -297,6 +301,8 @@ async function start(s, level) {
   $('score').textContent = '0';
   $('hits').textContent = `0/${notes.length}`;
   $('result').textContent = '';
+  shownSec = -1;
+  $('clock').textContent = `0:00 / ${mmss(chart.duration)}`;
   source = ctx.createBufferSource();
   source.buffer = buffer;
   source.connect(musicGain);
@@ -308,11 +314,12 @@ async function start(s, level) {
   requestAnimationFrame(frame);
 }
 
-function finish() {
+function finish(early) {
+  const at = early ? `Dừng ở ${mmss(heardClock())} · ` : '';
   playing = false;
   try { source.onended = null; source.stop(); } catch (e) {}
   $('notes').textContent = '';
-  $('result').textContent = `Trúng ${hits}/${notes.length} · ${score} điểm · ` + GRADES.map(g => `${g[1]} ${tally[g[1]] || 0}`).join(' · ');
+  $('result').textContent = at + `Trúng ${hits}/${notes.length} · ${score} điểm · ` + GRADES.map(g => `${g[1]} ${tally[g[1]] || 0}`).join(' · ');
   $('menu').classList.remove('hide');
 }
 
@@ -362,6 +369,8 @@ function frame() {
   const lean = (lo % 2 ? 1 : -1) * Math.cos(Math.PI * phase) * 5;
   $('dancer').setAttribute('transform', `translate(0 ${-16 * Math.sin(Math.PI * phase)}) rotate(${lean})`);
   $('bar').setAttribute('width', String(388 * Math.min(Math.max(now, 0) / chart.duration, 1)));
+  const sec = Math.floor(Math.max(now, 0));
+  if (sec !== shownSec) { shownSec = sec; $('clock').textContent = `${mmss(sec)} / ${mmss(chart.duration)}`; }
   requestAnimationFrame(frame);
 }
 
@@ -404,9 +413,9 @@ window.addEventListener('keydown', e => {
   if (e.repeat) return;
   const lane = { w: 'LU', s: 'LD', ArrowUp: 'RU', ArrowDown: 'RD' }[e.key];
   if (lane) { e.preventDefault(); tap(lane); }
-  if (e.key === 'Escape' && playing) finish();
+  if (e.key === 'Escape' && playing) finish(true);
 });
-$('stopBtn').addEventListener('pointerdown', e => { e.stopPropagation(); if (playing) finish(); });
+$('stopBtn').addEventListener('pointerdown', e => { e.stopPropagation(); if (playing) finish(true); });
 document.addEventListener('gesturestart', e => e.preventDefault());
 
 window.spike = { get state() { return { playing, now: ctx ? heardClock() : 0, score, hits, total: notes.length, live: $('notes').childElementCount, tick: tickNext }; }, tap };
