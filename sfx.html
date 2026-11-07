@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Chọn tiếng bấm</title>
+<link rel="icon" href="icons/icon-192.png">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:#eaf8ff;color:#1d5c3c;font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif;padding:18px 16px 60px;max-width:760px;margin:0 auto}
+  header{position:sticky;top:0;background:#eaf8ff;padding-bottom:10px;z-index:2}
+  h1{font-size:24px;color:#21985a}
+  h2{font-size:17px;margin:18px 0 6px;color:#35574a}
+  .sub{font-size:14px;color:#5c7a6e;margin:4px 0}
+  a{color:#2a86c9;font-weight:700}
+  .bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;font-size:14px}
+  button{border:0;border-radius:12px;padding:9px 13px;background:#fff;color:#1d5c3c;font:700 15px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  button.on{background:#2f9e62;color:#fff}
+  button:disabled{opacity:.45}
+  #stop{background:#ffe7d6;color:#b4521a}
+  .row{display:flex;align-items:center;gap:8px;background:#fff;border-radius:16px;padding:10px 12px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .row.chosen{outline:3px solid #2f9e62}
+  .name{flex:1;font-weight:800;font-size:16px}
+  .tag{font-weight:600;font-size:12px;color:#fff;border-radius:8px;padding:2px 7px;margin-left:6px;vertical-align:2px}
+  .t0{background:#4b7bd6}.t1{background:#2f9e62}.t2{background:#e0a21c}.t3{background:#e0571c}
+  #msg{font-size:14px;font-weight:700;color:#e0701c;min-height:18px;margin-top:6px}
+</style>
+<script src="sfx.js?v=1107-173934"></script>
+</head>
+<body>
+<header>
+  <h1>Chọn tiếng bấm</h1>
+  <p class="sub">Đang dùng: <b id="current"></b> · <a id="back" href="index.html">← về trò chơi</a></p>
+  <p class="sub"><b>Nghe</b>: một tiếng. <b>Với nhạc</b>: 12 giây nhạc, tiếng tự kêu đúng mỗi mũi tên mức Vừa. <b>Chọn</b>: dùng trong trò chơi. Mọi tiếng đã chỉnh to đều nhau khi nghe bằng loa máy.</p>
+  <div class="bar">Đoạn nhạc thử:
+    <button class="part" data-at="40">0:40 thường</button>
+    <button class="part on" data-at="85">1:25 bốc</button>
+    <button class="part" data-at="241">4:01 synth</button>
+    <button id="stop">Dừng</button>
+  </div>
+  <p id="msg">Đang đo các tiếng…</p>
+</header>
+<main id="list"></main>
+<script>
+const V = '1107-173934';
+const IOS = /iPad|iPhone/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const $ = id => document.getElementById(id);
+let ctx, master, musicGain, bus, source, buffer, chart, partAt = 85;
+let chosen = SFX.BY_ID[localStorage.getItem('spike-sound')] ? localStorage.getItem('spike-sound') : SFX.DEFAULT;
+
+// the same key handling as the game: the music is encrypted, the key lives in the private link
+(function saveKeyFromLink() {
+  const m = /[#&]k=([\w-]+)/.exec(location.hash);
+  if (m) localStorage.setItem('spike-key', m[1]);
+})();
+$('back').href = 'index.html' + (IOS ? location.hash : '');
+function keyBytes() {
+  const text = localStorage.getItem('spike-key') || '';
+  const bin = atob(text.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - text.length % 4) % 4));
+  return Uint8Array.from(bin, ch => ch.charCodeAt(0));
+}
+async function audio() {
+  ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+  await ctx.resume();
+  if (!master) {  // the same chain as the game: a limiter, music at 0.75
+    master = ctx.createDynamicsCompressor();
+    master.threshold.value = -2; master.knee.value = 0; master.ratio.value = 20; master.attack.value = 0.002; master.release.value = 0.08;
+    master.connect(ctx.destination);
+    musicGain = ctx.createGain(); musicGain.gain.value = 0.75; musicGain.connect(master);
+  }
+}
+async function music() {
+  if (buffer) return;
+  $('msg').textContent = 'Đang tải nhạc…';
+  const song = (await (await fetch(`songs/index.json?v=${V}`)).json()).songs[0];
+  const base = `songs/${song.slug}/`;
+  chart = await (await fetch(`${base}chart.json?v=${V}`)).json();
+  let bytes = await (await fetch(`${base}${chart.audio}?v=${V}`)).arrayBuffer();
+  if (chart.encrypted) {
+    const key = await crypto.subtle.importKey('raw', keyBytes(), 'AES-GCM', false, ['decrypt']);
+    bytes = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(bytes, 0, 12) }, key, new Uint8Array(bytes, 12));
+  }
+  buffer = await ctx.decodeAudioData(bytes);
+  $('msg').textContent = '';
+}
+function stop() {
+  if (source) { try { source.stop(); } catch (e) {} source = null; }
+  if (bus) { bus.disconnect(); bus = null; }  // drops the hits already scheduled
+  document.querySelectorAll('.withMusic.on').forEach(b => b.classList.remove('on'));
+}
+async function hear(id) { await audio(); SFX.play(ctx, master, ctx.currentTime + 0.03, id); }
+async function withMusic(id, button) {
+  await audio();
+  stop();
+  try { await music(); } catch (e) { $('msg').textContent = 'Không mở được nhạc. Hãy mở trò chơi bằng link đầy đủ có khóa một lần trước.'; return; }
+  const dur = 12, t0 = ctx.currentTime + 0.15;
+  source = ctx.createBufferSource(); source.buffer = buffer; source.connect(musicGain);
+  source.start(t0, partAt, dur);
+  bus = ctx.createGain(); bus.connect(master);
+  for (const n of chart.levels.vua) if (n.t >= partAt && n.t < partAt + dur) SFX.play(ctx, bus, t0 + n.t - partAt, id);
+  button.classList.add('on');
+  source.onended = () => button.classList.remove('on');
+}
+function choose(id) {
+  chosen = id; localStorage.setItem('spike-sound', id);
+  $('current').textContent = SFX.BY_ID[id].name;
+  document.querySelectorAll('.row').forEach(r => r.classList.toggle('chosen', r.dataset.id === id));
+  document.querySelectorAll('.pick').forEach(b => { b.textContent = b.dataset.id === id ? 'Đang dùng' : 'Chọn'; b.classList.toggle('on', b.dataset.id === id); });
+}
+function tagFor(hz) {  // words for how bright a sound is, from its measured spectral centroid
+  if (hz < 450) return ['trầm', 't0'];
+  if (hz < 1000) return ['ấm', 't1'];
+  if (hz < 2200) return ['sáng', 't2'];
+  return ['chói', 't3'];
+}
+function draw() {
+  const box = $('list'); box.textContent = '';
+  let group = '';
+  for (const s of SFX.LIST) {
+    if (s.group !== group) { group = s.group; const h = document.createElement('h2'); h.textContent = group; box.appendChild(h); }
+    const row = document.createElement('div'); row.className = 'row'; row.dataset.id = s.id;
+    const name = document.createElement('div'); name.className = 'name'; name.textContent = s.name;
+    if (SFX.bright[s.id]) { const [w, c] = tagFor(SFX.bright[s.id]); const t = document.createElement('span'); t.className = `tag ${c}`; t.textContent = w; name.appendChild(t); }
+    const a = document.createElement('button'); a.textContent = '▶ Nghe'; a.onclick = () => hear(s.id);
+    const b = document.createElement('button'); b.textContent = '♫ Với nhạc'; b.className = 'withMusic'; b.onclick = () => withMusic(s.id, b);
+    const p = document.createElement('button'); p.className = 'pick'; p.dataset.id = s.id; p.onclick = () => choose(s.id);
+    row.append(name, a, b, p); box.appendChild(row);
+  }
+  choose(chosen);
+}
+document.querySelectorAll('.part').forEach(b => b.onclick = () => {
+  partAt = +b.dataset.at;
+  document.querySelectorAll('.part').forEach(x => x.classList.toggle('on', x === b));
+});
+$('stop').onclick = stop;
+draw();
+SFX.calibrate(SFX.LIST.map(s => s.id), true).then(() => { draw(); $('msg').textContent = ''; window.sfxReady = true; });
+</script>
+</body>
+</html>

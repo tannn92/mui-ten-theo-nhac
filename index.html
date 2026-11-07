@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Bản thử 15: thêm đoạn bốc 4:00</title>
+<title>Bản thử 16: synth ở 4:00, chọn tiếng bấm</title>
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="theme-color" content="#8fdcff">
@@ -14,6 +14,7 @@
   window.IOS = /iPad|iPhone/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   if (!IOS) document.head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="manifest.webmanifest">');
 </script>
+<script src="sfx.js?v=1107-173934"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;background:#8fdcff;overflow:hidden;touch-action:none;font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif}
@@ -34,6 +35,10 @@
   #result{font-size:18px;font-weight:800;color:#e0701c;margin-bottom:10px}
   #result:empty{display:none}
   #stopBtn{cursor:pointer}
+  .sounds{margin-top:12px;font-size:15px;color:#35574a}
+  .sounds a{color:#2a86c9;font-weight:700}
+  .from{border:0;border-radius:10px;padding:6px 10px;margin-left:4px;background:#eefaf0;color:#1d5c3c;font:700 14px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;cursor:pointer}
+  .from.on{background:#2f9e62;color:#fff}
 </style>
 </head>
 <body>
@@ -168,16 +173,18 @@
 
 <div id="menu">
   <div class="panel">
-    <h1>Bản thử 15: thêm đoạn bốc 4:00</h1>
-    <p class="sub">Mũi tên hồng theo từng chữ hát, mũi tên cam theo beat lúc không có lời. Cùng nốt cùng hàng, nốt lên thì mũi tên lên. Chạm vào vòng tròn, hoặc phím W, S, ↑, ↓.</p>
+    <h1>Bản thử 16: synth ở 4:00, chọn tiếng bấm</h1>
+    <p class="sub">Dễ và Vừa: mũi tên cam theo beat, dày lên ở đoạn bốc, thưa ở đoạn chùng. Khó: mũi tên hồng theo từng chữ hát. Từ 4:00, mũi tên tím theo tiếng synth (Vừa và Khó). Hàng mũi tên đi theo giai điệu. Chạm vào vòng tròn, hoặc phím W, S, ↑, ↓.</p>
     <p id="result"></p>
     <div id="songs">Đang tải…</div>
+    <div class="sounds">Bắt đầu từ: <button class="from on" data-from="0">0:00</button><button class="from" data-from="60">1:00</button><button class="from" data-from="120">2:00</button><button class="from" data-from="180">3:00</button><button class="from" data-from="240">4:00</button></div>
+    <div class="sounds">Tiếng bấm: <b id="sndName"></b> · <a id="sndLink" href="sfx.html">nghe và chọn tiếng khác</a></div>
     <label><input type="checkbox" id="tick"> Bật tiếng tick tự kêu khi mũi tên chạm tâm (thay cho tiếng bấm)</label>
   </div>
 </div>
 
 <script>
-const V = '1107-165442';  // stamped by the deploy build
+const V = '1107-173934';  // stamped by the deploy build
 const TRAVEL = 2.4, SPLIT_Y = 445, 
   // Seconds from the ring centre, matched to what the eye sees at 183 units a second:
   // the white dot, the yellow disc, the white ring, and the arrow still touching the ring.
@@ -187,7 +194,7 @@ const LANES = { LU: [-110, 330, 335], LD: [-110, 330, 555], RU: [1290, 850, 335]
 const $ = id => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
 let ctx, source, chart, notes = [], startAt = 0, playing = false, tickNext = 0, firstLive = 0;
-let score = 0, hits = 0, tally = {}, master, musicGain, noiseBuf, shownSec = -1;
+let score = 0, hits = 0, tally = {}, master, musicGain, shownSec = -1, startFrom = 0;
 // minutes:seconds of what the player hears, so feedback can name the moment
 function mmss(s) { s = Math.floor(Math.max(s, 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
 
@@ -219,29 +226,12 @@ function audioGraph() {
   musicGain = ctx.createGain();
   musicGain.gain.value = 0.75;
   musicGain.connect(master);
-  noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.08), ctx.sampleRate);
-  const d = noiseBuf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  SFX.calibrate([hitKind]);
 }
 
-// A bright pop plus a short snap of noise, so it cuts through loud dance music.
-function hitSound(when) {
-  const o = ctx.createOscillator(), g = ctx.createGain();
-  o.type = 'triangle';
-  o.frequency.setValueAtTime(1900, when);
-  o.frequency.exponentialRampToValueAtTime(900, when + 0.06);
-  g.gain.setValueAtTime(0.9, when);
-  g.gain.exponentialRampToValueAtTime(0.001, when + 0.09);
-  o.connect(g).connect(master);
-  o.start(when); o.stop(when + 0.1);
-  const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), ng = ctx.createGain();
-  n.buffer = noiseBuf;
-  f.type = 'bandpass'; f.frequency.value = 3000; f.Q.value = 0.8;
-  ng.gain.setValueAtTime(0.8, when);
-  ng.gain.exponentialRampToValueAtTime(0.001, when + 0.05);
-  n.connect(f).connect(ng).connect(master);
-  n.start(when); n.stop(when + 0.06);
-}
+// The tap sound comes from sfx.js. The player picks it on sfx.html; the choice is kept on this device.
+let hitKind = SFX.BY_ID[localStorage.getItem('spike-sound')] ? localStorage.getItem('spike-sound') : SFX.DEFAULT;
+function hitSound(when) { SFX.play(ctx, master, when, hitKind); }
 
 function audioClock() { return ctx.currentTime - startAt; }
 function heardClock() { return audioClock() - (ctx.outputLatency || 0); }
@@ -295,8 +285,9 @@ async function start(s, level) {
   const buffer = await ctx.decodeAudioData(data);
   chart = c;
   $('notes').textContent = '';
-  notes = chart.levels[level].map(n => ({ ...n, el: null, done: false }));
-  score = hits = firstLive = tickNext = 0;
+  notes = chart.levels[level].map(n => ({ ...n, el: null, done: n.t < startFrom }));  // arrows before the start are gone
+  score = hits = 0;
+  firstLive = tickNext = Math.max(notes.findIndex(n => !n.done), 0);
   tally = {};
   $('score').textContent = '0';
   $('hits').textContent = `0/${notes.length}`;
@@ -306,8 +297,9 @@ async function start(s, level) {
   source = ctx.createBufferSource();
   source.buffer = buffer;
   source.connect(musicGain);
-  startAt = ctx.currentTime + 0.3;
-  source.start(startAt);
+  const at = ctx.currentTime + 0.3;
+  startAt = at - startFrom;  // the clock reads song time, so starting at 4:00 shows 4:00
+  source.start(at, startFrom);
   source.onended = () => { if (playing) finish(); };
   playing = true;
   $('menu').classList.add('hide');
@@ -340,6 +332,7 @@ function makeNote(n) {
   u.setAttribute('transform', 'scale(1.05)');
   g.appendChild(u);
   if (n.src === 'v') { g.style.setProperty('--arrow', '#ff5f9e'); g.style.setProperty('--edge', '#c2286a'); }
+  if (n.src === 'i') { g.style.setProperty('--arrow', '#9a8cff'); g.style.setProperty('--edge', '#5a48d6'); }
   $('notes').appendChild(g);
   n.el = g;
 }
@@ -419,7 +412,17 @@ $('stopBtn').addEventListener('pointerdown', e => { e.stopPropagation(); if (pla
 document.addEventListener('gesturestart', e => e.preventDefault());
 
 window.spike = { get state() { return { playing, now: ctx ? heardClock() : 0, score, hits, total: notes.length, live: $('notes').childElementCount, tick: tickNext }; }, tap };
+function pickFrom(sec) {
+  startFrom = sec;
+  document.querySelectorAll('.from').forEach(x => x.classList.toggle('on', +x.dataset.from === sec));
+}
+document.querySelectorAll('.from').forEach(b => b.addEventListener('click', () => pickFrom(+b.dataset.from)));
+const fromLink = /[?&]from=(\d+)/.exec(location.search);  // a link can open straight at a part, e.g. ?from=240
+if (fromLink) pickFrom(+fromLink[1]);
+
 saveKeyFromLink();
+$('sndName').textContent = SFX.BY_ID[hitKind].name;
+$('sndLink').href = 'sfx.html' + (IOS ? location.hash : '');
 checkVersion().then(loadList);
 </script>
 </body>
