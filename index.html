@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Bản thử 2: mũi tên theo tiếng hát</title>
+<title>Bản thử 3: mũi tên theo tiếng hát</title>
 <link rel="icon" href="data:,">
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
@@ -147,22 +147,22 @@
 
 <div id="menu">
   <div class="panel">
-    <h1>Bản thử 2: theo tiếng hát</h1>
+    <h1>Bản thử 3: theo tiếng hát</h1>
     <p class="sub">Mũi tên hồng theo tiếng hát, mũi tên cam theo beat. Chạm nửa trái hoặc nửa phải màn hình, hoặc phím ← →.</p>
     <p id="result"></p>
     <div id="songs">Đang tải…</div>
-    <label><input type="checkbox" id="tick"> Bật tiếng tick đúng lúc mũi tên chạm tâm</label>
+    <label><input type="checkbox" id="tick"> Bật tiếng tick tự kêu khi mũi tên chạm tâm (thay cho tiếng bấm)</label>
   </div>
 </div>
 
 <script>
-const V = '2';
+const V = '3';
 const TRAVEL = 2.4, Y = 475, GOOD = [[0.10, 'Tuyệt!', 100], [0.20, 'Giỏi quá!', 70], [0.30, 'Được!', 40]];
 const X = { L: [-110, 330], R: [1290, 850] };
 const $ = id => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
 let ctx, source, chart, notes = [], startAt = 0, playing = false, tickNext = 0, firstLive = 0;
-let score = 0, hits = 0, offset = 0;
+let score = 0, hits = 0, master, musicGain, noiseBuf;
 
 // The music on the public site is encrypted. The key lives only in the private link.
 function saveKeyFromLink() {
@@ -181,6 +181,39 @@ async function audioBytes(base, c) {
   if (!c.encrypted) return bytes;
   const key = await crypto.subtle.importKey('raw', keyBytes(), 'AES-GCM', false, ['decrypt']);
   return crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(bytes, 0, 12) }, key, new Uint8Array(bytes, 12));
+}
+
+function audioGraph() {
+  if (master) return;
+  master = ctx.createDynamicsCompressor();  // a limiter, so music plus hit sound never crackles
+  master.threshold.value = -2; master.knee.value = 0; master.ratio.value = 20;
+  master.attack.value = 0.002; master.release.value = 0.08;
+  master.connect(ctx.destination);
+  musicGain = ctx.createGain();
+  musicGain.gain.value = 0.75;
+  musicGain.connect(master);
+  noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.08), ctx.sampleRate);
+  const d = noiseBuf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+}
+
+// A bright pop plus a short snap of noise, so it cuts through loud dance music.
+function hitSound(when) {
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(1900, when);
+  o.frequency.exponentialRampToValueAtTime(900, when + 0.06);
+  g.gain.setValueAtTime(0.9, when);
+  g.gain.exponentialRampToValueAtTime(0.001, when + 0.09);
+  o.connect(g).connect(master);
+  o.start(when); o.stop(when + 0.1);
+  const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), ng = ctx.createGain();
+  n.buffer = noiseBuf;
+  f.type = 'bandpass'; f.frequency.value = 3000; f.Q.value = 0.8;
+  ng.gain.setValueAtTime(0.8, when);
+  ng.gain.exponentialRampToValueAtTime(0.001, when + 0.05);
+  n.connect(f).connect(ng).connect(master);
+  n.start(when); n.stop(when + 0.06);
 }
 
 function audioClock() { return ctx.currentTime - startAt; }
@@ -212,6 +245,7 @@ async function loadList() {
 async function start(s, level) {
   ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
   await ctx.resume();
+  audioGraph();
   $('result').textContent = 'Đang tải bài…';
   const base = `songs/${s.slug}/`;
   const c = await fetch(`${base}chart.json?v=${V}`).then(r => r.json());
@@ -232,7 +266,7 @@ async function start(s, level) {
   $('result').textContent = '';
   source = ctx.createBufferSource();
   source.buffer = buffer;
-  source.connect(ctx.destination);
+  source.connect(musicGain);
   startAt = ctx.currentTime + 0.3;
   source.start(startAt);
   source.onended = () => { if (playing) finish(); };
@@ -255,12 +289,7 @@ function scheduleTicks(now) {
     const when = startAt + notes[tickNext].t;
     tickNext++;
     if (when < ctx.currentTime) continue;
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.frequency.value = 1500;
-    g.gain.setValueAtTime(0.5, when);
-    g.gain.exponentialRampToValueAtTime(0.001, when + 0.05);
-    o.connect(g).connect(ctx.destination);
-    o.start(when); o.stop(when + 0.06);
+    hitSound(when);
   }
 }
 
@@ -322,6 +351,7 @@ function tap(side) {
   best.done = true;
   if (best.el) { best.el.remove(); best.el = null; }
   hits++; score += grade[2];
+  if (!$('tick').checked) hitSound(ctx.currentTime);
   $('score').textContent = score;
   $('hits').textContent = `${hits}/${notes.length}`;
   pop($(side === 'L' ? 'burstL' : 'burstR'), [{ transform: 'scale(.55)', opacity: 1 }, { transform: 'scale(1.45)', opacity: 0 }], 520);
