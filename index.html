@@ -5,7 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Bản thử 4: 4 hướng theo tiếng hát</title>
-<link rel="icon" href="data:,">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="theme-color" content="#8fdcff">
+<script>
+  // iPad home-screen apps keep separate storage, so there the key must stay in the saved link.
+  // A manifest would replace that link with start_url, so iOS skips the manifest.
+  window.IOS = /iPad|iPhone/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (!IOS) document.head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="manifest.webmanifest">');
+</script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;background:#8fdcff;overflow:hidden;touch-action:none;font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif}
@@ -180,7 +188,7 @@ function saveKeyFromLink() {
   const m = /[#&]k=([\w-]+)/.exec(location.hash);
   if (!m) return;
   localStorage.setItem('spike-key', m[1]);
-  history.replaceState(null, '', location.pathname);
+  if (!IOS) history.replaceState(null, '', location.pathname);
 }
 function keyBytes() {
   const text = localStorage.getItem('spike-key') || '';
