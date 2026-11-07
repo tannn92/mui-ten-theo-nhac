@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Bản thử 5: chấm 4 mức</title>
+<title>Bản thử 6: theo chữ hát</title>
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="theme-color" content="#8fdcff">
@@ -166,8 +166,8 @@
 
 <div id="menu">
   <div class="panel">
-    <h1>Bản thử 5: chấm 4 mức</h1>
-    <p class="sub">Mũi tên hồng theo tiếng hát, mũi tên cam theo beat. Cùng một nốt thì giữ nguyên hàng, nốt cao lên hàng trên, nốt thấp xuống hàng dưới. Chạm vào vòng tròn, hoặc phím W, S, ↑, ↓.</p>
+    <h1>Bản thử 6: theo chữ hát</h1>
+    <p class="sub">Mũi tên hồng theo từng chữ hát, mũi tên cam theo beat lúc không có lời. Cùng nốt cùng hàng, nốt lên thì mũi tên lên. Chạm vào vòng tròn, hoặc phím W, S, ↑, ↓.</p>
     <p id="result"></p>
     <div id="songs">Đang tải…</div>
     <label><input type="checkbox" id="tick"> Bật tiếng tick tự kêu khi mũi tên chạm tâm (thay cho tiếng bấm)</label>
@@ -175,7 +175,7 @@
 </div>
 
 <script>
-const V = '1107-130203';  // stamped by the deploy build
+const V = '1107-130933';  // stamped by the deploy build
 const TRAVEL = 2.4, SPLIT_Y = 445, 
   // Seconds from the ring centre, matched to what the eye sees at 183 units a second:
   // the white dot, the yellow disc, the white ring, and the arrow still touching the ring.
