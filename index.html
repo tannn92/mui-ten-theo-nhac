@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Bản thử 20: chọn hướng mũi tên, chuỗi đổi bên</title>
+<title>Bản thử 21: nhìn giữa, bấm ở rìa, hàng nút thấp</title>
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="theme-color" content="#8fdcff">
@@ -14,7 +14,7 @@
   window.IOS = /iPad|iPhone/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   if (!IOS) document.head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="manifest.webmanifest">');
 </script>
-<script src="sfx.js?v=0711.1845"></script>
+<script src="sfx.js?v=0711.1910"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;background:#8fdcff;overflow:hidden;touch-action:none;font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif}
@@ -37,7 +37,6 @@
   #stopBtn{cursor:pointer}
   .sounds{margin-top:12px;font-size:15px;color:#35574a}
   .sounds a{color:#2a86c9;font-weight:700}
-  #scene[data-layout="side"] .track.updown, #scene[data-layout="updown"] .track.side{display:none}
   #verMsg{font-weight:700;color:#e0701c}
   .from{border:0;border-radius:10px;padding:6px 10px;margin-left:4px;background:#eefaf0;color:#1d5c3c;font:700 14px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;cursor:pointer}
   .from.on{background:#2f9e62;color:#fff}
@@ -143,25 +142,26 @@
     <use href="#flower" transform="translate(500 770)"/><use href="#flower" transform="translate(690 776)"/>
   </g>
 
-  <g class="track side" fill="var(--lane)">
-    <rect x="70" y="325" width="430" height="90" rx="45"/><rect x="70" y="485" width="430" height="90" rx="45"/>
-    <rect x="680" y="325" width="430" height="90" rx="45"/><rect x="680" y="485" width="430" height="90" rx="45"/>
+  <g fill="var(--lane)">
+    <rect x="-60" y="515" width="435" height="90" rx="45"/><rect x="-60" y="665" width="435" height="90" rx="45"/>
+    <rect x="805" y="515" width="435" height="90" rx="45"/><rect x="805" y="665" width="435" height="90" rx="45"/>
   </g>
-  <g class="track updown" fill="var(--lane)">
-    <rect x="70" y="-130" width="90" height="545" rx="45"/><rect x="70" y="485" width="90" height="455" rx="45"/>
-    <rect x="1020" y="-130" width="90" height="545" rx="45"/><rect x="1020" y="485" width="90" height="455" rx="45"/>
-  </g>
-  <g transform="translate(115 370) scale(.72)"><g id="ringLU"><use href="#flowerRing"/></g></g>
-  <g transform="translate(115 530) scale(.72)"><g id="ringLD"><use href="#flowerRing"/></g></g>
-  <g transform="translate(1065 370) scale(.72)"><g id="ringRU"><use href="#flowerRing"/></g></g>
-  <g transform="translate(1065 530) scale(.72)"><g id="ringRD"><use href="#flowerRing"/></g></g>
+  <!-- soft buttons at the edges, under the thumbs: a touch anywhere on that half and row counts, these show where -->
+  <g transform="translate(110 560) scale(.62)"><g id="ghostLU" opacity=".42"><use href="#pad"/></g></g>
+  <g transform="translate(110 710) scale(.62)"><g id="ghostLD" opacity=".42"><use href="#pad"/></g></g>
+  <g transform="translate(1070 560) scale(.62)"><g id="ghostRU" opacity=".42"><use href="#pad"/></g></g>
+  <g transform="translate(1070 710) scale(.62)"><g id="ghostRD" opacity=".42"><use href="#pad"/></g></g>
+  <g transform="translate(330 560) scale(.72)"><g id="ringLU"><use href="#flowerRing"/></g></g>
+  <g transform="translate(330 710) scale(.72)"><g id="ringLD"><use href="#flowerRing"/></g></g>
+  <g transform="translate(850 560) scale(.72)"><g id="ringRU"><use href="#flowerRing"/></g></g>
+  <g transform="translate(850 710) scale(.72)"><g id="ringRD"><use href="#flowerRing"/></g></g>
 
   <g id="notes"></g>
 
-  <g transform="translate(115 370) scale(.72)"><g id="burstLU" opacity="0"><use href="#burstArt"/></g></g>
-  <g transform="translate(115 530) scale(.72)"><g id="burstLD" opacity="0"><use href="#burstArt"/></g></g>
-  <g transform="translate(1065 370) scale(.72)"><g id="burstRU" opacity="0"><use href="#burstArt"/></g></g>
-  <g transform="translate(1065 530) scale(.72)"><g id="burstRD" opacity="0"><use href="#burstArt"/></g></g>
+  <g transform="translate(330 560) scale(.72)"><g id="burstLU" opacity="0"><use href="#burstArt"/></g></g>
+  <g transform="translate(330 710) scale(.72)"><g id="burstLD" opacity="0"><use href="#burstArt"/></g></g>
+  <g transform="translate(850 560) scale(.72)"><g id="burstRU" opacity="0"><use href="#burstArt"/></g></g>
+  <g transform="translate(850 710) scale(.72)"><g id="burstRD" opacity="0"><use href="#burstArt"/></g></g>
   <g transform="translate(590 640)"><g id="dancer"><use href="#girl"/></g></g>
   <g transform="translate(590 186)"><text id="say" class="say" text-anchor="middle"></text></g>
 
@@ -182,23 +182,22 @@
 
 <div id="menu">
   <div class="panel">
-    <h1>Bản thử 20: chọn hướng mũi tên, chuỗi đổi bên</h1>
-    <p class="sub">Dễ và Vừa: mũi tên cam theo beat, dày lên ở đoạn bốc, thưa ở đoạn chùng. Khó: mũi tên hồng theo từng chữ hát. Từ 4:00, mũi tên tím theo tiếng synth (Vừa và Khó). Hàng mũi tên đi theo giai điệu. Chạm vào vòng tròn, hoặc phím W, S, ↑, ↓.</p>
+    <h1>Bản thử 21: nhìn giữa, bấm ở rìa, hàng nút thấp</h1>
+    <p class="sub">Dễ và Vừa: mũi tên cam theo beat, dày lên ở đoạn bốc, thưa ở đoạn chùng. Khó: mũi tên hồng theo từng chữ hát. Từ 4:00, mũi tên tím theo tiếng synth (Vừa và Khó). Hàng mũi tên đi theo giai điệu. Mũi tên chạy từ hai mép vào vòng hoa ở giữa; bấm vào nút mờ ở rìa (chạm đâu trên nửa đó cũng được), hoặc phím W, S, ↑, ↓.</p>
     <p class="sub">Phiên bản <b id="ver"></b> <button id="checkVer" class="from">Kiểm tra bản mới</button> <span id="verMsg"></span></p>
     <p id="result"></p>
     <div id="tapsBox" class="hide"><textarea id="taps" readonly></textarea><button id="copyTaps" class="from">Chép</button></div>
     <div id="songs">Đang tải…</div>
     <div class="sounds">Bắt đầu từ: <button class="from on" data-from="0">0:00</button><button class="from" data-from="60">1:00</button><button class="from" data-from="120">2:00</button><button class="from" data-from="180">3:00</button><button class="from" data-from="240">4:00</button></div>
-    <div class="sounds">Hướng mũi tên: <button class="from lay" data-lay="side">Từ giữa ra hai bên</button><button class="from lay" data-lay="updown">Từ trên xuống, từ dưới lên</button></div>
     <div class="sounds">Tiếng bấm: <b id="sndName"></b> · <a id="sndLink" href="sfx.html">nghe và chọn tiếng khác</a></div>
     <label><input type="checkbox" id="tick"> Bật tiếng tick tự kêu khi mũi tên chạm tâm (thay cho tiếng bấm)</label>
   </div>
 </div>
 
 <script>
-const V = '0711.1845';  // stamped by the deploy build
-// The rings sit at the screen edges, under a small child's thumbs, two a side 160 apart.
-const SPLIT_Y = 450,
+const V = '0711.1910';  // stamped by the deploy build
+// Two rows, low on the screen where hands hold an iPad: 560 and 710. A touch above 635 is the upper row.
+const SPLIT_Y = 635,
   
   // Seconds from the ring centre, matched to what the eye sees at 183 units a second:
   // the white dot, the yellow disc, the white ring, and the arrow still touching the ring.
@@ -207,14 +206,12 @@ const SPLIT_Y = 450,
 // Arrows always travel at 183 units a second, so timing feels the same either way in. Picked on the menu:
 // 'side' comes out from beside the dancer to the rings; 'updown' falls from the top to the upper rings and
 // rises from the bottom to the lower ones, so the dancer stays clear. Each lane: from x, y to x, y.
+// The user's layout: the flower rings near the middle so the eyes stay there, arrows from the screen edges
+// inward at 183 units a second, soft buttons at the edges for the thumbs. Each lane: from x, y to x, y.
 const SPEED = 440 / 2.4, OVERSHOOT = 40;
-const LAYOUTS = {
-  side: { LU: [455, 370, 115, 370], LD: [455, 530, 115, 530], RU: [725, 370, 1065, 370], RD: [725, 530, 1065, 530] },
-  updown: { LU: [115, -90, 115, 370], LD: [115, 910, 115, 530], RU: [1065, -90, 1065, 370], RD: [1065, 910, 1065, 530] },
-};
-let layout = localStorage.getItem('spike-layout') === 'updown' ? 'updown' : 'side';
-let LANES = LAYOUTS[layout], MAX_TRAVEL = 2.5;
+const LANES = { LU: [-110, 560, 330, 560], LD: [-110, 710, 330, 710], RU: [1290, 560, 850, 560], RD: [1290, 710, 850, 710] };
 function travelOf(lane) { const [x0, y0, x1, y1] = LANES[lane]; return Math.hypot(x1 - x0, y1 - y0) / SPEED; }
+const MAX_TRAVEL = Math.max(...Object.keys(LANES).map(travelOf));
 const $ = id => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
 let ctx, source, chart, notes = [], startAt = 0, playing = false, tickNext = 0, firstLive = 0;
@@ -386,7 +383,7 @@ function frame() {
     if (n.t - MAX_TRAVEL > now) break;  // nothing later can be on screen yet
     if (n.done) continue;
     const travel = travelOf(n.lane);
-    if (n.t - travel > now) continue;  // made only as it comes in: before that it would sit behind the dancer
+    if (n.t - travel > now) continue;  // made only as it comes in
     if (!n.el) makeNote(n);
     // past its ring an arrow goes on only a little and fades there, so an upper and a lower arrow never cross
     const p = Math.min(1 - (n.t - now) / travel, 1 + OVERSHOOT / (travel * SPEED));
@@ -422,10 +419,12 @@ function tap(lane) {
     taps.push(+heardClock().toFixed(3));
     hitSound(ctx.currentTime);
     pop($('ring' + lane), [{ transform: 'scale(.86)' }, { transform: 'scale(1)' }], 180);
+    pop($('ghost' + lane), [{ transform: 'scale(.8)', opacity: .9 }, { transform: 'scale(1)', opacity: .42 }], 220);
     $('hits').textContent = `${taps.length} lần gõ`;
     return;
   }
   pop($('ring' + lane), [{ transform: 'scale(.86)' }, { transform: 'scale(1)' }], 180);
+  pop($('ghost' + lane), [{ transform: 'scale(.8)', opacity: .9 }, { transform: 'scale(1)', opacity: .42 }], 220);
   const now = heardClock();
   let best = null, bestGap = WINDOW + 1;
   for (let i = firstLive; i < notes.length; i++) {
@@ -465,22 +464,13 @@ window.addEventListener('keydown', e => {
 $('stopBtn').addEventListener('pointerdown', e => { e.stopPropagation(); if (playing) finish(true); });
 document.addEventListener('gesturestart', e => e.preventDefault());
 
-window.spike = { geo: { SPEED, SPLIT_Y, get LANES() { return LANES; }, get layout() { return layout; } }, get state() { return { playing, now: ctx ? heardClock() : 0, score, hits, total: notes.length, live: $('notes').childElementCount, tick: tickNext }; }, tap };
+window.spike = { geo: { SPEED, SPLIT_Y, LANES }, get state() { return { playing, now: ctx ? heardClock() : 0, score, hits, total: notes.length, live: $('notes').childElementCount, tick: tickNext }; }, tap };
 $('copyTaps').addEventListener('click', () => { $('taps').select(); navigator.clipboard?.writeText($('taps').value).catch(() => {}); document.execCommand?.('copy'); });
 function pickFrom(sec) {
   startFrom = sec;
   document.querySelectorAll('.from').forEach(x => x.classList.toggle('on', +x.dataset.from === sec));
 }
 document.querySelectorAll('.from[data-from]').forEach(b => b.addEventListener('click', () => pickFrom(+b.dataset.from)));
-function setLayout(name) {
-  layout = name; LANES = LAYOUTS[name];
-  MAX_TRAVEL = Math.max(...Object.keys(LANES).map(travelOf));
-  localStorage.setItem('spike-layout', name);
-  $('scene').dataset.layout = name;
-  document.querySelectorAll('.lay').forEach(b => b.classList.toggle('on', b.dataset.lay === name));
-}
-document.querySelectorAll('.lay').forEach(b => b.addEventListener('click', () => setLayout(b.dataset.lay)));
-setLayout(layout);
 // The version is when it was released, day month . hour minute. The button asks the site for the newest one.
 $('ver').textContent = V.startsWith('__') ? 'đang thử trên máy' : V;
 $('checkVer').addEventListener('click', async () => {
