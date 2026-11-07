@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Bản thử 17: synth ở 4:00 theo nhịp bạn gõ</title>
+<title>Bản thử 18: Vừa ở 4:00 theo nhịp bạn gõ, mỗi chuỗi một nút</title>
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="theme-color" content="#8fdcff">
@@ -14,7 +14,7 @@
   window.IOS = /iPad|iPhone/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   if (!IOS) document.head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="manifest.webmanifest">');
 </script>
-<script src="sfx.js?v=1107-180211"></script>
+<script src="sfx.js?v=1107-181142"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;background:#8fdcff;overflow:hidden;touch-action:none;font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif}
@@ -176,7 +176,7 @@
 
 <div id="menu">
   <div class="panel">
-    <h1>Bản thử 17: synth ở 4:00 theo nhịp bạn gõ</h1>
+    <h1>Bản thử 18: Vừa ở 4:00 theo nhịp bạn gõ, mỗi chuỗi một nút</h1>
     <p class="sub">Dễ và Vừa: mũi tên cam theo beat, dày lên ở đoạn bốc, thưa ở đoạn chùng. Khó: mũi tên hồng theo từng chữ hát. Từ 4:00, mũi tên tím theo tiếng synth (Vừa và Khó). Hàng mũi tên đi theo giai điệu. Chạm vào vòng tròn, hoặc phím W, S, ↑, ↓.</p>
     <p id="result"></p>
     <div id="tapsBox" class="hide"><textarea id="taps" readonly></textarea><button id="copyTaps" class="from">Chép</button></div>
@@ -188,7 +188,7 @@
 </div>
 
 <script>
-const V = '1107-180211';  // stamped by the deploy build
+const V = '1107-181142';  // stamped by the deploy build
 const TRAVEL = 2.4, SPLIT_Y = 445, 
   // Seconds from the ring centre, matched to what the eye sees at 183 units a second:
   // the white dot, the yellow disc, the white ring, and the arrow still touching the ring.
