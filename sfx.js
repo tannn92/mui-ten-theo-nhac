@@ -63,7 +63,7 @@ const SFX = (() => {
     { id: 'clap', group: 'Snare, vỗ tay', name: 'Vỗ tay', play(c, o, t) {
       clap(c, o, t, 1400, 0.16);
       tone(c, o, t, { from: 220, to: 180, sweep: 0.05, peak: 0.25, decay: 0.06 }); } },
-    { id: 'clap-warm', group: 'Snare, vỗ tay', name: 'Vỗ tay ấm', play(c, o, t) {
+    { id: 'clap-warm', group: 'Snare, vỗ tay', name: 'Vỗ tay ấm (to gấp 3)', boost: 3, play(c, o, t) {
       clap(c, o, t, 900, 0.2); } },  // no low tone under it: the user heard it as a second sound ("bụp")
     { id: 'snap', group: 'Snare, vỗ tay', name: 'Búng tay', play(c, o, t) {
       hiss(c, o, t, { freq: 2600, q: 2, peak: 0.8, decay: 0.03 });
@@ -171,7 +171,8 @@ const SFX = (() => {
   }
   function play(c, out, when, id) {
     const s = BY_ID[id] || BY_ID[DEFAULT];
-    const g = c.createGain(); g.gain.value = level[s.id] ?? 1; g.connect(out);
+    // boost: the user asked for this sound louder than the rest; the limiter after it keeps it from clipping
+    const g = c.createGain(); g.gain.value = (level[s.id] ?? 1) * (s.boost || 1); g.connect(out);
     s.play(c, g, when);
   }
   return { LIST, BY_ID, DEFAULT, level, bright, calibrate, play, render };
