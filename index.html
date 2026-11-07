@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Bản thử 3: mũi tên theo tiếng hát</title>
+<title>Bản thử 4: 4 hướng theo tiếng hát</title>
 <link rel="icon" href="data:,">
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
@@ -38,6 +38,14 @@
       <path d="M-36,-5 L-17,-25 L-17,-13 L40,-13" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
     </g>
     <g id="arrowR"><use href="#arrowL" transform="scale(-1 1)"/></g>
+    <g id="arrowLU"><use href="#arrowL" transform="rotate(45)"/></g>
+    <g id="arrowLD"><use href="#arrowL" transform="rotate(-45)"/></g>
+    <g id="arrowRU"><use href="#arrowR" transform="rotate(-45)"/></g>
+    <g id="arrowRD"><use href="#arrowR" transform="rotate(45)"/></g>
+    <g id="flowerRing">
+      <circle r="96" fill="none" stroke="#fff" stroke-width="30" stroke-dasharray="1 37.7" stroke-linecap="round"/>
+      <use href="#ring"/>
+    </g>
     <path id="spark" d="M0,-16 Q2.5,-2.5 16,0 Q2.5,2.5 0,16 Q-2.5,2.5 -16,0 Q-2.5,-2.5 0,-16 Z"/>
     <g id="ring">
       <circle r="82" fill="var(--ringfill)"/>
@@ -96,13 +104,13 @@
   </defs>
 
   <rect x="-400" y="-300" width="1980" height="1420" fill="url(#b-bg)"/>
-  <g transform="translate(205 205)">
+  <g transform="translate(150 170) scale(.78)">
     <circle r="96" fill="none" stroke="#ffd54a" stroke-width="24" stroke-dasharray="1 49" stroke-linecap="round"/>
     <circle r="66" fill="#ffd23f"/>
   </g>
   <use href="#cloud" transform="translate(880 190) scale(1.15)"/>
   <use href="#cloud" transform="translate(470 150) scale(.7)" opacity=".9"/>
-  <use href="#cloud" transform="translate(1085 330) scale(.65)" opacity=".85"/>
+  <use href="#cloud" transform="translate(1085 225) scale(.55)" opacity=".85"/>
   <path d="M-400,520 L0,500 Q260,380 620,478 T1180,440 L1580,440 V1120 H-400 Z" fill="#b5e88a"/>
   <path d="M-400,640 L0,620 Q300,530 590,572 T1180,600 L1580,600 V1120 H-400 Z" fill="#83d765"/>
   <ellipse cx="590" cy="656" rx="280" ry="58" fill="#5cbc4a"/>
@@ -116,20 +124,23 @@
     <use href="#flower" transform="translate(500 770)"/><use href="#flower" transform="translate(690 776)"/>
   </g>
 
-  <rect x="-430" y="413" width="760" height="124" rx="62" fill="var(--lane)"/>
-  <rect x="850" y="413" width="760" height="124" rx="62" fill="var(--lane)"/>
-  <g transform="translate(330 475)"><circle r="96" fill="none" stroke="#fff" stroke-width="30" stroke-dasharray="1 37.7" stroke-linecap="round"/></g>
-  <g transform="translate(850 475)"><circle r="96" fill="none" stroke="#fff" stroke-width="30" stroke-dasharray="1 37.7" stroke-linecap="round"/></g>
-  <use href="#ring" x="330" y="475"/><use href="#ring" x="850" y="475"/>
+  <rect x="-430" y="283" width="760" height="104" rx="52" fill="var(--lane)"/>
+  <rect x="-430" y="503" width="760" height="104" rx="52" fill="var(--lane)"/>
+  <rect x="850" y="283" width="760" height="104" rx="52" fill="var(--lane)"/>
+  <rect x="850" y="503" width="760" height="104" rx="52" fill="var(--lane)"/>
+  <g transform="translate(330 335) scale(.9)"><g id="ringLU"><use href="#flowerRing"/></g></g>
+  <g transform="translate(330 555) scale(.9)"><g id="ringLD"><use href="#flowerRing"/></g></g>
+  <g transform="translate(850 335) scale(.9)"><g id="ringRU"><use href="#flowerRing"/></g></g>
+  <g transform="translate(850 555) scale(.9)"><g id="ringRD"><use href="#flowerRing"/></g></g>
 
   <g id="notes"></g>
 
-  <g transform="translate(330 475)"><g id="burstL" opacity="0"><use href="#burstArt"/></g></g>
-  <g transform="translate(850 475)"><g id="burstR" opacity="0"><use href="#burstArt"/></g></g>
+  <g transform="translate(330 335) scale(.9)"><g id="burstLU" opacity="0"><use href="#burstArt"/></g></g>
+  <g transform="translate(330 555) scale(.9)"><g id="burstLD" opacity="0"><use href="#burstArt"/></g></g>
+  <g transform="translate(850 335) scale(.9)"><g id="burstRU" opacity="0"><use href="#burstArt"/></g></g>
+  <g transform="translate(850 555) scale(.9)"><g id="burstRD" opacity="0"><use href="#burstArt"/></g></g>
   <g transform="translate(590 640)"><g id="dancer"><use href="#girl"/></g></g>
   <g transform="translate(590 186)"><text id="say" class="say" text-anchor="middle"></text></g>
-  <g transform="translate(130 705)"><g id="padL"><use href="#pad"/><use href="#arrowL" transform="scale(.82)"/></g></g>
-  <g transform="translate(1050 705)"><g id="padR"><use href="#pad"/><use href="#arrowR" transform="scale(.82)"/></g></g>
 
   <g id="stopBtn" transform="translate(66 62)">
     <circle r="44" fill="transparent"/>
@@ -147,8 +158,8 @@
 
 <div id="menu">
   <div class="panel">
-    <h1>Bản thử 3: theo tiếng hát</h1>
-    <p class="sub">Mũi tên hồng theo tiếng hát, mũi tên cam theo beat. Chạm nửa trái hoặc nửa phải màn hình, hoặc phím ← →.</p>
+    <h1>Bản thử 4: 4 hướng</h1>
+    <p class="sub">Mũi tên hồng theo tiếng hát, mũi tên cam theo beat. Cùng một nốt thì giữ nguyên hàng, nốt cao lên hàng trên, nốt thấp xuống hàng dưới. Chạm vào vòng tròn, hoặc phím W, S, ↑, ↓.</p>
     <p id="result"></p>
     <div id="songs">Đang tải…</div>
     <label><input type="checkbox" id="tick"> Bật tiếng tick tự kêu khi mũi tên chạm tâm (thay cho tiếng bấm)</label>
@@ -156,9 +167,9 @@
 </div>
 
 <script>
-const V = '3';
-const TRAVEL = 2.4, Y = 475, GOOD = [[0.10, 'Tuyệt!', 100], [0.20, 'Giỏi quá!', 70], [0.30, 'Được!', 40]];
-const X = { L: [-110, 330], R: [1290, 850] };
+const V = '4';
+const TRAVEL = 2.4, SPLIT_Y = 445, GOOD = [[0.10, 'Tuyệt!', 100], [0.20, 'Giỏi quá!', 70], [0.30, 'Được!', 40]];
+const LANES = { LU: [-110, 330, 335], LD: [-110, 330, 555], RU: [1290, 850, 335], RD: [1290, 850, 555] };
 const $ = id => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
 let ctx, source, chart, notes = [], startAt = 0, playing = false, tickNext = 0, firstLive = 0;
@@ -296,8 +307,8 @@ function scheduleTicks(now) {
 function makeNote(n) {
   const g = document.createElementNS(NS, 'g');
   const u = document.createElementNS(NS, 'use');
-  u.setAttribute('href', n.side === 'L' ? '#arrowL' : '#arrowR');
-  u.setAttribute('transform', 'scale(1.2)');
+  u.setAttribute('href', '#arrow' + n.lane);
+  u.setAttribute('transform', 'scale(1.05)');
   g.appendChild(u);
   if (n.src === 'v') { g.style.setProperty('--arrow', '#ff5f9e'); g.style.setProperty('--edge', '#c2286a'); }
   $('notes').appendChild(g);
@@ -314,8 +325,8 @@ function frame() {
     if (n.done) continue;
     if (!n.el) makeNote(n);
     const p = 1 - (n.t - now) / TRAVEL;
-    const [x0, x1] = X[n.side];
-    n.el.setAttribute('transform', `translate(${x0 + (x1 - x0) * p} ${Y})`);
+    const [x0, x1, y] = LANES[n.lane];
+    n.el.setAttribute('transform', `translate(${x0 + (x1 - x0) * p} ${y})`);
     if (now > n.t + 0.3) { n.done = true; n.el.remove(); n.el = null; }
     else if (now > n.t) n.el.setAttribute('opacity', String(Math.max(0, 1 - (now - n.t) / 0.3)));
   }
@@ -334,15 +345,15 @@ function frame() {
 
 function pop(el, frames, ms) { el.animate(frames, { duration: ms, easing: 'ease-out' }); }
 
-function tap(side) {
+function tap(lane) {
   if (!playing) return;
-  pop($(side === 'L' ? 'padL' : 'padR'), [{ transform: 'scale(.86)' }, { transform: 'scale(1)' }], 180);
+  pop($('ring' + lane), [{ transform: 'scale(.86)' }, { transform: 'scale(1)' }], 180);
   const now = heardClock();
   let best = null, bestGap = 1;
   for (let i = firstLive; i < notes.length; i++) {
     const n = notes[i];
     if (n.t > now + 0.4) break;
-    if (n.done || n.side !== side) continue;
+    if (n.done || n.lane !== lane) continue;
     const gap = Math.abs(n.t - now);
     if (gap < bestGap) { best = n; bestGap = gap; }
   }
@@ -354,7 +365,7 @@ function tap(side) {
   if (!$('tick').checked) hitSound(ctx.currentTime);
   $('score').textContent = score;
   $('hits').textContent = `${hits}/${notes.length}`;
-  pop($(side === 'L' ? 'burstL' : 'burstR'), [{ transform: 'scale(.55)', opacity: 1 }, { transform: 'scale(1.45)', opacity: 0 }], 520);
+  pop($('burst' + lane), [{ transform: 'scale(.55)', opacity: 1 }, { transform: 'scale(1.45)', opacity: 0 }], 520);
   const say = $('say');
   say.textContent = grade[1];
   pop(say, [{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1.12)', opacity: 1, offset: .15 }, { transform: 'scale(1)', opacity: 1, offset: .3 }, { opacity: 1, offset: .75 }, { opacity: 0 }], 620);
@@ -362,12 +373,14 @@ function tap(side) {
 
 window.addEventListener('pointerdown', e => {
   if (!playing || e.target.closest?.('#stopBtn')) return;
-  tap(e.clientX < innerWidth / 2 ? 'L' : 'R');
+  const m = $('scene').getScreenCTM().inverse();
+  const y = m.b * e.clientX + m.d * e.clientY + m.f;
+  tap((e.clientX < innerWidth / 2 ? 'L' : 'R') + (y < SPLIT_Y ? 'U' : 'D'));
 });
 window.addEventListener('keydown', e => {
   if (e.repeat) return;
-  if (e.key === 'ArrowLeft') tap('L');
-  if (e.key === 'ArrowRight') tap('R');
+  const lane = { w: 'LU', s: 'LD', ArrowUp: 'RU', ArrowDown: 'RD' }[e.key];
+  if (lane) { e.preventDefault(); tap(lane); }
   if (e.key === 'Escape' && playing) finish();
 });
 $('stopBtn').addEventListener('pointerdown', e => { e.stopPropagation(); if (playing) finish(); });
