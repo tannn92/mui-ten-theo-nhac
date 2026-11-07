@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Bản thử 4: 4 hướng theo tiếng hát</title>
+<title>Bản thử 5: chấm 4 mức</title>
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="theme-color" content="#8fdcff">
@@ -166,7 +166,7 @@
 
 <div id="menu">
   <div class="panel">
-    <h1>Bản thử 4: 4 hướng</h1>
+    <h1>Bản thử 5: chấm 4 mức</h1>
     <p class="sub">Mũi tên hồng theo tiếng hát, mũi tên cam theo beat. Cùng một nốt thì giữ nguyên hàng, nốt cao lên hàng trên, nốt thấp xuống hàng dưới. Chạm vào vòng tròn, hoặc phím W, S, ↑, ↓.</p>
     <p id="result"></p>
     <div id="songs">Đang tải…</div>
@@ -175,13 +175,17 @@
 </div>
 
 <script>
-const V = '1107-124623';  // stamped by the deploy build
-const TRAVEL = 2.4, SPLIT_Y = 445, GOOD = [[0.10, 'Tuyệt!', 100], [0.20, 'Giỏi quá!', 70], [0.30, 'Được!', 40]];
+const V = '1107-130203';  // stamped by the deploy build
+const TRAVEL = 2.4, SPLIT_Y = 445, 
+  // Seconds from the ring centre, matched to what the eye sees at 183 units a second:
+  // the white dot, the yellow disc, the white ring, and the arrow still touching the ring.
+  GRADES = [[0.08, 'Tuyệt vời!', 100, '#e8457f'], [0.235, 'Giỏi quá!', 70, '#21985a'], [0.40, 'Tốt!', 40, '#2a86c9'], [0.70, 'Suýt rồi!', 10, '#8a7f73']],
+  WINDOW = 0.70;
 const LANES = { LU: [-110, 330, 335], LD: [-110, 330, 555], RU: [1290, 850, 335], RD: [1290, 850, 555] };
 const $ = id => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
 let ctx, source, chart, notes = [], startAt = 0, playing = false, tickNext = 0, firstLive = 0;
-let score = 0, hits = 0, master, musicGain, noiseBuf;
+let score = 0, hits = 0, tally = {}, master, musicGain, noiseBuf;
 
 // The music on the public site is encrypted. The key lives only in the private link.
 function saveKeyFromLink() {
@@ -289,6 +293,7 @@ async function start(s, level) {
   $('notes').textContent = '';
   notes = chart.levels[level].map(n => ({ ...n, el: null, done: false }));
   score = hits = firstLive = tickNext = 0;
+  tally = {};
   $('score').textContent = '0';
   $('hits').textContent = `0/${notes.length}`;
   $('result').textContent = '';
@@ -307,7 +312,7 @@ function finish() {
   playing = false;
   try { source.onended = null; source.stop(); } catch (e) {}
   $('notes').textContent = '';
-  $('result').textContent = `Trúng ${hits}/${notes.length} mũi tên · ${score} điểm`;
+  $('result').textContent = `Trúng ${hits}/${notes.length} · ${score} điểm · ` + GRADES.map(g => `${g[1]} ${tally[g[1]] || 0}`).join(' · ');
   $('menu').classList.remove('hide');
 }
 
@@ -344,8 +349,8 @@ function frame() {
     const p = 1 - (n.t - now) / TRAVEL;
     const [x0, x1, y] = LANES[n.lane];
     n.el.setAttribute('transform', `translate(${x0 + (x1 - x0) * p} ${y})`);
-    if (now > n.t + 0.3) { n.done = true; n.el.remove(); n.el = null; }
-    else if (now > n.t) n.el.setAttribute('opacity', String(Math.max(0, 1 - (now - n.t) / 0.3)));
+    if (now > n.t + WINDOW) { n.done = true; n.el.remove(); n.el = null; }
+    else if (now > n.t + 0.4) n.el.setAttribute('opacity', String(Math.max(0, 1 - (now - n.t - 0.4) / (WINDOW - 0.4))));
   }
   while (firstLive < notes.length && notes[firstLive].done) firstLive++;
 
@@ -366,25 +371,26 @@ function tap(lane) {
   if (!playing) return;
   pop($('ring' + lane), [{ transform: 'scale(.86)' }, { transform: 'scale(1)' }], 180);
   const now = heardClock();
-  let best = null, bestGap = 1;
+  let best = null, bestGap = WINDOW + 1;
   for (let i = firstLive; i < notes.length; i++) {
     const n = notes[i];
-    if (n.t > now + 0.4) break;
+    if (n.t > now + WINDOW) break;
     if (n.done || n.lane !== lane) continue;
     const gap = Math.abs(n.t - now);
     if (gap < bestGap) { best = n; bestGap = gap; }
   }
-  const grade = GOOD.find(g => bestGap <= g[0]);
+  const grade = GRADES.find(g => bestGap <= g[0]);
   if (!best || !grade) return;
   best.done = true;
   if (best.el) { best.el.remove(); best.el = null; }
-  hits++; score += grade[2];
+  hits++; score += grade[2]; tally[grade[1]] = (tally[grade[1]] || 0) + 1;
   if (!$('tick').checked) hitSound(ctx.currentTime);
   $('score').textContent = score;
   $('hits').textContent = `${hits}/${notes.length}`;
   pop($('burst' + lane), [{ transform: 'scale(.55)', opacity: 1 }, { transform: 'scale(1.45)', opacity: 0 }], 520);
   const say = $('say');
   say.textContent = grade[1];
+  say.style.fill = grade[3];
   pop(say, [{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1.12)', opacity: 1, offset: .15 }, { transform: 'scale(1)', opacity: 1, offset: .3 }, { opacity: 1, offset: .75 }, { opacity: 0 }], 620);
 }
 
