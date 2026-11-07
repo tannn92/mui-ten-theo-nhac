@@ -175,7 +175,7 @@
 </div>
 
 <script>
-const V = '4';
+const V = '1107-124623';  // stamped by the deploy build
 const TRAVEL = 2.4, SPLIT_Y = 445, GOOD = [[0.10, 'Tuyệt!', 100], [0.20, 'Giỏi quá!', 70], [0.30, 'Được!', 40]];
 const LANES = { LU: [-110, 330, 335], LD: [-110, 330, 555], RU: [1290, 850, 335], RD: [1290, 850, 555] };
 const $ = id => document.getElementById(id);
@@ -238,6 +238,14 @@ function hitSound(when) {
 function audioClock() { return ctx.currentTime - startAt; }
 function heardClock() { return audioClock() - (ctx.outputLatency || 0); }
 
+// GitHub Pages lets a browser keep this page for 10 minutes. An old page must not run on new data.
+async function checkVersion() {
+  try {
+    const live = (await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' }).then(r => r.json())).v;
+    if (live !== V && !location.search.includes(`v=${live}`)) location.replace(`${location.pathname}?v=${live}${location.hash}`);
+  } catch (e) { /* offline or local preview: carry on */ }
+}
+
 async function loadList() {
   const list = (await (await fetch(`songs/index.json?v=${V}`)).json()).songs;
   const box = $('songs'); box.textContent = '';
@@ -264,6 +272,7 @@ async function loadList() {
 async function start(s, level) {
   ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
   await ctx.resume();
+  await checkVersion();
   audioGraph();
   $('result').textContent = 'Đang tải bài…';
   const base = `songs/${s.slug}/`;
@@ -396,7 +405,7 @@ document.addEventListener('gesturestart', e => e.preventDefault());
 
 window.spike = { get state() { return { playing, now: ctx ? heardClock() : 0, score, hits, total: notes.length, live: $('notes').childElementCount, tick: tickNext }; }, tap };
 saveKeyFromLink();
-loadList();
+checkVersion().then(loadList);
 </script>
 </body>
 </html>
