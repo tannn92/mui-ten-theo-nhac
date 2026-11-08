@@ -1,6 +1,6 @@
 'use strict';
 window.Dance=(()=>{let runtime=null,pendingSong=[null,null];return{
- async init(canvas,bundle){const {createRuntime}=await import('./dance3d/runtime.js?v=0811.1920');runtime=await createRuntime(canvas,bundle);runtime.setSong(...pendingSong);},
+ async init(canvas,bundle){const {createRuntime}=await import('./dance3d/runtime.js?v=0811.2029');runtime=await createRuntime(canvas,bundle);runtime.setSong(...pendingSong);},
  setSong(moves,chart){pendingSong=[moves,chart];runtime?.setSong(moves,chart);},draw(t){runtime?.draw(t);},
  setOutfit(id){runtime?.setOutfit(id);},equip(slot,index){runtime?.equip(slot,index);},mountWardrobe(container){runtime?.mountWardrobe(container);},
  snapshot(){return runtime?.snapshot();},diagnostics(){return runtime?.snapshot();},get test(){return runtime?.test;},audit(t){runtime?.draw(t);return runtime?.snapshot();},

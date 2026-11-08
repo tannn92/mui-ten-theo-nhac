@@ -14,15 +14,42 @@
   window.IOS = /iPad|iPhone/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   if (!IOS) document.head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="manifest.webmanifest">');
 </script>
-<script src="sfx.js?v=0811.1920"></script>
-<link rel="stylesheet" href="dance3d/wardrobe.css?v=0811.1920">
+<script>
+  // Loading overlay state + byte counting for the big downloads (wraps fetch before anything else runs).
+  window.LOAD = { step: 'bundle', pct: null, mb: 0, msg: null, update() {} };
+  (function () {
+    const orig = window.fetch.bind(window);
+    window.fetch = async function (input, init) {
+      const res = await orig(input, init);
+      let url = ''; try { url = typeof input === 'string' ? input : input.url || String(input); } catch (e) {}
+      if (!/(dance\.bin|\.(mp3|m4a|ogg|wav|enc|vrm|glb|bin))(\?|$)/.test(url) || !res.ok || !res.body) return res;
+      const big = /dance\.bin(\?|$)/.test(url);
+      const total = +res.headers.get('Content-Length') || 0, rd = res.body.getReader();
+      let got = 0;
+      const stream = new ReadableStream({
+        async pull(c) {
+          const { done, value } = await rd.read();
+          if (done) { c.close(); return; }
+          got += value.length; c.enqueue(value);
+          if (big && window.LOAD.step === 'bundle') { LOAD.pct = total ? Math.min(99, Math.floor(got / total * 100)) : null; LOAD.mb = got / 1048576; LOAD.update(); }
+        },
+        cancel(r) { return rd.cancel(r); }
+      });
+      return new Response(stream, { status: res.status, statusText: res.statusText, headers: res.headers });
+    };
+  })();
+</script>
+<script src="sfx.js?v=0811.2029"></script>
+<link rel="stylesheet" href="dance3d/wardrobe.css?v=0811.2029">
 <script type="importmap">{"imports":{"three":"./lib/three.module.js","three/addons/":"./lib/jsm/","@pixiv/three-vrm":"./lib/three-vrm.module.js"}}</script>
-<script src="dance.js?v=0811.1920"></script>
+<script src="dance.js?v=0811.2029"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;background:#2b1d4f;overflow:hidden;touch-action:none;font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif}
   #stage{position:fixed;inset:0;width:100%;height:100%;display:block}
   #scene{position:fixed;inset:0;width:100%;height:100%;display:block}
+  .combo{font:800 44px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;paint-order:stroke;stroke:#fff;stroke-width:10px;stroke-linejoin:round;fill:url(#comboGrad);opacity:0}
+  .combolbl{font:800 16px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;paint-order:stroke;stroke:#fff;stroke-width:6px;stroke-linejoin:round;fill:#d6407a;letter-spacing:2px;opacity:0}
   .say{font:800 66px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;paint-order:stroke;stroke:#fff;stroke-width:14px;stroke-linejoin:round;fill:#21985a;opacity:0}
   .hudtext{font:800 34px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;fill:#2f9e62}
   .clock{font:800 26px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;fill:#2f9e62;paint-order:stroke;stroke:#fff;stroke-width:8px;stroke-linejoin:round;font-variant-numeric:tabular-nums}
@@ -47,9 +74,22 @@
   #tapsBox{margin-bottom:10px}
   #tapsBox.hide{display:none}
   #taps{width:100%;height:84px;font:13px ui-monospace,monospace;border:1px solid #cfe7d6;border-radius:10px;padding:6px;user-select:text;-webkit-user-select:text}
+  #load{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(255,214,232,.72);backdrop-filter:blur(4px);font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif}
+  #load.hide{display:none}
+  #load .card{background:#fff;border-radius:28px;padding:26px 30px;width:min(440px,88vw);text-align:center;box-shadow:0 14px 40px rgba(200,60,120,.25);border:4px solid #ffc2dc}
+  #load .face{font-size:44px;animation:ldb 1s ease-in-out infinite}
+  @keyframes ldb{50%{transform:translateY(-8px) rotate(6deg)}}
+  #load .lbl{font-weight:800;font-size:19px;color:#d6457f;margin:8px 0 14px}
+  #load .bar{height:18px;border-radius:9px;background:#ffe3ef;overflow:hidden}
+  #load .fill{height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,#ff8fbd,#ff5c9e);transition:width .2s}
+  #load .bar.ind .fill{width:35%!important;animation:ldi 1.1s ease-in-out infinite alternate}
+  @keyframes ldi{from{margin-left:0}to{margin-left:65%}}
+  #load button{margin-top:14px;border:0;border-radius:16px;background:#ff5c9e;color:#fff;font:800 17px inherit;font-family:inherit;padding:10px 22px;cursor:pointer}
+  .song:disabled{opacity:.5;cursor:wait}
 </style>
 </head>
 <body>
+<div id="load"><div class="card"><div class="face">🌸</div><div class="lbl" id="loadLbl">Đang tải nhân vật và quần áo…</div><div class="bar"><div class="fill" id="loadFill"></div></div><div id="loadRetry" hidden><button onclick="location.reload()">Tải lại</button></div></div></div>
 <canvas id="stage"></canvas>
 <svg id="scene" viewBox="0 0 1180 820" preserveAspectRatio="xMidYMid meet"
      style="--arrow:#ff9d2e;--edge:#c8640a;--ring:#ffffff;--ring2:#ffe36b;--ringfill:rgba(255,255,255,.55);--lane:rgba(255,255,255,.55);--burst:#fff;--hair:#6a4128;--dress:#ffd23f;--dress2:#fff4bf;--skin:#ffdcc4;--shoe:#ff8a3c;--ui:#fff;--uit:#2f9e62;--padedge:#57c26f">
@@ -112,7 +152,9 @@
   <g transform="translate(330 710) scale(.72)"><g id="burstLD" opacity="0"><use href="#burstArt"/></g></g>
   <g transform="translate(850 560) scale(.72)"><g id="burstRU" opacity="0"><use href="#burstArt"/></g></g>
   <g transform="translate(850 710) scale(.72)"><g id="burstRD" opacity="0"><use href="#burstArt"/></g></g>
-  <g transform="translate(590 186)"><text id="say" class="say" text-anchor="middle"></text></g>
+  <g transform="translate(590 140)"><text id="say" class="say" text-anchor="middle"></text></g>
+  <defs><linearGradient id="comboGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7eb3"/><stop offset="1" stop-color="#e8457f"/></linearGradient></defs>
+  <g transform="translate(590 196)"><text id="comboNum" class="combo" text-anchor="middle"></text><text id="comboLbl" class="combolbl" text-anchor="middle" y="24">liên tiếp ♥</text></g>
 
   <g id="stopBtn" transform="translate(66 62)">
     <circle r="44" fill="transparent"/>
@@ -132,7 +174,7 @@
 <div id="menu">
   <div class="panel">
     <h1>Bản thử 23: bé nhún theo nhạc</h1>
-    <p class="sub">Dễ và Vừa: mũi tên cam theo beat, dày lên ở đoạn bốc, thưa ở đoạn chùng. Khó: mũi tên hồng theo từng chữ hát. Từ 4:00, mũi tên tím theo tiếng synth (Vừa và Khó). Hàng mũi tên đi theo giai điệu. Mũi tên chạy từ hai mép vào vòng hoa ở giữa; bấm vào nút mờ ở rìa (chạm đâu trên nửa đó cũng được), hoặc phím W, S, ↑, ↓. Bé và 4 bạn nhún, đưa tay nhẹ nhàng theo nhịp; bé hát theo lời, chớp mắt, nháy mắt. Chọn đồ cho bé ở dưới.</p>
+    <p class="sub">Dễ: ít mũi tên, 2 nút trái phải. Vừa: nhiều mũi tên hơn, 2 nút. Khó: như Vừa nhưng 4 nút (trên, dưới mỗi bên). Mũi tên theo beat, dày lên ở đoạn bốc, thưa ở đoạn chùng. Bấm vào vòng hoa (chạm nửa màn hình trái/phải cũng được), hoặc phím W, S, ↑, ↓. Bé và 4 bạn nhảy theo nhạc. Chọn đồ cho bé ở dưới.</p>
     <p class="sub">Phiên bản <b id="ver"></b> <button id="checkVer" class="from">Kiểm tra bản mới</button> <span id="verMsg"></span></p>
     <p id="result"></p>
     <div id="tapsBox" class="hide"><textarea id="taps" readonly></textarea><button id="copyTaps" class="from">Chép</button></div>
@@ -146,7 +188,7 @@
 </div>
 
 <script>
-const V = '0811.1920';  // stamped by the deploy build
+const V = '0811.2029';  // stamped by the deploy build
 // Two rows, low on the screen where hands hold an iPad: 560 and 710. A touch above 635 is the upper row.
 const SPLIT_Y = 635,
   
@@ -177,6 +219,7 @@ let MAX_TRAVEL = Math.max(...Object.keys(LANES).map(travelOf));
 const $ = id => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
 let ctx, source, chart, notes = [], startAt = 0, playing = false, tickNext = 0, firstLive = 0;
+let combo = 0, maxCombo = 0, comboTimer = 0;
 let score = 0, hits = 0, tally = {}, master, musicGain, shownSec = -1, startFrom = 0, playEnd = Infinity;
 // Bounded "nhảy đẹp" demo: only with ?dance=beauty (optional from/to, decimal seconds). Normal game untouched otherwise.
 const DEMO = (() => {
@@ -187,10 +230,15 @@ const DEMO = (() => {
 let twoLane = false;
 // Dễ: the notes of Vừa (same number of taps to feel the music) on just two buttons, left and right; two notes on the
 // same side closer than 0.12 s become one.
+// Levels (owner, 2026-11-08): Dễ = the old Dễ arrows on 2 buttons; Vừa = the old Vừa arrows on 2 buttons;
+// Khó = the old Vừa arrows on 4 buttons. The old Khó (every sung word) is gone.
+const SOURCE_LEVEL = { de: 'de', vua: 'vua', kho: 'vua' };
+const isTwoLane = level => level === 'de' || level === 'vua';
 function levelNotes(c, level) {
-  if (level !== 'de') return c.levels[level];
-  const out = [], last = {};
-  for (const n of c.levels.vua) { const lane = n.lane[0] + 'M'; if (last[lane] != null && n.t - last[lane] < 0.12) continue; last[lane] = n.t; out.push({ ...n, lane }); }
+  const src = c.levels[SOURCE_LEVEL[level]] || [];
+  if (!isTwoLane(level)) return src;
+  const out = [], last = {};   // two notes on the same side closer than 0.12 s become one
+  for (const n of src) { const lane = n.lane[0] + 'M'; if (last[lane] != null && n.t - last[lane] < 0.12) continue; last[lane] = n.t; out.push({ ...n, lane }); }
   return out;
 }
 let recording = false, taps = [];  // 'Ghi nhịp gõ': the player taps what they hear, the times are kept
@@ -251,14 +299,14 @@ async function loadList() {
     head.className = 'sub';
     head.textContent = `${s.title} · ${Math.floor(s.duration / 60)}:${String(Math.round(s.duration % 60)).padStart(2, '0')} · ${Math.round(s.bpm)} BPM`;
     box.appendChild(head);
-    for (const [key, label] of [['de', 'Dễ'], ['vua', 'Vừa'], ['kho', 'Khó']]) {
+    for (const [key, label] of [['de', 'Dễ'], ['vua', 'Vừa'], ['kho', 'Khó']].filter(([k]) => s.levels[SOURCE_LEVEL[k]] != null)) {
       const b = document.createElement('button');
       b.className = 'song';
       b.dataset.level = key;
       b.textContent = label;
       const m = document.createElement('span');
-      m.textContent = `${s.levels[key]} mũi tên`;
-      if (key === 'de') fetch(`songs/${s.slug}/chart.json?v=${V}`).then(r => r.json()).then(c => { if (!DEMO) m.textContent = `${levelNotes(c, 'de').length} mũi tên · 2 nút`; }).catch(() => {});
+      m.textContent = `${s.levels[SOURCE_LEVEL[key]]} mũi tên · ${isTwoLane(key) ? 2 : 4} nút`;
+      fetch(`songs/${s.slug}/chart.json?v=${V}`).then(r => r.json()).then(c => { if (!DEMO) m.textContent = `${levelNotes(c, key).length} mũi tên · ${isTwoLane(key) ? 2 : 4} nút`; }).catch(() => {});
       if (DEMO) {   // demo: count only the arrows inside the demo window (same clamp as start())
         fetch(`songs/${s.slug}/chart.json?v=${V}`).then(r => r.json()).then(c => {
           let f = Math.max(0, Math.min(DEMO.from, c.duration)), t = Math.min(DEMO.to, c.duration);
@@ -301,7 +349,40 @@ async function loadDance() {
 let danceReady = null;
 function idleLoop() { if (!playing) Dance.draw(null); requestAnimationFrame(idleLoop); }
 
+// ---- loading overlay ----
+const loadEl = $('load');
+let loadBusy = null;   // 'start' while a level is opening
+function renderLoad() {
+  const L = window.LOAD, bar = loadEl.querySelector('.bar');
+  let t;
+  if (L.msg) t = L.msg;
+  else if (L.step === 'bundle') t = 'Đang tải nhân vật và quần áo…' + (L.pct != null ? ` ${L.pct}%` : L.mb ? ` ${L.mb.toFixed(1)} MB` : '');
+  else if (L.step === 'char') t = 'Đang chuẩn bị nhân vật…';
+  else if (L.step === 'music') t = 'Đang mở nhạc…';
+  else t = 'Sẵn sàng!';
+  $('loadLbl').textContent = t;
+  const ind = !L.msg && ((L.step === 'bundle' && L.pct == null) || L.step === 'char' || L.step === 'music');
+  bar.classList.toggle('ind', ind);
+  $('loadFill').style.width = (L.step === 'bundle' ? (L.pct || 0) : 100) + '%';
+}
+window.LOAD.update = renderLoad;
+function setLoad(step, hideNow) { LOAD.step = step; LOAD.msg = null; renderLoad(); loadEl.classList.toggle('hide', !!hideNow); }
+renderLoad();
+const slowTimer = setTimeout(() => {
+  if (Dance.ready) return;
+  LOAD.msg = 'Mạng chậm quá, thử tải lại nhé'; renderLoad(); $('loadRetry').hidden = false; loadEl.classList.remove('hide');
+}, 60000);
+function setSongButtons(off) { document.querySelectorAll('.song').forEach(b => { b.disabled = off; }); }
+
+let starting = false;
 async function start(s, level) {
+  if (starting || playing) return;
+  starting = true; setSongButtons(true); setLoad('music');
+  try { await startRun(s, level); }
+  catch (e) { console.warn('start', e); $('result').textContent = 'Có lỗi, thử lại nhé.'; }
+  finally { starting = false; setSongButtons(false); setLoad('done', true); }
+}
+async function startRun(s, level) {
   ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
   await ctx.resume();
   await checkVersion();
@@ -328,10 +409,11 @@ async function start(s, level) {
     if (!(demoTo > demoFrom)) { demoFrom = 89.34; demoTo = Math.min(116.78, chart.duration); }
     startFrom = demoFrom;
   }
-  twoLane = level === 'de'; setStage();
+  twoLane = isTwoLane(level); setStage();
   notes = recording ? [] : levelNotes(chart, level).filter(n => !DEMO || (n.t >= demoFrom && n.t <= demoTo)).map(n => ({ ...n, el: null, done: n.t < startFrom }));  // arrows before the start are gone
   playEnd = DEMO ? demoTo : Infinity;
   score = hits = 0;
+  combo = maxCombo = 0; clearTimeout(comboTimer); $('comboNum').style.opacity = $('comboLbl').style.opacity = 0;
   firstLive = tickNext = Math.max(notes.findIndex(n => !n.done), 0);
   tally = {};
   $('score').textContent = '0';
@@ -339,6 +421,7 @@ async function start(s, level) {
   $('result').textContent = '';
   shownSec = -1;
   $('clock').textContent = `0:00 / ${mmss(chart.duration)}`;
+  if (source) { try { source.onended = null; source.stop(); } catch (e) {} try { source.disconnect(); } catch (e) {} }
   source = ctx.createBufferSource();
   source.buffer = buffer;
   source.connect(musicGain);
@@ -361,7 +444,7 @@ function finish(early) {
   playing = false;
   try { source.onended = null; source.stop(); } catch (e) {}
   $('notes').textContent = '';
-  $('result').textContent = at + `Trúng ${hits}/${notes.length} · ${score} điểm · ` + GRADES.map(g => `${g[1]} ${tally[g[1]] || 0}`).join(' · ');
+  $('result').textContent = at + `Trúng ${hits}/${notes.length} · ${score} điểm · Combo cao nhất ${maxCombo} · ` + GRADES.map(g => `${g[1]} ${tally[g[1]] || 0}`).join(' · ');
   if (recording) { $('result').textContent = `Đã ghi ${taps.length} lần gõ. Bấm "Chép" rồi dán gửi cho tôi.`; showTaps(); }
   else $('tapsBox').classList.add('hide');
   $('menu').classList.remove('hide');
@@ -405,7 +488,7 @@ function frame() {
     const p = Math.min(1 - (n.t - now) / travel, 1 + OVERSHOOT / (travel * SPEED));
     const [x0, y0, x1, y1] = LANES[n.lane];
     n.el.setAttribute('transform', `translate(${x0 + (x1 - x0) * p} ${y0 + (y1 - y0) * p})`);
-    if (now > n.t + WINDOW) { n.done = true; n.el.remove(); n.el = null; }
+    if (now > n.t + WINDOW) { n.done = true; n.el.remove(); n.el = null; comboBreak(); }
     else {
       const appear = Math.min(Math.max(p / 0.12, 0), 1);  // fades in as it comes out from behind the dancer
       const leave = now > n.t + 0.4 ? Math.max(0, 1 - (now - n.t - 0.4) / (WINDOW - 0.4)) : 1;
@@ -427,6 +510,28 @@ function frame() {
 }
 
 function pop(el, frames, ms) { el.animate(frames, { duration: ms, easing: 'ease-out' }); }
+
+// Combo: consecutive hits. A miss (note passes its window unhit) resets it.
+// Bonus: each hit scores grade points x (1 + min(combo, 50) / 100), so up to +50%.
+function comboShow() {
+  const num = $('comboNum'), lbl = $('comboLbl');
+  clearTimeout(comboTimer);
+  if (combo < 2) return;
+  num.textContent = combo;
+  num.style.opacity = lbl.style.opacity = 1;
+  pop(num, [{ transform: 'scale(.6)' }, { transform: 'scale(1.25)', offset: .35 }, { transform: 'scale(1)' }], 260);
+  comboTimer = setTimeout(() => { num.style.opacity = lbl.style.opacity = 0; }, 1500);
+}
+function comboBreak() {
+  if (combo === 0) return;
+  const had = combo >= 2;
+  combo = 0; clearTimeout(comboTimer);
+  const num = $('comboNum'), lbl = $('comboLbl');
+  if (had) {
+    pop(num, [{ transform: 'translateX(-8px)' }, { transform: 'translateX(8px)' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(0)' }], 260);
+    comboTimer = setTimeout(() => { num.style.opacity = lbl.style.opacity = 0; }, 260);
+  }
+}
 
 function tap(lane) {
   if (!playing) return;
@@ -453,8 +558,10 @@ function tap(lane) {
   if (!best || !grade) return;
   best.done = true;
   if (best.el) { best.el.remove(); best.el = null; }
-  hits++; score += grade[2]; tally[grade[1]] = (tally[grade[1]] || 0) + 1;
+  combo++; if (combo > maxCombo) maxCombo = combo;
+  hits++; score += Math.round(grade[2] * (1 + Math.min(combo, 50) / 100)); tally[grade[1]] = (tally[grade[1]] || 0) + 1;
   if (!$('tick').checked) hitSound(ctx.currentTime);
+  comboShow();
   $('score').textContent = score;
   $('hits').textContent = `${hits}/${notes.length}`;
   pop($('burst' + lane), [{ transform: 'scale(.55)', opacity: 1 }, { transform: 'scale(1.45)', opacity: 0 }], 520);
@@ -507,7 +614,7 @@ window.addEventListener('keydown', e => {
 $('stopBtn').addEventListener('pointerdown', e => { e.stopPropagation(); if (playing) finish(true); });
 document.addEventListener('gesturestart', e => e.preventDefault());
 
-window.spike = { geo: { SPEED, SPLIT_Y, LANES }, get state() { return { dance: Dance.ready, danceMoves: Dance.hasMoves, playing, now: ctx ? heardClock() : 0, score, hits, total: notes.length, live: $('notes').childElementCount, tick: tickNext }; }, tap };
+window.spike = { geo: { SPEED, SPLIT_Y, LANES }, get state() { return { dance: Dance.ready, danceMoves: Dance.hasMoves, playing, now: ctx ? heardClock() : 0, score, hits, combo, maxCombo, total: notes.length, live: $('notes').childElementCount, tick: tickNext }; }, tap };
 $('copyTaps').addEventListener('click', () => { $('taps').select(); navigator.clipboard?.writeText($('taps').value).catch(() => {}); document.execCommand?.('copy'); });
 function pickFrom(sec) {
   startFrom = sec;
@@ -547,10 +654,11 @@ $('songs').addEventListener('click', e => {
     $('outfitRow').scrollIntoView({ block: 'nearest' });
   }
 }, true);
-danceReady = loadDance().then(b => { DANCE = b; return Dance.init($('stage'), b); }).then(showOutfits).catch(e => {
+danceReady = loadDance().then(b => { DANCE = b; setLoad('char'); return Dance.init($('stage'), b); }).then(() => { clearTimeout(slowTimer); showOutfits(); setLoad('done'); $('loadLbl').textContent = 'Sẵn sàng!'; setTimeout(() => { if (!starting) loadEl.classList.add('hide'); }, 500); }).catch(e => {
   $('outfits').textContent = 'Không mở được nhân vật 3D. Hãy tải lại trang. ' + e.message;
   $('outfits').setAttribute('role', 'alert');
   console.warn('dance', e);
+  clearTimeout(slowTimer); LOAD.msg = 'Không mở được nhân vật. Thử tải lại nhé'; renderLoad(); $('loadRetry').hidden = false;
 });
 requestAnimationFrame(idleLoop);
 $('sndName').textContent = SFX.BY_ID[hitKind].name;
