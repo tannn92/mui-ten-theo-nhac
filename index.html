@@ -14,8 +14,10 @@
   window.IOS = /iPad|iPhone/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   if (!IOS) document.head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="manifest.webmanifest">');
 </script>
-<script src="sfx.js?v=0711.2323"></script>
-<script src="dance.js?v=0711.2323"></script>
+<script src="sfx.js?v=0811.1920"></script>
+<link rel="stylesheet" href="dance3d/wardrobe.css?v=0811.1920">
+<script type="importmap">{"imports":{"three":"./lib/three.module.js","three/addons/":"./lib/jsm/","@pixiv/three-vrm":"./lib/three-vrm.module.js"}}</script>
+<script src="dance.js?v=0811.1920"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;background:#2b1d4f;overflow:hidden;touch-action:none;font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif}
@@ -136,14 +138,15 @@
     <div id="tapsBox" class="hide"><textarea id="taps" readonly></textarea><button id="copyTaps" class="from">Chép</button></div>
     <div id="songs">Đang tải…</div>
     <div class="sounds">Bắt đầu từ: <button class="from on" data-from="0">0:00</button><button class="from" data-from="60">1:00</button><button class="from" data-from="120">2:00</button><button class="from" data-from="180">3:00</button><button class="from" data-from="240">4:00</button></div>
-    <div class="sounds" id="outfitRow" hidden>Đồ của bé: <span id="outfits"></span></div>
+    <section id="outfitRow" aria-label="Chọn đồ trước khi nhảy"><div id="outfits" role="status">Đang chuẩn bị nhân vật 3D…</div></section>
     <div class="sounds">Tiếng bấm: <b id="sndName"></b> · <a id="sndLink" href="sfx.html">nghe và chọn tiếng khác</a></div>
     <label><input type="checkbox" id="tick"> Bật tiếng tick tự kêu khi mũi tên chạm tâm (thay cho tiếng bấm)</label>
+    <label><input type="checkbox" id="edgeLayout"> Bông hoa ra rìa: mũi tên chạy từ giữa ra hai bên</label>
   </div>
 </div>
 
 <script>
-const V = '0711.2323';  // stamped by the deploy build
+const V = '0811.1920';  // stamped by the deploy build
 // Two rows, low on the screen where hands hold an iPad: 560 and 710. A touch above 635 is the upper row.
 const SPLIT_Y = 635,
   
@@ -157,13 +160,39 @@ const SPLIT_Y = 635,
 // The user's layout: the flower rings near the middle so the eyes stay there, arrows from the screen edges
 // inward at 183 units a second, soft buttons at the edges for the thumbs. Each lane: from x, y to x, y.
 const SPEED = 440 / 2.4, OVERSHOOT = 40;
-const LANES = { LU: [-110, 560, 330, 560], LD: [-110, 710, 330, 710], RU: [1290, 560, 850, 560], RD: [1290, 710, 850, 710] };
+// Two layouts (homepage toggle): 'center' = rings near the middle, arrows from the screen edges inward (default);
+// 'edge' = rings at the screen edges, arrows from the middle outward (the old layout). M = the single row of Dễ.
+const ROWS = { U: 560, D: 710, M: 635 };
+let LAYOUT = localStorage.getItem('spike-layout') === 'edge' ? 'edge' : 'center';
+function laneGeom(lane) {
+  const left = lane[0] === 'L', y = ROWS[lane[1]];
+  const [from, to] = LAYOUT === 'edge' ? (left ? [520, 110] : [660, 1070]) : (left ? [-110, 330] : [1290, 850]);
+  return [from, y, to, y];
+}
+let LANES = {};
+function buildLanes() { LANES = {}; for (const l of ['LU', 'LD', 'RU', 'RD', 'LM', 'RM']) LANES[l] = laneGeom(l); }
+buildLanes();
 function travelOf(lane) { const [x0, y0, x1, y1] = LANES[lane]; return Math.hypot(x1 - x0, y1 - y0) / SPEED; }
-const MAX_TRAVEL = Math.max(...Object.keys(LANES).map(travelOf));
+let MAX_TRAVEL = Math.max(...Object.keys(LANES).map(travelOf));
 const $ = id => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
 let ctx, source, chart, notes = [], startAt = 0, playing = false, tickNext = 0, firstLive = 0;
-let score = 0, hits = 0, tally = {}, master, musicGain, shownSec = -1, startFrom = 0;
+let score = 0, hits = 0, tally = {}, master, musicGain, shownSec = -1, startFrom = 0, playEnd = Infinity;
+// Bounded "nhảy đẹp" demo: only with ?dance=beauty (optional from/to, decimal seconds). Normal game untouched otherwise.
+const DEMO = (() => {
+  const q = new URLSearchParams(location.search); if (q.get('dance') !== 'beauty') return null;
+  const f = parseFloat(q.get('from')), t = parseFloat(q.get('to')), ok = Number.isFinite(f) && Number.isFinite(t) && t > f && f >= 0;
+  return ok ? { from: f, to: t } : { from: 89.34, to: 116.78 };
+})();
+let twoLane = false;
+// Dễ: the notes of Vừa (same number of taps to feel the music) on just two buttons, left and right; two notes on the
+// same side closer than 0.12 s become one.
+function levelNotes(c, level) {
+  if (level !== 'de') return c.levels[level];
+  const out = [], last = {};
+  for (const n of c.levels.vua) { const lane = n.lane[0] + 'M'; if (last[lane] != null && n.t - last[lane] < 0.12) continue; last[lane] = n.t; out.push({ ...n, lane }); }
+  return out;
+}
 let recording = false, taps = [];  // 'Ghi nhịp gõ': the player taps what they hear, the times are kept
 // minutes:seconds of what the player hears, so feedback can name the moment
 function mmss(s) { s = Math.floor(Math.max(s, 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
@@ -229,6 +258,14 @@ async function loadList() {
       b.textContent = label;
       const m = document.createElement('span');
       m.textContent = `${s.levels[key]} mũi tên`;
+      if (key === 'de') fetch(`songs/${s.slug}/chart.json?v=${V}`).then(r => r.json()).then(c => { if (!DEMO) m.textContent = `${levelNotes(c, 'de').length} mũi tên · 2 nút`; }).catch(() => {});
+      if (DEMO) {   // demo: count only the arrows inside the demo window (same clamp as start())
+        fetch(`songs/${s.slug}/chart.json?v=${V}`).then(r => r.json()).then(c => {
+          let f = Math.max(0, Math.min(DEMO.from, c.duration)), t = Math.min(DEMO.to, c.duration);
+          if (!(t > f)) { f = 89.34; t = Math.min(116.78, c.duration); }
+          m.textContent = `${levelNotes(c, key).filter(n => n.t >= f && n.t <= t).length} mũi tên`;
+        }).catch(() => {});
+      }
       b.appendChild(m);
       b.addEventListener('click', () => start(s, key));
       box.appendChild(b);
@@ -285,7 +322,15 @@ async function start(s, level) {
   Dance.setSong(DANCE ? await DANCE.json(`moves/${s.slug}.groove.json`).catch(() => null) : null, c);   // the gentle beat dance
   $('notes').textContent = '';
   recording = level === 'rec'; taps = [];
-  notes = recording ? [] : chart.levels[level].map(n => ({ ...n, el: null, done: n.t < startFrom }));  // arrows before the start are gone
+  let demoFrom = null, demoTo = null;
+  if (DEMO) {   // clamp to the song; an invalid range falls back to the default demo window
+    demoFrom = Math.max(0, Math.min(DEMO.from, chart.duration)); demoTo = Math.min(DEMO.to, chart.duration);
+    if (!(demoTo > demoFrom)) { demoFrom = 89.34; demoTo = Math.min(116.78, chart.duration); }
+    startFrom = demoFrom;
+  }
+  twoLane = level === 'de'; setStage();
+  notes = recording ? [] : levelNotes(chart, level).filter(n => !DEMO || (n.t >= demoFrom && n.t <= demoTo)).map(n => ({ ...n, el: null, done: n.t < startFrom }));  // arrows before the start are gone
+  playEnd = DEMO ? demoTo : Infinity;
   score = hits = 0;
   firstLive = tickNext = Math.max(notes.findIndex(n => !n.done), 0);
   tally = {};
@@ -299,7 +344,7 @@ async function start(s, level) {
   source.connect(musicGain);
   const at = ctx.currentTime + 0.3;
   startAt = at - startFrom;  // the clock reads song time, so starting at 4:00 shows 4:00
-  source.start(at, startFrom);
+  if (DEMO) source.start(at, startFrom, playEnd - startFrom); else source.start(at, startFrom);
   source.onended = () => { if (playing) finish(); };
   playing = true;
   $('menu').classList.add('hide');
@@ -347,6 +392,7 @@ function makeNote(n) {
 function frame() {
   if (!playing) return;
   const now = heardClock();
+  if (now >= playEnd) { finish(); return; }
   scheduleTicks(audioClock());
   for (let i = firstLive; i < notes.length; i++) {
     const n = notes[i];
@@ -418,15 +464,43 @@ function tap(lane) {
   pop(say, [{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1.12)', opacity: 1, offset: .15 }, { transform: 'scale(1)', opacity: 1, offset: .3 }, { opacity: 1, offset: .75 }, { opacity: 0 }], 620);
 }
 
+// Places rings, bursts, soft pads and lane bars for the current layout, and shows 2 or 4 lanes.
+function setStage() {
+  const defs = document.querySelector('#scene defs');
+  if (!$('arrowLM')) {
+    for (const [id, ref] of [['arrowLM', '#arrowL'], ['arrowRM', '#arrowR']]) { const g = document.createElementNS(NS, 'g'); g.id = id; const u = document.createElementNS(NS, 'use'); u.setAttribute('href', ref); g.appendChild(u); defs.appendChild(g); }
+    for (const kind of ['ring', 'burst', 'ghost']) for (const side of ['L', 'R']) {
+      const src = $(kind + side + 'U').parentNode, c = src.cloneNode(true); c.querySelector('[id]').id = kind + side + 'M'; src.parentNode.insertBefore(c, src.nextSibling);
+    }
+  }
+  buildLanes(); MAX_TRAVEL = Math.max(...Object.keys(LANES).map(travelOf));
+  for (const l of ['LU', 'LD', 'RU', 'RD', 'LM', 'RM']) {
+    const [, y, x] = LANES[l], show = twoLane ? l[1] === 'M' : l[1] !== 'M';
+    for (const kind of ['ring', 'burst']) { const g = $(kind + l).parentNode; g.setAttribute('transform', `translate(${x} ${y}) scale(.72)`); g.style.display = show ? '' : 'none'; }
+    const ghost = $('ghost' + l).parentNode, gx = l[0] === 'L' ? 110 : 1070;
+    ghost.setAttribute('transform', `translate(${gx} ${y}) scale(.62)`); ghost.style.display = show && LAYOUT === 'center' ? '' : 'none';
+  }
+  const bars = document.querySelectorAll('#scene > g[fill="var(--lane)"] rect');
+  bars.forEach((r, i) => {
+    const left = i % 2 === 0 ? (i < 2 ? true : false) : (i < 2 ? true : false);
+    const isLeft = i < 2, row = i % 2 === 0 ? 'U' : 'D', y = (twoLane ? ROWS.M : ROWS[row]) - 45;
+    r.setAttribute('x', LAYOUT === 'edge' ? (isLeft ? 60 : 640) : (isLeft ? -60 : 805)); r.setAttribute('width', LAYOUT === 'edge' ? 480 : 435);
+    r.setAttribute('y', String(y)); r.style.display = twoLane && row === 'D' ? 'none' : '';
+  });
+}
+$('edgeLayout').checked = LAYOUT === 'edge';
+$('edgeLayout').addEventListener('change', e => { LAYOUT = e.target.checked ? 'edge' : 'center'; localStorage.setItem('spike-layout', LAYOUT); setStage(); });
+setStage();
 window.addEventListener('pointerdown', e => {
   if (!playing || e.target.closest?.('#stopBtn')) return;
   const m = $('scene').getScreenCTM().inverse();
   const y = m.b * e.clientX + m.d * e.clientY + m.f;
-  tap((e.clientX < innerWidth / 2 ? 'L' : 'R') + (y < SPLIT_Y ? 'U' : 'D'));
+  tap((e.clientX < innerWidth / 2 ? 'L' : 'R') + (twoLane ? 'M' : y < SPLIT_Y ? 'U' : 'D'));
 });
 window.addEventListener('keydown', e => {
   if (e.repeat) return;
-  const lane = { w: 'LU', s: 'LD', ArrowUp: 'RU', ArrowDown: 'RD', ' ': 'LD' }[e.key];
+  let lane = { w: 'LU', s: 'LD', ArrowUp: 'RU', ArrowDown: 'RD', ' ': 'LD' }[e.key];
+  if (lane && twoLane) lane = lane[0] + 'M';
   if (lane) { e.preventDefault(); tap(lane); }
   if (e.key === 'Escape' && playing) finish(true);
 });
@@ -440,6 +514,13 @@ function pickFrom(sec) {
   document.querySelectorAll('.from').forEach(x => x.classList.toggle('on', +x.dataset.from === sec));
 }
 document.querySelectorAll('.from[data-from]').forEach(b => b.addEventListener('click', () => pickFrom(+b.dataset.from)));
+if (DEMO) {   // the demo window is fixed by the URL: hide the start-time buttons and say what this is
+  document.querySelectorAll('.from').forEach(b => { b.disabled = true; b.style.display = 'none'; });
+  const tag = document.createElement('div'); tag.id = 'demoTag';
+  tag.textContent = `Bản thử nhảy đẹp · ${mmss(DEMO.from)}–${mmss(DEMO.to)}`;
+  tag.style.cssText = 'position:fixed;top:6px;left:50%;transform:translateX(-50%);background:#e98bb3;color:#fff;padding:4px 12px;border-radius:12px;font:600 14px system-ui;z-index:50';
+  document.body.appendChild(tag);
+}
 // The version is when it was released, day month . hour minute. The button asks the site for the newest one.
 $('ver').textContent = V.startsWith('__') ? 'đang thử trên máy' : V;
 $('checkVer').addEventListener('click', async () => {
@@ -455,16 +536,22 @@ const fromLink = /[?&]from=(\d+)/.exec(location.search);  // a link can open str
 if (fromLink) pickFrom(+fromLink[1]);
 
 saveKeyFromLink();
-function showOutfits() {   // one button per outfit; the choice is kept on this device
-  const box = $('outfits'); box.textContent = '';
-  for (const o of Dance.outfits) {
-    const b = document.createElement('button'); b.className = 'from' + (o.id === Dance.outfit ? ' on' : ''); b.textContent = o.name;
-    b.addEventListener('click', () => { Dance.setOutfit(o.id); box.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); });
-    box.appendChild(b);
-  }
-  $('outfitRow').hidden = Dance.outfits.length < 2;
+function showOutfits() {
+  Dance.mountWardrobe($('outfits'));
+  $('outfitRow').hidden = false;
 }
-danceReady = loadDance().then(b => { DANCE = b; return Dance.init($('stage'), b); }).then(showOutfits).catch(e => console.warn('dance', e));
+// Keep the visible loading/error state until the avatar is usable.
+$('songs').addEventListener('click', e => {
+  if (!Dance.ready) {
+    e.preventDefault(); e.stopImmediatePropagation();
+    $('outfitRow').scrollIntoView({ block: 'nearest' });
+  }
+}, true);
+danceReady = loadDance().then(b => { DANCE = b; return Dance.init($('stage'), b); }).then(showOutfits).catch(e => {
+  $('outfits').textContent = 'Không mở được nhân vật 3D. Hãy tải lại trang. ' + e.message;
+  $('outfits').setAttribute('role', 'alert');
+  console.warn('dance', e);
+});
 requestAnimationFrame(idleLoop);
 $('sndName').textContent = SFX.BY_ID[hitKind].name;
 $('sndLink').href = 'sfx.html' + (IOS ? location.hash : '');

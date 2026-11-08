@@ -1,0 +1,87 @@
+import * as T from 'three';
+import {loadWardrobe} from './wardrobe.js?v=0811.1920';
+import {createChoreography} from './choreography.js?v=0811.1920';
+import {createPoseBank} from './pose-bank.js?v=0811.1920';
+import {applyFaceExpression} from './face-expressions.js?v=0811.1920';
+import {createCrew} from './crew.js?v=0811.1920';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=0811.1920';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=0811.1920';
+export async function createRuntime(canvas,bundle){
+ const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
+ const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
+ const captureAsset=beautyDemo?'wardrobe/beauty-demo.json':raw.captureAsset||(bundle.files[FULL_CAPTURE_ASSET]?FULL_CAPTURE_ASSET:CAPTURE_ASSET);
+ if(beautyDemo&&!bundle.files[captureAsset])throw Error('Thiếu chuyển động demo nhảy đẹp');
+ if(raw.captureAsset&&!bundle.files[captureAsset])throw Error('Thiếu chuyển động được chọn: '+captureAsset);
+ const capturedData=bundle.files[captureAsset]?await bundle.json(captureAsset):null;
+ const captured=capturedData?createCapturedMotion(capturedData):null;
+ const config=structuredClone(raw);config.variants.forEach(v=>{const key=v.file;v.file=bundle.files[key];if(!v.file)throw Error('Thiếu dữ liệu nhân vật '+(v.id||key));});
+ const renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.outputColorSpace=T.SRGBColorSpace;
+ const scene=new T.Scene();scene.background=new T.Color('#f4e4ed');const camera=new T.OrthographicCamera(-1.6,1.6,1.12,-1.12,.01,20);camera.position.set(0,.75,5);camera.lookAt(0,.75,0);
+ scene.add(new T.HemisphereLight(0xffffff,0x997c94,1.35));const light=new T.DirectionalLight(0xfff5ef,1.1);light.position.set(-2,4,5);scene.add(light);
+ const disc=new T.Mesh(new T.CylinderGeometry(.9,.95,.04,48),new T.MeshStandardMaterial({color:0xe0c3d5,roughness:1}));disc.position.y=-.03;scene.add(disc);
+ const ring=new T.Mesh(new T.TorusGeometry(.92,.006,6,64),new T.MeshBasicMaterial({color:0xfffbfe}));ring.rotation.x=Math.PI/2;ring.position.y=-.005;scene.add(ring);
+ const wardrobe=await loadWardrobe(scene,config),motion=createChoreography(data);let songMoves=null,lastTime=null,lastMode=null,idleStart=performance.now(),refresh=()=>{},lastSnapshot={},width=0,height=0;
+ const v=new T.Vector3();
+ for(const variant of wardrobe.variants)variant.vrm.scene.position.y=variant.restOffset||0;
+ const crew=createCrew(scene,wardrobe);
+ const poseBank=createPoseBank(data,wardrobe.variants);
+ const capturedIndex=new Map(captured?.boneNames.map((n,i)=>[n,i])||[]);
+ const captureReferenceOffset=wardrobe.variants.find(v=>v.spec.id===captured?.referenceVariant)?.restOffset||0;
+ // Bake only the two transition windows. Unwrapping the relative rotation
+ // fixes the 180-degree branch change of per-frame shortest-path crossfades.
+ let capturedFades=[];
+ const fadeQ=new T.Quaternion(),fadeR=new T.Quaternion();
+ function bakeCapturedFades(){
+  capturedFades=[];if(!captured?.matched)return;
+  const master=wardrobe.variants[0],savedYaw=master.vrm.scene.rotation.y;
+  const windows=[{start:captured.t0,duration:captured.entryFade},{start:captured.t0+captured.duration-captured.exitFade,duration:captured.exitFade}];
+  for(const {start,duration} of windows){const rows=[],previousRelative=[],previousAxes=[],count=Math.round(duration*120);
+   if(duration<=0)continue;
+   for(let frame=0;frame<=count;frame++){
+    const t=start+frame*duration/count,stock=motion.sample(t),capture=captured.sample(t),weight=capture.weight;
+    master.vrm.scene.rotation.y=(stock.yaw||0)*(1-weight);poseBank.apply(master,stock);
+    const q=[];for(const e of master.entries){
+     const authored=e.bone.quaternion.clone(),index=capturedIndex.get(e.name),target=index==null?new T.Quaternion():new T.Quaternion().fromArray(capture.q,index*4);
+     const relative=authored.clone().invert().multiply(target).normalize(),prev=previousRelative[e.index];
+     if(prev?prev.dot(relative)<0:relative.w<0)relative.set(-relative.x,-relative.y,-relative.z,-relative.w);
+     previousRelative[e.index]=relative.clone();
+     const length=Math.hypot(relative.x,relative.y,relative.z),axis=length>1e-9?new T.Vector3(relative.x,relative.y,relative.z).multiplyScalar(1/length):(previousAxes[e.index]||new T.Vector3(1,0,0));
+     previousAxes[e.index]=axis;const halfAngle=Math.atan2(length,relative.w),sin=Math.sin(halfAngle*weight);
+     const powered=new T.Quaternion(axis.x*sin,axis.y*sin,axis.z*sin,Math.cos(halfAngle*weight));
+     authored.multiply(powered).normalize().toArray(q,e.index*4);
+    }
+    rows.push({q,bob:(master.vrm.humanoid.getNormalizedBoneNode('hips').position.y-master.baseHips.y)*(1-weight)});
+   }
+   capturedFades.push({start,end:start+duration,rows,fps:count/duration});
+  }
+  master.vrm.scene.rotation.y=savedYaw;master.vrm.scene.updateMatrixWorld(true);
+ }
+ function fadePoseAt(t){const fade=capturedFades.find(f=>t>=f.start&&t<=f.end);if(!fade)return null;const f=T.MathUtils.clamp((t-fade.start)*fade.fps,0,fade.rows.length-1),i=Math.floor(f),a=fade.rows[i],b=fade.rows[Math.min(i+1,fade.rows.length-1)],u=f-i,q=[];for(const e of wardrobe.variants[0].entries){fadeQ.fromArray(a.q,e.index*4).slerp(fadeR.fromArray(b.q,e.index*4),u).toArray(q,e.index*4);}return{q,bob:T.MathUtils.lerp(a.bob,b.bob,u)};}
+ const physicalSlots=['hair','top','bottom','shoes'],presets=config.variants.map((v,i)=>({id:v.id,name:v.name||v.label||(i===0?'Bạc hà':i===1?'Nơ hồng':`Bộ ${i+1}`)}));
+ function equip(slot,index){wardrobe.equip(slot,index);saveWardrobe(wardrobe.outfit);refresh();}const saved=readWardrobe(config);for(const slot of wardrobe.slots)wardrobe.equip(slot,saved[slot]);
+ function resize(){const w=canvas.clientWidth||innerWidth,h=canvas.clientHeight||innerHeight;if(w===width&&h===height)return;width=w;height=h;renderer.setSize(w,h,false);const aspect=w/h,half=1.12;camera.left=-half*aspect;camera.right=half*aspect;camera.top=half;camera.bottom=-half;camera.updateProjectionMatrix();}
+ function draw(t){const started=performance.now();resize();const playing=t!=null&&Number.isFinite(t),clock=playing?t:(performance.now()-idleStart)/1000;const delta=lastTime==null?0:clock-lastTime,seek=lastMode!==playing||delta<0||delta>.15,dt=seek?0:Math.min(.05,Math.max(0,delta));lastTime=clock;lastMode=playing;const menu=document.querySelector('#menu'),menuOpen=menu&&!menu.hidden&&getComputedStyle(menu).display!=='none',crewVisible=playing&&!menuOpen,needed=new Set([0]);if(crewVisible&&wardrobe.variants.length>1)needed.add(1);for(const slot of physicalSlots){const i=wardrobe.variantFor?wardrobe.variantFor(slot,wardrobe.outfit[slot]):wardrobe.outfit[slot];if(Number.isInteger(i))needed.add(i);}const activeVariants=wardrobe.variants.filter((_,i)=>needed.has(i));const sample=motion.sample(playing?clock:clock*.5),capture=playing?captured?.sample(captured.t0===0&&clock<0?0:clock):null,captureWeight=capture?.weight||0,fadePose=captureWeight>0&&captureWeight<1?fadePoseAt(clock):null,sourceRoot=poseBank.root(sample),authoredRootX=.3*Math.tanh(((sample.rootX||0)+sourceRoot[0]*.5)/.3),authoredRootZ=T.MathUtils.clamp((sample.rootZ||0)+sourceRoot[2]*.5,-.13,.13),rootX=T.MathUtils.lerp(authoredRootX,capture?.root[0]||0,captureWeight),rootZ=T.MathUtils.lerp(authoredRootZ,capture?.root[2]||0,captureWeight),rootYaw=(sample.yaw||0)*(1-captureWeight);
+ for(const variant of wardrobe.variants){variant.vrm.scene.position.x=rootX;variant.vrm.scene.position.z=rootZ;variant.vrm.scene.rotation.y=rootYaw;}
+ for(const variant of activeVariants){
+  // Captured poses are source-time stabilized; stock power and anatomy guards
+  // must not overwrite the actual choreography inside the captured interval.
+  if(fadePose){variant.vrm.humanoid.getNormalizedBoneNode('hips').position.copy(variant.baseHips);variant.vrm.humanoid.getNormalizedBoneNode('hips').position.y+=fadePose.bob;for(const e of variant.entries)e.bone.quaternion.fromArray(fadePose.q,e.index*4);}
+  else if(captureWeight===1){variant.vrm.humanoid.getNormalizedBoneNode('hips').position.copy(variant.baseHips);for(const e of variant.entries){const index=capturedIndex.get(e.name);if(index==null)e.bone.quaternion.identity();else e.bone.quaternion.fromArray(capture.q,index*4);}}
+  else poseBank.apply(variant,sample);
+  variant.vrm.humanoid.update();variant.vrm.scene.updateMatrixWorld(true);
+ }
+ const capturedY=(capture?.root[1]||0)-captureReferenceOffset;let groundedY=capturedY;
+ if(captureWeight<1){let low=Infinity;for(const side of ['left','right']){wardrobe.master.humanoid.getRawBoneNode(side+'Foot').getWorldPosition(v);low=Math.min(low,v.y);}const authoredY=wardrobe.master.scene.position.y+.075-low;groundedY=T.MathUtils.lerp(authoredY,capturedY,captureWeight);}
+ for(let i=0;i<wardrobe.variants.length;i++){const variant=wardrobe.variants[i],vrm=variant.vrm;vrm.scene.position.y=groundedY+(variant.restOffset||0);const active=needed.has(i);if(active){vrm.scene.updateMatrixWorld(true);if(seek||!variant.wasActive)vrm.springBoneManager?.reset();applyFaceExpression(vrm,wardrobe.options.face[wardrobe.outfit.face],clock);vrm.update(dt);}variant.wasActive=active;}
+ const compact=menuOpen&&width<1000;camera.zoom=compact?.55:1;camera.updateProjectionMatrix();camera.position.x=menuOpen&&width>=1000?.47:0;camera.position.y=compact?-.4:.75;camera.lookAt(camera.position.x,camera.position.y,0);crew.update(crewVisible,playing?t:null,width/height);renderer.render(scene,camera);
+ lastSnapshot={time:playing?t:null,motionSource:captureWeight===1?'captured':captureWeight>0?'blend':'authored',captured:{asset:captureAsset,available:!!captured,matched:captured?.matched||false,active:captureWeight>0,weight:captureWeight,source:'cac-center',transition:'continuous-relative-120hz',sourceTime:capture?.sourceTime??null,localTime:capture?.localTime??null,index:capture?.index??null,next:capture?.next??null,alpha:capture?.alpha??null,t0:captured?.t0??null,duration:captured?.duration??null,entryFade:captured?.entryFade??null,exitFade:captured?.exitFade??null},activeVariants:[...needed].sort((a,b)=>a-b),source:captureWeight>0?capture.localTime:sample.layers[0]?.time,layers:[...sample.layers.map(l=>({...l,weight:l.weight*(1-captureWeight)})).filter(l=>l.weight>0),...(captureWeight>0?[{clip:'cac-center',time:capture.localTime,weight:captureWeight}]:[])],clipIds:captureWeight===1?['cac-center']:captureWeight>0?['cac-center',...sample.layers.map(l=>l.clip)]:sample.layers.map(l=>l.clip),mode:sample.mode,phraseId:sample.phraseId,energy:sample.energy,amplitude:sample.amplitude,rootX,rootZ,sourceRoot,speed:sample.phaseRate,phaseRate:sample.phaseRate,rootVelocity:sample.rootVelocity,beatPhase:sample.beatPhase,rootPosition:[rootX,wardrobe.master.scene.position.y,rootZ],yaw:rootYaw,seek,drawMs:performance.now()-started,triangles:renderer.info.render.triangles,calls:renderer.info.render.calls};
+ }
+ function snapshot(){const bones={};for(const name of ['hips','spine','chest','neck','head','leftShoulder','rightShoulder','leftUpperArm','rightUpperArm','leftLowerArm','rightLowerArm','leftHand','rightHand','leftUpperLeg','rightUpperLeg','leftLowerLeg','rightLowerLeg','leftFoot','rightFoot']){const b=wardrobe.master.humanoid.getRawBoneNode(name);if(!b)continue;b.getWorldPosition(v);const world=v.toArray(),screen=v.clone().project(camera);bones[name]={world,screen:[(screen.x+1)*width/2,(1-screen.y)*height/2],quaternion:b.quaternion.toArray()};}return{...lastSnapshot,crew:crew.diagnostics(),selection:{...wardrobe.outfit},bones,finite:Object.values(bones).every(b=>b.world.every(Number.isFinite)),face:{id:wardrobe.options.face[wardrobe.outfit.face].id,values:wardrobe.options.face[wardrobe.outfit.face].values},parts:wardrobe.variants.flatMap((v,i)=>Object.entries(v.parts).flatMap(([slot,ms])=>ms.map(m=>({slot,variant:i,visible:m.visible,meshId:m.uuid,geometryId:m.geometry.uuid,indexCount:m.geometry.index?.count||0})))).concat((wardrobe.styleParts||[]).map(p=>({slot:p.slot,variant:p.variant,donor:p.donor,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count}))).concat((wardrobe.accessoryParts||[]).map(p=>({slot:p.slot,variant:p.variant,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count}))),accessories:(wardrobe.accessoryParts||[]).map(p=>({slot:p.slot,variant:p.variant,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count})),audit:wardrobe.audit};}
+ const api={draw,equip,snapshot,setSong(moves,chart){songMoves=moves;motion.setSong(moves,chart);captured?.setSong(moves,chart);bakeCapturedFades();lastTime=null;idleStart=performance.now();},outfits:presets,get outfit(){const i=presets.findIndex((_,i)=>physicalSlots.every(s=>wardrobe.variantFor(s,wardrobe.outfit[s])===i&&!wardrobe.options[s][wardrobe.outfit[s]].style));return i>=0&&!(wardrobe.outfit.accessory>0)?presets[i].id:'mixed';},setOutfit(id){const i=presets.findIndex(p=>p.id===id);if(i>=0){physicalSlots.forEach(s=>{const choice=wardrobe.options?.[s]?.findIndex(o=>o.variant===i)??i;if(choice>=0)equip(s,choice);});if(wardrobe.slots.includes('accessory'))equip('accessory',0);}},mountWardrobe(container){refresh=mountWardrobe(container,config,equip,()=>wardrobe.outfit);},test:{wardrobe,camera,scene,renderer,motion,poseBank,crew,captured}};
+ // Warm both crew costumes while the loading state is still visible. Otherwise
+ // their first shader compilation can stall the first audible dance beat.
+ draw(null);crew.update(true,0,width/height);
+ if(renderer.compileAsync)await renderer.compileAsync(scene,camera);else renderer.compile(scene,camera);
+ renderer.render(scene,camera);crew.update(false,null,width/height);draw(null);
+ return api;
+}
