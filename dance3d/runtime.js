@@ -1,13 +1,13 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=0911.2053';
-import {createSongBackgrounds} from './song-backgrounds.js?v=0911.2053';
-import {loadWardrobe} from './wardrobe.js?v=0911.2053';
-import {createChoreography} from './choreography.js?v=0911.2053';
-import {createPoseBank} from './pose-bank.js?v=0911.2053';
-import {applyFaceExpression} from './face-expressions.js?v=0911.2053';
-import {createCrew} from './crew.js?v=0911.2053';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=0911.2053';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=0911.2053';
+import {createPerformanceLibrary} from './performance-library.js?v=0911.2312';
+import {createSongBackgrounds} from './song-backgrounds.js?v=0911.2312';
+import {loadWardrobe} from './wardrobe.js?v=0911.2312';
+import {createChoreography} from './choreography.js?v=0911.2312';
+import {createPoseBank} from './pose-bank.js?v=0911.2312';
+import {applyFaceExpression} from './face-expressions.js?v=0911.2312';
+import {createCrew} from './crew.js?v=0911.2312';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=0911.2312';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=0911.2312';
 export async function createRuntime(canvas,bundle){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
@@ -77,7 +77,10 @@ export async function createRuntime(canvas,bundle){
   Promise.resolve(job).then(put).catch(e=>console.warn('sew',e)).finally(()=>sewing(false));}
  function resize(){const w=canvas.clientWidth||innerWidth,h=canvas.clientHeight||innerHeight;if(w===width&&h===height)return;width=w;height=h;renderer.setSize(w,h,false);backdrop.resize(w,h);const aspect=w/h,half=1.12;camera.left=-half*aspect;camera.right=half*aspect;camera.top=half;camera.bottom=-half;camera.updateProjectionMatrix();}
   function crewSelection(s){const out={hair:s.hair??1};for(const k of ['hair','top','bottom','shoes','accessory']){if((k==='hair'||k==='accessory')&&!s.selectionIds?.[k])continue;const i=wardrobe.options[k]?.findIndex(o=>o.id===s.selectionIds?.[k]);if(!(i>=0))return null;out[k]=i;}return out;}
- function themedCrew(entry,chart){const slug=chart?.slug||Object.keys(raw.performances||{}).find(k=>raw.performances[k]===entry);const pool=(config.crewOutfits?.[slug]||[]).map(s=>({s,sel:crewSelection(s)})).filter(x=>x.sel);if(!entry?.crew?.length||!pool.length)return entry;
+ function themedCrew(entry,chart){const slug=chart?.slug||Object.keys(raw.performances||{}).find(k=>raw.performances[k]===entry);
+  // Trio songs (Huntrix): crewOutfits[slug] = {mode:'complement', sets:[...]} -> the backups wear the sets the child is NOT
+  // wearing (left backup first). If she wears none of them, the first set (the group's leader) is left out.
+  {const spec=config.crewOutfits?.[slug];if(spec&&!Array.isArray(spec)&&spec.mode==='complement'&&entry?.crew?.length){const sets=(spec.sets||[]).map(id=>(config.sets||[]).find(x=>x.id===id)).filter(Boolean),cur=wardrobe.outfit||{},wearing=sets.find(x=>['top','bottom'].every(k=>x.selection?.[k]===cur[k])),rest=sets.filter(x=>x!==(wearing||sets[0]));if(rest.length)return {...entry,crew:entry.crew.map((c,i)=>({...c,variant:1,outfit:{...rest[i%rest.length].selection}}))};}}const pool=(Array.isArray(config.crewOutfits?.[slug])?config.crewOutfits[slug]:[]).map(s=>({s,sel:crewSelection(s)})).filter(x=>x.sel);if(!entry?.crew?.length||!pool.length)return entry;
   for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
   // Boy slots get boy looks and girl slots girl looks (role, default girl); a role without looks borrows from the whole pool.
   const byRole=new Map(),used=new Map();for(const x of pool){const r=x.s.role||'girl';if(!byRole.has(r))byRole.set(r,[]);byRole.get(r).push(x);}

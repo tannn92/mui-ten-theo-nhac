@@ -1,11 +1,12 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=0911.2053';
-import {hideNativeCrewSafety} from './crew-styles.js?v=0911.2053';
-import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=0911.2053';
-import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=0911.2053';
-import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=0911.2053';
-import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=0911.2053';
-import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=0911.2053';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=0911.2312';
+import {hideNativeCrewSafety} from './crew-styles.js?v=0911.2312';
+import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=0911.2312';
+import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=0911.2312';
+import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=0911.2312';
+import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=0911.2312';
+import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=0911.2312';
+import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=0911.2312';
 
 // Four background performers reuse the live A/B skeletons, geometry, materials
 // and morph arrays. Detached binding applies a crew transform AFTER skinning;
@@ -51,7 +52,7 @@ export function createCrew(scene,wardrobe){
    const source=wardrobe.variants[spec.variant??1];if(!source)throw Error('Crew donor is missing');
    const rig=createIndependentCrewRig(source);let selected=source.meshes.filter(m=>m.isSkinnedMesh&&!m.userData.requiredBottomStyle);
    if(spec.outfit){selected=[...source.parts.face,...source.parts.upper,...source.parts.lower,...source.parts.feet];for(const slot of ['hair','top','bottom','shoes']){const choice=spec.outfit[slot]??(spec.variant??1),option=wardrobe.options[slot][choice];if(!option||wardrobe.variants[option.variant]!==source)throw Error('Independent crew outfit must use its donor rig');selected.push(...(wardrobe.styles.meshesFor(slot,choice)||source.parts[slot]));}const acc=spec.outfit.accessory,accOpt=acc!=null?wardrobe.options.accessory?.[acc]:null;if(accOpt?.style)selected.push(...(wardrobe.styles.meshesFor('accessory',acc)||[]));}
-   if(spec.outfit&&wardrobe.options.bottom[spec.outfit.bottom]?.style?.startsWith('huntrix-'))selected=selected.filter(m=>!m.userData.excludeHuntrix);if(spec.outfit){const bottomOption=wardrobe.options.bottom[spec.outfit.bottom];selected=selected.filter(m=>!hideNativeCrewSafety(m,bottomOption)&&!hideNativeDolceSafety(m,bottomOption)&&!hideNativeGirlXinhSafety(m,bottomOption)&&!hideNativeGirlXinhBoySafety(m,bottomOption)&&!hideNativeTaiSinhSafety(m,bottomOption)&&!hideNativeTaiSinhCrewSafety(m,bottomOption));}rig.setMeshes(selected);
+   if(spec.outfit&&wardrobe.options.bottom[spec.outfit.bottom]?.style?.startsWith('huntrix-'))selected=selected.filter(m=>!m.userData.excludeHuntrix);if(spec.outfit){const bottomOption=wardrobe.options.bottom[spec.outfit.bottom];selected=selected.filter(m=>!hideNativeCrewSafety(m,bottomOption)&&!hideNativeDolceSafety(m,bottomOption)&&!hideNativeGirlXinhSafety(m,bottomOption)&&!hideNativeGirlXinhBoySafety(m,bottomOption)&&!hideNativeTaiSinhSafety(m,bottomOption)&&!hideNativeTaiSinhCrewSafety(m,bottomOption)&&!hideNativeHuntrixTrioSafety(m,bottomOption));}rig.setMeshes(selected);
    // Same as the shared crew: small background figures skip the MToon outline pass (half the draw calls).
    for(const m of rig.meshes)if(m.visible&&Array.isArray(m.material)&&m.material.length===2&&m.material[1].isOutline)m.material=m.material[0];
    rig.setMotion(tracks[i],null,chart);if(spec.rootScale)rig.setRootScale(spec.rootScale);rig.setMirror(!!spec.mirror);group.add(rig.root);
