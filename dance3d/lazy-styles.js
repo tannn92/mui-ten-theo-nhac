@@ -1,15 +1,15 @@
-import {buildTaiSinhHair} from './tai-sinh-hair.js?v=0911.2012';
-import {buildTaiSinhStyles} from './tai-sinh-styles.js?v=0911.2012';
-import {buildGirlXinhBoyStyles} from './girl-xinh-boys-styles.js?v=0911.2012';
-import {buildGirlXinhHair} from './girl-xinh-hair.js?v=0911.2012';
-import {buildGirlXinhLeadStyles} from './girl-xinh-lead.js?v=0911.2012';
-import {buildDolceCrewHair} from './dolce-hair.js?v=0911.2012';
-import {buildDolceCrewStyles} from './dolce-crew-styles.js?v=0911.2012';
-import {buildHatMuaCrewHair} from './crew-hair.js?v=0911.2012';
-import {buildHatMuaCrewStyles} from './crew-styles.js?v=0911.2012';
-import {buildClothingStyles} from './clothing-styles.js?v=0911.2012';
-import {buildHuntrixStyles} from './huntrix-styles.js?v=0911.2012';
-import {buildHatMuaStyles} from './hat-mua-styles.js?v=0911.2012';
+import {buildTaiSinhHair} from './tai-sinh-hair.js?v=0911.2025';
+import {buildTaiSinhStyles} from './tai-sinh-styles.js?v=0911.2025';
+import {buildGirlXinhBoyStyles} from './girl-xinh-boys-styles.js?v=0911.2025';
+import {buildGirlXinhHair} from './girl-xinh-hair.js?v=0911.2025';
+import {buildGirlXinhLeadStyles} from './girl-xinh-lead.js?v=0911.2025';
+import {buildDolceCrewHair} from './dolce-hair.js?v=0911.2025';
+import {buildDolceCrewStyles} from './dolce-crew-styles.js?v=0911.2025';
+import {buildHatMuaCrewHair} from './crew-hair.js?v=0911.2025';
+import {buildHatMuaCrewStyles} from './crew-styles.js?v=0911.2025';
+import {buildClothingStyles} from './clothing-styles.js?v=0911.2025';
+import {buildHuntrixStyles} from './huntrix-styles.js?v=0911.2025';
+import {buildHatMuaStyles} from './hat-mua-styles.js?v=0911.2025';
 
 // Every cooperative step is a synchronous rest-pose transaction. The renderer
 // always sees the live pose, never a donor left at rest across an event-loop yield.
