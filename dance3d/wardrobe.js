@@ -1,12 +1,10 @@
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {VRMLoaderPlugin} from '@pixiv/three-vrm';
-import {createAccessories} from './accessories.js?v=0911.1222';
-import {getWardrobeOptions,wardrobeDefaults} from './wardrobe-ui.js?v=0911.1222';
-import {addSkirtShorts,limitSkirtSprings} from './skirt-safety.js?v=0911.1222';
-import {createClothingStyles} from './clothing-styles.js?v=0911.1222';
-import {createHuntrixStyles} from './huntrix-styles.js?v=0911.1222';
-import {createHatMuaStyles} from './hat-mua-styles.js?v=0911.1222';
+import {createAccessories} from './accessories.js?v=0911.1341';
+import {getWardrobeOptions,wardrobeDefaults} from './wardrobe-ui.js?v=0911.1341';
+import {addSkirtShorts,limitSkirtSprings} from './skirt-safety.js?v=0911.1341';
+import {createLazyStyles} from './lazy-styles.js?v=0911.1341';
 
 const physicalSlots=['hair','top','bottom','shoes'];
 const vector=new T.Vector3();
@@ -103,7 +101,8 @@ export async function loadWardrobe(scene,config,onProgress=()=>{}){
  }
  for(const variant of variants){if(variant.spec.id==='rose')addSkirtShorts(variant);else if(variant.spec.id==='street')addSkirtShorts(variant,'dolce-pants');}
  if(audit.unknown.length)throw Error('Chưa phân loại material: '+audit.unknown.map(x=>x.material).join(', '));
- const outfit=wardrobeDefaults(config),accessories=createAccessories(master.vrm,options.accessory.map(o=>o.style?.startsWith('hat-mua-')?{...o,id:'none'}:o)),legacy=createClothingStyles(variants,Object.fromEntries(Object.entries(options).map(([k,v])=>[k,v.map(o=>(o.style?.startsWith('huntrix-')||o.style?.startsWith('hat-mua-'))?{...o,style:null}:o)]))),extra=createHuntrixStyles(variants,options),hm=createHatMuaStyles(variants,options),styles={parts:[...legacy.parts,...extra.parts,...hm.parts],records:new Map([...legacy.records,...extra.records,...hm.records]),meshesFor:(s,i)=>hm.meshesFor(s,i)||extra.meshesFor(s,i)||legacy.meshesFor(s,i),hide(){legacy.hide();extra.hide();hm.hide();}};
+ const outfit=wardrobeDefaults(config),accessories=createAccessories(master.vrm,options.accessory.map(o=>o.style?.startsWith('hat-mua-')?{...o,id:'none'}:o)),styles=createLazyStyles(variants,options);
+ styles.ensureOutfit(outfit);
  const variantFor=(slot,choice=outfit[slot])=>options[slot]?.[choice]?.variant;
  const meshesFor=(slot,choice=outfit[slot])=>slot==='face'?master.parts.face:styles.meshesFor(slot,choice)||variants[variantFor(slot,choice)]?.parts[slot]||[];
  function updateVisibility(){
@@ -117,7 +116,7 @@ export async function loadWardrobe(scene,config,onProgress=()=>{}){
  });
  for(const slot of [...physicalSlots,'accessory'])styles.meshesFor(slot,outfit[slot])?.forEach(mesh=>mesh.visible=true);
  }
- function equip(slot,index){if(!slots.includes(slot)||!Number.isInteger(index)||index<0||index>=counts[slot])throw Error('Món đồ không tồn tại');outfit[slot]=index;updateVisibility();accessories.equip(outfit.accessory,outfit.hair);}
+ function equip(slot,index){if(!slots.includes(slot)||!Number.isInteger(index)||index<0||index>=counts[slot])throw Error('Món đồ không tồn tại');styles.ensureStyle(slot,index);outfit[slot]=index;updateVisibility();accessories.equip(outfit.accessory,outfit.hair);}
  updateVisibility();accessories.equip(outfit.accessory,outfit.hair);
- return {options,counts,defaults:wardrobeDefaults(config),variantFor,meshesFor,styles,styleParts:styles.parts,accessories,accessoryParts:accessories.parts,variants,master:master.vrm,outfit,audit,footRestY,equip,slots,snapshot(){return{outfit:{...outfit},face:master.parts.face.map(m=>m.uuid),active:Object.fromEntries(slots.map(k=>[k,k==='accessory'?(styles.meshesFor(k,outfit[k])||accessories.choices[outfit.accessory].meshes).map(m=>m.uuid):meshesFor(k).map(m=>m.uuid)])),body:Object.fromEntries(['upper','lower','feet'].map(k=>[k,variants.flatMap(v=>v.parts[k].filter(m=>m.visible).map(m=>m.uuid))])),audit};}};
+ return {isStyleReady:styles.isStyleReady,isOutfitReady:styles.isOutfitReady,prewarmOutfits:styles.prewarmOutfits,setBackgroundPaused:styles.setBackgroundPaused,ensureStyle:styles.ensureStyle,ensureOutfit:styles.ensureOutfit,prepareOutfit:styles.prepareOutfit,options,counts,defaults:wardrobeDefaults(config),variantFor,meshesFor,styles,styleParts:styles.parts,accessories,accessoryParts:accessories.parts,variants,master:master.vrm,outfit,audit,footRestY,equip,slots,snapshot(){return{outfit:{...outfit},face:master.parts.face.map(m=>m.uuid),active:Object.fromEntries(slots.map(k=>[k,k==='accessory'?(styles.meshesFor(k,outfit[k])||accessories.choices[outfit.accessory].meshes).map(m=>m.uuid):meshesFor(k).map(m=>m.uuid)])),body:Object.fromEntries(['upper','lower','feet'].map(k=>[k,variants.flatMap(v=>v.parts[k].filter(m=>m.visible).map(m=>m.uuid))])),audit};}};
 }

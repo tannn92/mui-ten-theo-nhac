@@ -1,13 +1,13 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=0911.1222';
-import {createSongBackgrounds} from './song-backgrounds.js?v=0911.1222';
-import {loadWardrobe} from './wardrobe.js?v=0911.1222';
-import {createChoreography} from './choreography.js?v=0911.1222';
-import {createPoseBank} from './pose-bank.js?v=0911.1222';
-import {applyFaceExpression} from './face-expressions.js?v=0911.1222';
-import {createCrew} from './crew.js?v=0911.1222';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=0911.1222';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=0911.1222';
+import {createPerformanceLibrary} from './performance-library.js?v=0911.1341';
+import {createSongBackgrounds} from './song-backgrounds.js?v=0911.1341';
+import {loadWardrobe} from './wardrobe.js?v=0911.1341';
+import {createChoreography} from './choreography.js?v=0911.1341';
+import {createPoseBank} from './pose-bank.js?v=0911.1341';
+import {applyFaceExpression} from './face-expressions.js?v=0911.1341';
+import {createCrew} from './crew.js?v=0911.1341';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=0911.1341';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=0911.1341';
 export async function createRuntime(canvas,bundle){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
@@ -60,9 +60,24 @@ export async function createRuntime(canvas,bundle){
  }
  function fadePoseAt(t){const fade=capturedFades.find(f=>t>=f.start&&t<=f.end);if(!fade)return null;const f=T.MathUtils.clamp((t-fade.start)*fade.fps,0,fade.rows.length-1),i=Math.floor(f),a=fade.rows[i],b=fade.rows[Math.min(i+1,fade.rows.length-1)],u=f-i,q=[];for(const e of wardrobe.variants[0].entries){fadeQ.fromArray(a.q,e.index*4).slerp(fadeR.fromArray(b.q,e.index*4),u).toArray(q,e.index*4);}return{q,bob:T.MathUtils.lerp(a.bob,b.bob,u)};}
  const physicalSlots=['hair','top','bottom','shoes'],presets=config.variants.map((v,i)=>({id:v.id,name:v.name||v.label||(i===0?'Bạc hà':i===1?'Nơ hồng':`Bộ ${i+1}`)}));
- function equip(slot,index){wardrobe.equip(slot,index);saveWardrobe(wardrobe.outfit);refresh();}const saved=readWardrobe(config);for(const slot of wardrobe.slots)wardrobe.equip(slot,saved[slot]);
+ function equip(slot,index){wardrobe.equip(slot,index);saveWardrobe(wardrobe.outfit);refresh();}
+ // Wardrobe taps: a garment that was never worn is sewn on first use (up to ~2 s of CPU). Show "Đang may đồ…" first and
+ // let it paint, then build. The API equip above stays synchronous for tools and tests.
+ let sewingEl=null,sewingCount=0;
+ function sewing(on){sewingCount=Math.max(0,sewingCount+(on?1:-1));if(!sewingEl){sewingEl=document.createElement('div');sewingEl.textContent='🧵 Đang may đồ…';sewingEl.setAttribute('role','status');sewingEl.style.cssText='position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:60;padding:10px 18px;border-radius:999px;background:#fff;color:#c9275f;font:700 18px ui-rounded,system-ui,sans-serif;box-shadow:0 4px 16px rgba(80,20,60,.25);pointer-events:none;transition:opacity .2s';document.body.appendChild(sewingEl);}sewingEl.style.opacity=sewingCount?'1':'0';}
+ // Wardrobe taps arrive slot by slot (a preset set = several calls in one tick): batch them, sew the cold pieces with
+ // interactive priority, then put the whole batch on at once. Latest selection per slot wins.
+ let uiBatch=null,uiBatchNo=0;const uiSlotNo={};
+ function equipFromUI(slot,index){if(!uiBatch){uiBatch={};queueMicrotask(flushUIBatch);}uiBatch[slot]=index;}
+ function flushUIBatch(){const sel=uiBatch;uiBatch=null;const no=++uiBatchNo;for(const s in sel)uiSlotNo[s]=no;
+  const put=()=>{for(const [s,i] of Object.entries(sel))if(uiSlotNo[s]===no)equip(s,i);};
+  const cold=Object.entries(sel).some(([s,i])=>wardrobe.isStyleReady?!wardrobe.isStyleReady(s,i):!!(wardrobe.options?.[s]?.[i]?.style&&!wardrobe.styles?.meshesFor?.(s,i)));
+  if(!cold)return put();
+  sewing(true);const job=wardrobe.prepareOutfit?wardrobe.prepareOutfit(sel,{priority:100}):new Promise(r=>requestAnimationFrame(()=>setTimeout(r,30)));
+  Promise.resolve(job).then(put).catch(e=>console.warn('sew',e)).finally(()=>sewing(false));}
  function resize(){const w=canvas.clientWidth||innerWidth,h=canvas.clientHeight||innerHeight;if(w===width&&h===height)return;width=w;height=h;renderer.setSize(w,h,false);backdrop.resize(w,h);const aspect=w/h,half=1.12;camera.left=-half*aspect;camera.right=half*aspect;camera.top=half;camera.bottom=-half;camera.updateProjectionMatrix();}
- function draw(t){const started=performance.now();resize();const playing=t!=null&&Number.isFinite(t),clock=playing?t:(performance.now()-idleStart)/1000;const delta=lastTime==null?0:clock-lastTime,seek=lastMode!==playing||delta<0||delta>.15,dt=seek?0:Math.min(.05,Math.max(0,delta));lastTime=clock;lastMode=playing;const menu=document.querySelector('#menu'),menuOpen=menu&&!menu.hidden&&!menu.classList.contains('hide')&&menu.style.display!=='none',crewVisible=playing&&!menuOpen,needed=new Set([0]);if(crewVisible)for(const i of crew.sharedVariants())needed.add(i);for(const slot of physicalSlots){const i=wardrobe.variantFor?wardrobe.variantFor(slot,wardrobe.outfit[slot]):wardrobe.outfit[slot];if(Number.isInteger(i))needed.add(i);}const activeVariants=wardrobe.variants.filter((_,i)=>needed.has(i));const sample=motion.sample(playing?clock:clock*.5),capture=playing?captured?.sample(captured.t0===0&&clock<0?0:clock):null,captureWeight=capture?.weight||0,fadePose=captureWeight>0&&captureWeight<1?fadePoseAt(clock):null,sourceRoot=poseBank.root(sample),authoredRootX=.3*Math.tanh(((sample.rootX||0)+sourceRoot[0]*.5)/.3),authoredRootZ=T.MathUtils.clamp((sample.rootZ||0)+sourceRoot[2]*.5,-.13,.13),rootX=T.MathUtils.lerp(authoredRootX,capture?.root[0]||0,captureWeight),rootZ=T.MathUtils.lerp(authoredRootZ,capture?.root[2]||0,captureWeight),rootYaw=(sample.yaw||0)*(1-captureWeight);
+ let bgPlaying=null;
+ function draw(t){const started=performance.now();resize();const playing=t!=null&&Number.isFinite(t);if(playing!==bgPlaying){bgPlaying=playing;try{wardrobe.setBackgroundPaused?.(playing);}catch(e){}}const clock=playing?t:(performance.now()-idleStart)/1000;const delta=lastTime==null?0:clock-lastTime,seek=lastMode!==playing||delta<0||delta>.15,dt=seek?0:Math.min(.05,Math.max(0,delta));lastTime=clock;lastMode=playing;const menu=document.querySelector('#menu'),menuOpen=menu&&!menu.hidden&&!menu.classList.contains('hide')&&menu.style.display!=='none',crewVisible=playing&&!menuOpen,needed=new Set([0]);if(crewVisible)for(const i of crew.sharedVariants())needed.add(i);for(const slot of physicalSlots){const i=wardrobe.variantFor?wardrobe.variantFor(slot,wardrobe.outfit[slot]):wardrobe.outfit[slot];if(Number.isInteger(i))needed.add(i);}const activeVariants=wardrobe.variants.filter((_,i)=>needed.has(i));const sample=motion.sample(playing?clock:clock*.5),capture=playing?captured?.sample(captured.t0===0&&clock<0?0:clock):null,captureWeight=capture?.weight||0,fadePose=captureWeight>0&&captureWeight<1?fadePoseAt(clock):null,sourceRoot=poseBank.root(sample),authoredRootX=.3*Math.tanh(((sample.rootX||0)+sourceRoot[0]*.5)/.3),authoredRootZ=T.MathUtils.clamp((sample.rootZ||0)+sourceRoot[2]*.5,-.13,.13),rootX=T.MathUtils.lerp(authoredRootX,capture?.root[0]||0,captureWeight),rootZ=T.MathUtils.lerp(authoredRootZ,capture?.root[2]||0,captureWeight),rootYaw=(sample.yaw||0)*(1-captureWeight);
  for(const variant of wardrobe.variants){variant.vrm.scene.position.x=rootX;variant.vrm.scene.position.z=rootZ;variant.vrm.scene.rotation.y=rootYaw;}
  for(const variant of activeVariants){
   // Captured poses are source-time stabilized; stock power and anatomy guards
@@ -80,13 +95,16 @@ export async function createRuntime(canvas,bundle){
  }
  function snapshot(){const bones={};for(const name of ['hips','spine','chest','neck','head','leftShoulder','rightShoulder','leftUpperArm','rightUpperArm','leftLowerArm','rightLowerArm','leftHand','rightHand','leftUpperLeg','rightUpperLeg','leftLowerLeg','rightLowerLeg','leftFoot','rightFoot']){const b=wardrobe.master.humanoid.getRawBoneNode(name);if(!b)continue;b.getWorldPosition(v);const world=v.toArray(),screen=v.clone().project(camera);bones[name]={world,screen:[(screen.x+1)*width/2,(1-screen.y)*height/2],quaternion:b.quaternion.toArray()};}return{...lastSnapshot,backdrop:backdrop.diagnostics(),crew:crew.diagnostics(),selection:{...wardrobe.outfit},bones,finite:Object.values(bones).every(b=>b.world.every(Number.isFinite)),face:{id:wardrobe.options.face[wardrobe.outfit.face].id,values:wardrobe.options.face[wardrobe.outfit.face].values},parts:wardrobe.variants.flatMap((v,i)=>Object.entries(v.parts).flatMap(([slot,ms])=>ms.map(m=>({slot,variant:i,visible:m.visible,meshId:m.uuid,geometryId:m.geometry.uuid,indexCount:m.geometry.index?.count||0})))).concat((wardrobe.styleParts||[]).map(p=>({slot:p.slot,variant:p.variant,donor:p.donor,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count}))).concat((wardrobe.accessoryParts||[]).map(p=>({slot:p.slot,variant:p.variant,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count}))),accessories:(wardrobe.accessoryParts||[]).map(p=>({slot:p.slot,variant:p.variant,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count})),audit:wardrobe.audit};}
  const api={draw,equip,snapshot,async setSong(moves,chart){const request=++songRequest,entry=beautyDemo?null:performances.find(chart),loaded=entry?await performances.load(entry):null;if(request!==songRequest)return false;
+ // Backups wear theme outfits that are built on demand (lazy wardrobe): sew them before the crew rigs clone the meshes.
+ for(const c of entry?.crew||[])if(c.outfit)await wardrobe.prepareOutfit(c.outfit);if(request!==songRequest)return false;
  captured=loaded?.lead?createCapturedMotion(loaded.lead):defaultCaptured;captureAsset=loaded?.lead?entry.lead:defaultCaptureAsset;
  capturedIndex=new Map(captured?.boneNames.map((n,i)=>[n,i])||[]);captureReferenceOffset=wardrobe.variants.find(v=>v.spec.id===captured?.referenceVariant)?.restOffset||0;
- songMoves=moves;backdrop.setSong(chart);motion.setSong(moves,chart);const matched=captured?.setSong(moves,chart);if(loaded?.lead&&!matched)throw Error('Lead track song identity mismatch');crew.setSong(chart,loaded?.entry,loaded?.crewData);bakeCapturedFades();lastTime=null;idleStart=performance.now();return true;},outfits:presets,get outfit(){const i=presets.findIndex((_,i)=>physicalSlots.every(s=>wardrobe.variantFor(s,wardrobe.outfit[s])===i&&!wardrobe.options[s][wardrobe.outfit[s]].style));return i>=0&&!(wardrobe.outfit.accessory>0)?presets[i].id:'mixed';},setOutfit(id){const i=presets.findIndex(p=>p.id===id);if(i>=0){physicalSlots.forEach(s=>{const choice=wardrobe.options?.[s]?.findIndex(o=>o.variant===i)??i;if(choice>=0)equip(s,choice);});if(wardrobe.slots.includes('accessory'))equip('accessory',0);}},mountWardrobe(container){refresh=mountWardrobe(container,config,equip,()=>wardrobe.outfit);},test:{wardrobe,camera,scene,renderer,motion,poseBank,crew,captured}};
+ songMoves=moves;backdrop.setSong(chart);motion.setSong(moves,chart);const matched=captured?.setSong(moves,chart);if(loaded?.lead&&!matched)throw Error('Lead track song identity mismatch');crew.setSong(chart,loaded?.entry,loaded?.crewData);bakeCapturedFades();lastTime=null;idleStart=performance.now();return true;},outfits:presets,get outfit(){const i=presets.findIndex((_,i)=>physicalSlots.every(s=>wardrobe.variantFor(s,wardrobe.outfit[s])===i&&!wardrobe.options[s][wardrobe.outfit[s]].style));return i>=0&&!(wardrobe.outfit.accessory>0)?presets[i].id:'mixed';},setOutfit(id){const i=presets.findIndex(p=>p.id===id);if(i>=0){physicalSlots.forEach(s=>{const choice=wardrobe.options?.[s]?.findIndex(o=>o.variant===i)??i;if(choice>=0)equip(s,choice);});if(wardrobe.slots.includes('accessory'))equip('accessory',0);}},mountWardrobe(container){refresh=mountWardrobe(container,config,equipFromUI,()=>wardrobe.outfit);},test:{wardrobe,camera,scene,renderer,motion,poseBank,crew,captured}};
  // Warm both crew costumes while the loading state is still visible. Otherwise
  // their first shader compilation can stall the first audible dance beat.
  draw(null);crew.update(true,0,width/height);
  if(renderer.compileAsync)await renderer.compileAsync(scene,camera);else renderer.compile(scene,camera);
  renderer.render(scene,camera);crew.update(false,null,width/height);draw(null);
+ setTimeout(()=>{try{wardrobe.prewarmOutfits?.((config.sets||[]).map(x=>x.selection));}catch(e){console.warn('prewarm',e);}},2500);
  return api;
 }

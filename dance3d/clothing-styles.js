@@ -1,8 +1,8 @@
 import * as T from 'three';
 
 // Extra garments use the existing donor skeleton and its skin mask. All meshes
-// are made once at load time; equipping only changes visibility.
-export function createClothingStyles(variants,options){
+// are made once per option; the cooperative generator supports deferred construction.
+export function* buildClothingStyles(variants,options){
  const records=new Map(),parts=[],V=()=>new T.Vector3();
  const ramp=new T.DataTexture(new Uint8Array([125,185,235,255]),4,1,T.RedFormat);ramp.needsUpdate=true;ramp.minFilter=ramp.magFilter=T.NearestFilter;
  const mat=color=>new T.MeshToonMaterial({color,gradientMap:ramp,side:T.DoubleSide});
@@ -84,11 +84,11 @@ export function createClothingStyles(variants,options){
  }
  // Broad organza flounces: independent surfaces, without the donor skirt's
  // printed lace or long A-line silhouette. Keep its spring-bone skin weights.
- function dolceFlounces(record,donor,position){
+ function* dolceFlounces(record,donor,position){
   const source=donor.parts.bottom[0],inv=source.matrixWorld.clone().invert(),hip=position('hips').applyMatrix4(inv),tris=triangles(source);
   for(let layer=0;layer<3;layer++){
    const positions=[],samples=[],indices=[],cols=96,rows=10;
-   for(let j=0;j<=rows;j++)for(let k=0;k<=cols;k++){
+   for(let j=0;j<=rows;j++)for(let k=0;k<=cols;k++){if(k%8===0)yield;
     const u=j/rows,a=k/cols*Math.PI*2,fold=Math.sin(a*7.+layer*1.5),rx=.108+.016*layer+.030*u,rz=.077+.010*layer+.029*u;
     const y=hip.y+.030-layer*.050-u*.075+.009*fold*u;
     const target=V().set(Math.cos(a)*rx,y,Math.sin(a)*rz+hip.z),anchor=V().set(Math.cos(a)*.13,y,Math.sin(a)*.10+hip.z);let best=null;
@@ -106,7 +106,7 @@ export function createClothingStyles(variants,options){
   }
  }
 
- function dolceRibbons(record,donor,position){
+ function* dolceRibbons(record,donor,position){
   const body=donor.meshes.find(m=>[].concat(m.material).some(a=>/Body.*SKIN/.test(a.name))),inv=body.matrixWorld.clone().invert(),tris=triangles(body);
   const cloth=mat('#ffd1db'),edge=mat('#ffe1ee');cloth.emissive.set('#633842');cloth.emissiveIntensity=.18;cloth.transparent=true;cloth.opacity=.70;cloth.depthWrite=false;
   const hipY=position('hips').applyMatrix4(inv).y,belt=clone(record,body,v=>{v.x*=1.14;v.z*=1.18;}),bp=body.geometry.attributes.position,bi=body.geometry.index,beltIds=[];
@@ -115,7 +115,7 @@ export function createClothingStyles(variants,options){
   // Fit the sequinned sash outside the skirt, not inside its flared waistband.
   const skirtTris=donor.parts.bottom.flatMap(triangles),beltPos=belt.geometry.attributes.position;
   function skirtSurface(x,y,z){const direction=V().set(x,0,z).normalize(),ray=new T.Ray(direction.clone().multiplyScalar(.5).setY(y),direction.clone().negate());let best=null;for(const t of skirtTris){const hit=ray.intersectTriangle(t.triangle.a,t.triangle.b,t.triangle.c,false,V());if(hit&&(!best||hit.lengthSq()>best.lengthSq()))best=hit;}return best;}
-  for(const id of new Set(beltIds)){const v=V().fromBufferAttribute(beltPos,id),hit=skirtSurface(v.x,v.y,v.z);if(hit)beltPos.setXYZ(id,hit.x*1.035,v.y,hit.z*1.035);}
+  for(const id of new Set(beltIds)){yield;const v=V().fromBufferAttribute(beltPos,id),hit=skirtSurface(v.x,v.y,v.z);if(hit)beltPos.setXYZ(id,hit.x*1.035,v.y,hit.z*1.035);}
   belt.geometry.computeVertexNormals();belt.geometry.computeBoundingSphere();
   const silver=new T.MeshStandardMaterial({color:'#e6edf7',metalness:.65,roughness:.23,emissive:'#555860',emissiveIntensity:.25});
   for(let i=0;i<21;i++){
@@ -128,7 +128,7 @@ export function createClothingStyles(variants,options){
   for(const [side,sign] of [['left',1],['right',-1]])for(let ribbon=0;ribbon<1;ribbon++){
    const hip=position(side+'UpperLeg').applyMatrix4(inv),knee=position(side+'LowerLeg').applyMatrix4(inv),foot=position(side+'Foot').applyMatrix4(inv);
    const start=position('hips').applyMatrix4(inv).y-.025,end=foot.y+.035,positions=[],samples=[],indices=[],rows=64,cols=16;
-   for(let j=0;j<=rows;j++)for(let k=0;k<=cols;k++){
+   for(let j=0;j<=rows;j++)for(let k=0;k<=cols;k++){if(k%8===0)yield;
     const u=j/rows,v=k/cols-.5,y=T.MathUtils.lerp(start,end,u),c=y>knee.y?hip.clone().lerp(knee,T.MathUtils.clamp((hip.y-y)/(hip.y-knee.y),0,1)):knee.clone().lerp(foot,T.MathUtils.clamp((knee.y-y)/(knee.y-foot.y),0,1));
     const fold=Math.sin(u*Math.PI*5+sign*.7),width=.115*(1-.12*u),x=c.x+sign*(.108+.015*fold+v*width),z=c.z+.012+.030*Math.sin(u*Math.PI*5+sign*.7+v*2.4)+.016*Math.sin(v*Math.PI*2);
     const target=V().set(c.x+sign*.04,y,c.z);let best=null;
@@ -143,7 +143,7 @@ export function createClothingStyles(variants,options){
   }
  }
 
- function dolceHalter(record,donor,position){
+ function* dolceHalter(record,donor,position){
   const body=donor.meshes.find(m=>[].concat(m.material).some(a=>/Body.*SKIN/.test(a.name))),inv=body.matrixWorld.clone().invert();
   const hip=position('hips').applyMatrix4(inv),neck=position('neck').applyMatrix4(inv),chest=position('chest').applyMatrix4(inv),hem=hip.y+.13;
   const tris=triangles(body),positions=[],samples=[],indices=[],sequin=sequinMaterial();
@@ -153,7 +153,7 @@ export function createClothingStyles(variants,options){
   for(let i=0;i<ix.count;i+=3){const a=[ix.getX(i),ix.getX(i+1),ix.getX(i+2)];if(a.every(j=>p.getY(j)>hip.y+.02&&p.getY(j)<neck.y-.006))ids.push(...a);}
   skin.geometry.setIndex(ids);skin.geometry.clearGroups();skin.material=mat('#f3c5b0');
   const rows=24,cols=64;
-  for(let j=0;j<=rows;j++)for(let k=0;k<=cols;k++){
+  for(let j=0;j<=rows;j++)for(let k=0;k<=cols;k++){if(k%8===0)yield;
    const a=k/cols*Math.PI*2,c=Math.cos(a),s=Math.sin(a),u=j/rows;
    const high=T.MathUtils.lerp(chest.y+.035,neck.y-.018,Math.pow(Math.abs(s),2));
    const y=T.MathUtils.lerp(hem,high,u),origin=V().set(c*.24,y,s*.24),ray=new T.Ray(origin,V().set(-c,0,-s));let best=null;
@@ -179,7 +179,7 @@ export function createClothingStyles(variants,options){
   }
  }
 
- function collar(record,source,neck,tie=false){
+ function* collar(record,source,neck,tie=false){
   const tris=triangles(source),local=neck.clone().applyMatrix4(source.matrixWorld.clone().invert()),positions=[],samples=[],indices=[];
   function point(x,y,front){
    const ray=new T.Ray(V().set(x,y,front?1:-1),V().set(0,0,front?-1:1));let best=null;
@@ -189,13 +189,13 @@ export function createClothingStyles(variants,options){
    positions.push(...best.p.toArray());samples.push({ids:best.ids,bary});return samples.length-1;
   }
   // Broad filled panels conform to the front, shoulders and upper back.
-  function panel(corners,front){const n=10,start=samples.length;
-   for(let y=0;y<=n;y++)for(let x=0;x<=n;x++){const u=x/n,v=y/n,a=new T.Vector2(...corners[0]).lerp(new T.Vector2(...corners[1]),u),b=new T.Vector2(...corners[3]).lerp(new T.Vector2(...corners[2]),u);a.lerp(b,v);point(local.x+a.x,local.y+a.y,front);}
+  function* panel(corners,front){yield;const n=10,start=samples.length;
+   for(let y=0;y<=n;y++)for(let x=0;x<=n;x++){if(x===0)yield;const u=x/n,v=y/n,a=new T.Vector2(...corners[0]).lerp(new T.Vector2(...corners[1]),u),b=new T.Vector2(...corners[3]).lerp(new T.Vector2(...corners[2]),u);a.lerp(b,v);point(local.x+a.x,local.y+a.y,front);}
    for(let y=0;y<n;y++)for(let x=0;x<n;x++){const a=start+y*(n+1)+x,b=a+1,c=a+n+1,d=c+1;indices.push(a,b,c,b,d,c);}
   }
-  if(tie){panel([[-.012,-.035],[.012,-.035],[.023,-.15],[-.023,-.15]],true);panel([[-.023,-.15],[.023,-.15],[0,-.18],[0,-.18]],true);}
-  else{for(const sign of[-1,1])panel([[sign*.032,-.026],[sign*.105,-.048],[sign*.023,-.139],[sign*.015,-.112]],true);
-  panel([[-.09,-.035],[.09,-.035],[.085,-.105],[-.085,-.105]],false);}
+  if(tie){yield* panel([[-.012,-.035],[.012,-.035],[.023,-.15],[-.023,-.15]],true);yield* panel([[-.023,-.15],[.023,-.15],[0,-.18],[0,-.18]],true);}
+  else{for(const sign of[-1,1])yield* panel([[sign*.032,-.026],[sign*.105,-.048],[sign*.023,-.139],[sign*.015,-.112]],true);
+  yield* panel([[-.09,-.035],[.09,-.035],[.085,-.105],[-.085,-.105]],false);}
   const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.setIndex(indices);skinDetail(record,source,g,tie?dolceMaterial(null,'dolce-tie'):navy,samples);
  }
  for(const slot of ['top','bottom','shoes'])for(const [index,option]of options[slot].entries()){
@@ -204,9 +204,9 @@ export function createClothingStyles(variants,options){
   if(option.style.startsWith('dolce-')){
    const style=option.style;
    if(style==='dolce-glitter'){
-    dolceHalter(record,donor,position);
+    yield* dolceHalter(record,donor,position);
    }else if(style==='dolce-skirt'){
-    dolceFlounces(record,donor,position);
+    yield* dolceFlounces(record,donor,position);
    }else if(style==='dolce-pants'){
     // Build a clean continuous trouser surface from the body's leg topology.
     // Cargo pockets, straps and alpha cutouts are deliberately not inherited.
@@ -231,9 +231,9 @@ export function createClothingStyles(variants,options){
      if(style==='dolce-shirt'){v.x*=1.06;v.z*=1.13;v.y-=.035*T.MathUtils.clamp((waist+.06-v.y)/.10,0,1);}
     });result.material=material;if(style==='dolce-skirt'&&layer<1){result.material=material.clone();result.material.onBeforeCompile=material.onBeforeCompile;result.material.customProgramCacheKey=material.customProgramCacheKey;result.material.transparent=true;result.material.opacity=.92;result.material.depthWrite=false;}result.geometry.clearGroups();}
    }
-   if(style==='dolce-skirt')dolceRibbons(record,donor,position);
+   if(style==='dolce-skirt')yield* dolceRibbons(record,donor,position);
    if(style==='dolce-boots')for(const side of ['left','right']){const foot=position(side+'Foot'),knee=position(side+'LowerLeg'),p=foot.clone().lerp(knee,.73);const ring=new T.TorusGeometry(.043,.012,12,64);const rp=ring.attributes.position;for(let i=0;i<rp.count;i++){const v=V().fromBufferAttribute(rp,i),a=Math.atan2(v.y,v.x);v.multiplyScalar(1+.045*Math.sin(a*31.)+.025*Math.cos(a*47.));rp.setXYZ(i,v.x,v.y,v.z);}ring.computeVertexNormals();ring.rotateX(Math.PI/2);attached(record,bone(side+'LowerLeg'),ring,mat('#fffafa'),p);}
-   if(style==='dolce-shirt')collar(record,record.meshes[0],position('neck'),true);
+   if(style==='dolce-shirt')yield* collar(record,record.meshes[0],position('neck'),true);
   }else if(option.style==='puff-hoodie'){
    // Inflate sleeves around their own T-pose arm axes, not around world origin.
    for(const mesh of source){const inverse=mesh.matrixWorld.clone().invert(),segments=['left','right'].flatMap(side=>[['UpperArm','LowerArm'],['LowerArm','Hand']].map(([a,b])=>[position(side+a).applyMatrix4(inverse),position(side+b).applyMatrix4(inverse)]));
@@ -243,7 +243,7 @@ export function createClothingStyles(variants,options){
    }
   }else if(option.style==='sailor'){
    source.forEach(m=>clone(record,m,null));
-   collar(record,source[0],position('neck'));
+   yield* collar(record,source[0],position('neck'));
   }else if(option.style==='tiered-skirt'){
    for(const m of source){const waist=position('hips').add(V().set(0,.065,0)).applyMatrix4(m.matrixWorld.clone().invert()).y;
     clone(record,m,v=>{const u=T.MathUtils.clamp((waist-v.y)/.25,0,1);v.x*=1+.10*u;v.z*=1+.10*u;});
@@ -274,3 +274,5 @@ export function createClothingStyles(variants,options){
  }
  return{parts,records,meshesFor(slot,index){return records.get(slot+':'+index)?.meshes;},hide(){for(const p of parts)p.mesh.visible=false;}};
 }
+
+export function createClothingStyles(...args){const iterator=buildClothingStyles(...args);let step;do{step=iterator.next();}while(!step.done);return step.value;}
