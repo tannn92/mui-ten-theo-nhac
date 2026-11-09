@@ -39,10 +39,10 @@
     };
   })();
 </script>
-<script src="sfx.js?v=0911.1801"></script>
-<link rel="stylesheet" href="dance3d/wardrobe.css?v=0911.1801">
+<script src="sfx.js?v=0911.1804"></script>
+<link rel="stylesheet" href="dance3d/wardrobe.css?v=0911.1804">
 <script type="importmap">{"imports":{"three":"./lib/three.module.js","three/addons/":"./lib/jsm/","@pixiv/three-vrm":"./lib/three-vrm.module.js"}}</script>
-<script src="dance.js?v=0911.1801"></script>
+<script src="dance.js?v=0911.1804"></script>
 <style>
   /* ===== Look: "kẹo ngọt long lanh". One palette: plum text, pink action, gold stars, mint/yellow/pink for the 3 levels. ===== */
   :root{
@@ -78,6 +78,7 @@
   /* ===== Menu panel ===== */
   #menu{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:rgba(60,20,80,.25);padding:20px}
   #menu.hide{display:none}
+  #verTag{position:absolute;right:12px;bottom:8px;font:600 12px/1 system-ui,-apple-system,sans-serif;color:rgba(255,255,255,.85);text-shadow:0 1px 2px rgba(60,20,80,.6);pointer-events:none;letter-spacing:.02em}
   .panel{position:relative;width:min(560px,100%);max-height:92vh;overflow-x:hidden;overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;border-radius:32px;padding:0 22px 24px;background:rgba(255,250,253,.97);border:4px solid var(--pinkb);box-shadow:0 18px 50px rgba(110,30,90,.3)}
   body #menu .panel{background:rgba(255,250,253,.97)}   /* beats wardrobe.css (same weight, later) so the whole panel is one look */
   #menu:not(.done) #donePanel,#menu.done #mainPanel{display:none}
@@ -489,6 +490,7 @@
 <div id="gateHint" aria-hidden="true">Bố mẹ: giữ ⚙️ 1 giây để mở</div>
 
 <div id="menu">
+  <div id="verTag" aria-label="Phiên bản">Bản 0911.1804</div>
   <div class="panel" id="mainPanel">
     <svg class="logo" viewBox="0 0 480 96" role="img" aria-label="Mũi Tên Theo Nhạc">
       <g transform="translate(48 50)">
@@ -561,7 +563,7 @@
 </div>
 
 <script>
-const V = '0911.1801';  // stamped by the deploy build
+const V = '0911.1804';  // stamped by the deploy build
 // Two rows, low on the screen where hands hold an iPad: 560 and 710. A touch above 635 is the upper row.
 const SPLIT_Y = 635,
   
