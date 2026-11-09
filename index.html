@@ -39,10 +39,10 @@
     };
   })();
 </script>
-<script src="sfx.js?v=0911.1104"></script>
-<link rel="stylesheet" href="dance3d/wardrobe.css?v=0911.1104">
+<script src="sfx.js?v=0911.1222"></script>
+<link rel="stylesheet" href="dance3d/wardrobe.css?v=0911.1222">
 <script type="importmap">{"imports":{"three":"./lib/three.module.js","three/addons/":"./lib/jsm/","@pixiv/three-vrm":"./lib/three-vrm.module.js"}}</script>
-<script src="dance.js?v=0911.1104"></script>
+<script src="dance.js?v=0911.1222"></script>
 <style>
   /* ===== Look: "kẹo ngọt long lanh". One palette: plum text, pink action, gold stars, mint/yellow/pink for the 3 levels. ===== */
   :root{
@@ -272,6 +272,39 @@
   .tab.gear.holding::before,.parent>summary.holding::before{opacity:1;transform:scaleX(1);transition:transform 1s linear}
   #gateHint{position:fixed;z-index:80;width:250px;padding:10px 14px;border-radius:16px;background:var(--plum);color:#fff;font:800 15px/1.3 var(--font);text-align:center;box-shadow:0 8px 20px rgba(0,0,0,.25);pointer-events:none;opacity:0;transform:translateY(-4px);transition:opacity .2s,transform .2s}
   #gateHint.on{opacity:1;transform:none}
+  /* song menu that scales to many songs: a grid of song tiles (tap = choose, never starts),
+     and ONE row of Dễ / Vừa / Khó for the chosen song, stuck to the bottom of the panel */
+  #songs{display:block}
+  #songGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 14px;padding-top:8px}
+  .tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:7px;min-height:128px;padding:12px 6px 10px;border:3px solid #ffdcec;border-radius:22px;background:#fff;color:var(--plum);font:inherit;text-align:center;cursor:pointer;box-shadow:0 4px 0 #ffd0e6;transition:transform .12s,box-shadow .12s,border-color .12s;-webkit-tap-highlight-color:transparent}
+  .tile .cover{width:54px;height:54px;border-radius:17px}
+  .tile .cover svg.emb-art{width:42px;height:42px}
+  .tmeta{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;max-width:100%;flex:1}
+  .tname{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:100%;font-size:14.5px;font-weight:900;line-height:1.15;overflow-wrap:anywhere}
+  .tfoot{display:flex;align-items:center;gap:6px;margin-top:auto;font-size:12.5px;font-weight:800;color:var(--plum2)}
+  .tstars{display:flex}
+  .tstars .st{width:15px;height:15px}
+  .tile.on{border-color:#ff4f8b;background:linear-gradient(180deg,#fff,#ffe6f1);box-shadow:0 4px 0 #ff8fbb,0 0 0 5px rgba(255,79,139,.2);transform:translateY(-2px)}
+  .tile.on::after{content:"";position:absolute;top:-10px;right:-8px;width:30px;height:30px;border:3px solid #fff;border-radius:50%;background:#ff4f8b url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='white' stroke-width='3.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/18px no-repeat;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+  .tile.pop{animation:tilePop .4s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes tilePop{0%{transform:scale(.93)}100%{transform:translateY(-2px)}}
+  #levelRow{position:sticky;bottom:0;z-index:4;background:linear-gradient(180deg,#fff 30%,var(--tint,#fff0f6));border-color:#ff9fc4;box-shadow:0 -8px 18px rgba(120,40,90,.15),0 4px 0 #ffd0e6}
+  #levelRow .cardhead{margin-bottom:10px}
+  #levelRow .cover{width:44px;height:44px;border-radius:14px}
+  #levelRow .cover svg.emb-art{width:34px;height:34px}
+  #levelRow .cmeta{flex:1}
+  #levelRow .ctitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  @media (max-width:999px){
+    #songGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .tile{flex-direction:row;align-items:center;gap:10px;min-height:92px;padding:10px 10px 10px 12px;text-align:left}
+    .tmeta{align-items:flex-start}
+    #levelRow{padding:10px 10px 12px}
+    #levelRow .cardhead{margin-bottom:8px}
+    #levelRow .lvl{min-height:100px;padding:8px 4px}
+  }
+  @media (max-width:520px){.tile .cover{width:44px;height:44px}.tile .cover svg.emb-art{width:34px;height:34px}.tname{font-size:13.5px}#levelRow .lvl-name{font-size:22px}#levelRow .st{width:19px;height:19px}
+    #levelRow{padding:8px 8px 10px}#levelRow .cardhead{gap:8px;margin:0 2px 6px}#levelRow .cover{width:30px;height:30px;border-radius:10px}#levelRow .cover svg.emb-art{width:24px;height:24px}
+    #levelRow .ctitle{font-size:15px}#levelRow .csub{display:none}#levelRow .levels{gap:8px}#levelRow .lvl{min-height:84px;gap:3px;padding:6px 2px}#levelRow .pads{width:44px;height:26px}}
   /* upright iPad and phone: the sticky bar sits flush with the panel top, so no list peeks above it */
   @media (max-width:999px){body #menu #mainPanel{padding-top:0}}
 
@@ -528,7 +561,7 @@
 </div>
 
 <script>
-const V = '0911.1104';  // stamped by the deploy build
+const V = '0911.1222';  // stamped by the deploy build
 // Two rows, low on the screen where hands hold an iPad: 560 and 710. A touch above 635 is the upper row.
 const SPLIT_Y = 635,
   
@@ -771,6 +804,11 @@ function refreshBadges() {
     if (rec && rec.stars >= 3) { if (!c) { c = document.createElement('span'); c.className = 'crown'; c.setAttribute('aria-hidden', 'true'); c.textContent = '👑'; b.appendChild(c); } }
     else if (c) c.remove();
   }));
+  // song tiles: the best stars on any level of that song, small
+  document.querySelectorAll('#songGrid .tile').forEach(t => {
+    const got = Math.max(0, ...LEVELS.map(L => (best[`${t.dataset.slug}|${L.key}`] || {}).stars || 0));
+    t.querySelectorAll('.tstars .st').forEach((s, i) => s.setAttribute('class', `st ${i < got ? 'on' : 'off'}`));
+  });
 }
 // one big button at the top that plays the last song and level again
 function refreshQuick() {
@@ -786,9 +824,58 @@ async function loadList() {
   const list = (await (await fetch(`songs/index.json?v=${V}`)).json()).songs;
   SONGS = list;
   const box = $('songs'), recBox = $('recBtns'); box.textContent = ''; recBox.textContent = '';
+  const grid = document.createElement('div');
+  grid.id = 'songGrid'; grid.setAttribute('role', 'group'); grid.setAttribute('aria-label', 'Chọn bài hát');
+  const card = document.createElement('div');
+  card.className = 'card'; card.id = 'levelRow';
+  box.append(grid, card);
   for (const s of list) {
-    const card = document.createElement('div');
-    card.className = 'card'; card.dataset.slug = s.slug;
+    // a tile: tap = choose this song (it never starts a song, so a stray tap is harmless)
+    const t = document.createElement('button');
+    t.type = 'button'; t.className = 'tile'; t.dataset.slug = s.slug;
+    t.setAttribute('aria-pressed', 'false'); t.setAttribute('aria-label', s.title);
+    const tc = document.createElement('div');
+    tc.className = 'cover'; paintCover(tc, s);
+    const tm = document.createElement('span');
+    tm.className = 'tmeta';
+    const tn = document.createElement('span');
+    tn.className = 'tname'; tn.textContent = s.title;
+    const tf = document.createElement('span');
+    tf.className = 'tfoot';
+    tf.innerHTML = `<span class="tdur">${mmss(Math.round(s.duration))}</span><span class="tstars" aria-hidden="true">${[1, 2, 3].map(() => starSvg(false)).join('')}</span>`;
+    tm.append(tn, tf); t.append(tc, tm);
+    t.addEventListener('click', () => pickSong(s, true));
+    grid.appendChild(t);
+    // "Ghi nhịp gõ" is a tool for the parents: it lives in their area, never among the buttons the child presses
+    const r = document.createElement('button');
+    r.type = 'button'; r.className = 'song recbtn'; r.dataset.level = 'rec';
+    r.textContent = `Ghi nhịp gõ · ${s.title}`;
+    r.addEventListener('click', () => start(s, 'rec'));
+    recBox.appendChild(r);
+  }
+  // the chosen song: the one chosen last time, else the one played last, else the first
+  let last = null, pick = null;
+  try { pick = localStorage.getItem(PICK_KEY); last = JSON.parse(localStorage.getItem('spike-last') || 'null'); } catch (e) {}
+  pickSong(list.find(x => x.slug === pick) || list.find(x => last && x.slug === last.slug) || list[0], false);
+  refreshQuick();
+  return list;
+}
+const PICK_KEY = 'spike-pick';
+const CHARTS = {};   // slug -> chart promise, fetched once (arrow counts on the level row)
+const chartOf = s => CHARTS[s.slug] || (CHARTS[s.slug] = fetch(`songs/${s.slug}/chart.json?v=${V}`).then(r => r.json()));
+// ONE row of Dễ / Vừa / Khó, for the chosen song (#levelRow keeps class "card" + data-slug, buttons keep "song lvl" + data-level)
+function pickSong(s, byTap) {
+  if (!s) return;
+  try { if (byTap) localStorage.setItem(PICK_KEY, s.slug); } catch (e) {}
+  document.querySelectorAll('#songGrid .tile').forEach(t => {
+    const on = t.dataset.slug === s.slug;
+    t.classList.toggle('on', on); t.setAttribute('aria-pressed', String(on));
+    if (on && byTap) { t.classList.remove('pop'); void t.offsetWidth; t.classList.add('pop'); }
+  });
+  const card = $('levelRow'), off = !!card.querySelector('.lvl:disabled');   // a song is starting: new buttons stay off too
+  if (card.dataset.slug === s.slug && card.childElementCount) return;
+  card.dataset.slug = s.slug; card.textContent = '';
+  {
     const head = document.createElement('div');
     head.className = 'cardhead';
     const cover = document.createElement('div');
@@ -815,29 +902,23 @@ async function loadList() {
       const m = document.createElement('span');
       m.className = 'm';
       m.textContent = `${s.levels[SOURCE_LEVEL[key]]} mũi tên · ${pads} nút`;
-      fetch(`songs/${s.slug}/chart.json?v=${V}`).then(r => r.json()).then(c => { if (!DEMO) { const n = levelNotes(c, key).length; m.textContent = `${n} mũi tên · ${pads} nút`; b.setAttribute('aria-label', `${L.name}, ${n} mũi tên, ${pads} nút`); } }).catch(() => {});
+      chartOf(s).then(c => { if (!DEMO) { const n = levelNotes(c, key).length; m.textContent = `${n} mũi tên · ${pads} nút`; b.setAttribute('aria-label', `${L.name}, ${n} mũi tên, ${pads} nút`); } }).catch(() => {});
       if (DEMO) {   // demo: count only the arrows inside the demo window (same clamp as start())
-        fetch(`songs/${s.slug}/chart.json?v=${V}`).then(r => r.json()).then(c => {
+        chartOf(s).then(c => {
           let f = Math.max(0, Math.min(DEMO.from, c.duration)), t = Math.min(DEMO.to, c.duration);
           if (!(t > f)) { f = 89.34; t = Math.min(116.78, c.duration); }
           m.textContent = `${levelNotes(c, key).filter(n => n.t >= f && n.t <= t).length} mũi tên`;
         }).catch(() => {});
       }
       b.appendChild(m);
+      b.disabled = off;
       b.addEventListener('click', () => start(s, key));
       row.appendChild(b);
     }
     card.appendChild(row);
-    box.appendChild(card);
-    // "Ghi nhịp gõ" is a tool for the parents: it lives in their area, never among the buttons the child presses
-    const r = document.createElement('button');
-    r.type = 'button'; r.className = 'song recbtn'; r.dataset.level = 'rec';
-    r.textContent = `Ghi nhịp gõ · ${s.title}`;
-    r.addEventListener('click', () => start(s, 'rec'));
-    recBox.appendChild(r);
+    card.style.setProperty('--tint', cover.style.getPropertyValue('--e1') || '#fff0f6');   // the row takes the song's colour
   }
-  refreshBadges(); refreshQuick();
-  return list;
+  refreshBadges();
 }
 
 let DANCE = null;

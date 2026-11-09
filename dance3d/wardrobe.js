@@ -1,12 +1,12 @@
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {VRMLoaderPlugin} from '@pixiv/three-vrm';
-import {createAccessories} from './accessories.js?v=0911.1104';
-import {getWardrobeOptions,wardrobeDefaults} from './wardrobe-ui.js?v=0911.1104';
-import {addSkirtShorts,limitSkirtSprings} from './skirt-safety.js?v=0911.1104';
-import {createClothingStyles} from './clothing-styles.js?v=0911.1104';
-import {createHuntrixStyles} from './huntrix-styles.js?v=0911.1104';
-import {createHatMuaStyles} from './hat-mua-styles.js?v=0911.1104';
+import {createAccessories} from './accessories.js?v=0911.1222';
+import {getWardrobeOptions,wardrobeDefaults} from './wardrobe-ui.js?v=0911.1222';
+import {addSkirtShorts,limitSkirtSprings} from './skirt-safety.js?v=0911.1222';
+import {createClothingStyles} from './clothing-styles.js?v=0911.1222';
+import {createHuntrixStyles} from './huntrix-styles.js?v=0911.1222';
+import {createHatMuaStyles} from './hat-mua-styles.js?v=0911.1222';
 
 const physicalSlots=['hair','top','bottom','shoes'];
 const vector=new T.Vector3();
