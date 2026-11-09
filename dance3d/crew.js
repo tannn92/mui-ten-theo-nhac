@@ -1,12 +1,12 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=1011.0639';
-import {hideNativeCrewSafety} from './crew-styles.js?v=1011.0639';
-import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=1011.0639';
-import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1011.0639';
-import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=1011.0639';
-import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1011.0639';
-import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=1011.0639';
-import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1011.0639';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=1011.0649';
+import {hideNativeCrewSafety} from './crew-styles.js?v=1011.0649';
+import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=1011.0649';
+import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1011.0649';
+import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=1011.0649';
+import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1011.0649';
+import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=1011.0649';
+import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1011.0649';
 
 // Four background performers reuse the live A/B skeletons, geometry, materials
 // and morph arrays. Detached binding applies a crew transform AFTER skinning;

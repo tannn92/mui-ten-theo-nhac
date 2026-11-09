@@ -1,13 +1,13 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=1011.0639';
-import {createSongBackgrounds} from './song-backgrounds.js?v=1011.0639';
-import {loadWardrobe} from './wardrobe.js?v=1011.0639';
-import {createChoreography} from './choreography.js?v=1011.0639';
-import {createPoseBank} from './pose-bank.js?v=1011.0639';
-import {applyFaceExpression} from './face-expressions.js?v=1011.0639';
-import {createCrew} from './crew.js?v=1011.0639';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1011.0639';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1011.0639';
+import {createPerformanceLibrary} from './performance-library.js?v=1011.0649';
+import {createSongBackgrounds} from './song-backgrounds.js?v=1011.0649';
+import {loadWardrobe} from './wardrobe.js?v=1011.0649';
+import {createChoreography} from './choreography.js?v=1011.0649';
+import {createPoseBank} from './pose-bank.js?v=1011.0649';
+import {applyFaceExpression} from './face-expressions.js?v=1011.0649';
+import {createCrew} from './crew.js?v=1011.0649';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1011.0649';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1011.0649';
 export async function createRuntime(canvas,bundle){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
