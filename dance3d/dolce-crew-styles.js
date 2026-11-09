@@ -46,22 +46,28 @@ const mat=(color,roughness=.8)=>new T.MeshStandardMaterial({color,roughness,side
   function oval(y,a,extra=0){const [rx,rz]=section(y),x=Math.cos(a),z=Math.sin(a);return V().set(x*(rx+extra),y,hip.z+Math.sign(z)*Math.sqrt(Math.max(0,1-Math.pow(Math.abs(x),4)))*(rz+extra));}
   function fluff(center,rx,rz,height,m,rigid,seed=0){for(let j=0;j<36;j++){const a=j*2.39996,y=Math.sin(j*1.731+seed)*height*.42,r=1+.09*Math.sin(j*2.13);sphere(center.clone().add(V().set(Math.cos(a)*rx*r,y,Math.sin(a)*rz*r)),[.010,.015,.010],m,rigid);}}
   function bow(center,m,rigid){for(const sign of [-1,1])sphere(center.clone().add(V().set(sign*.012,0,0)),[.015,.010,.004],m,rigid);sphere(center,[.005,.006,.005],m,rigid);}
-  const waist=hip.y+.065;
+  const waist=hip.y+(spec.role==='boy'?.090:.065);
   function torso(y,a,extra=0){const [rx,rz]=section(y);return V().set(Math.cos(a)*(rx+extra),y,hip.z+Math.sign(Math.sin(a))*Math.pow(Math.abs(Math.sin(a)),.55)*(rz+extra));}
   function patch(rows,cols,fn,m,weightFn){const mesh=grid(rows,cols,fn,m);if(weightFn){const g=mesh.geometry,p=g.attributes.position;for(let i=0;i<p.count;i++){const [a,b,w]=weightFn(V().fromBufferAttribute(p,i));g.attributes.skinIndex.setXYZW(i,boneIndex(a),boneIndex(b),0,0);g.attributes.skinWeight.setXYZW(i,1-w,w,0,0);}}return mesh;}
   function limb(side,aName,bName,start,end,radius,m){const a=pos(side+aName),b=pos(side+bName),axis=b.clone().sub(a).normalize(),t=V().set(0,0,1),n=V().crossVectors(axis,t).normalize();patch(5,16,(u,v)=>{const q=a.clone().lerp(b,start+(end-start)*u),ang=v*Math.PI*2,r=radius*(1-.12*u);return q.addScaledVector(n,Math.cos(ang)*r).addScaledVector(t,Math.sin(ang)*r);},m,()=>[side+aName,side+aName,0]);}
   if(slot==='top'){
     register(shell('skin-upper',(x,y)=>y>hip.y-.02&&y<neck.y+.045,.0014),skin,false);
     if(spec.role==='boy'){
-      const low=hip.y-(spec.shirt==='blazer'?.060:.025),high=neck.y-.020;
-      const shirt=(y,a,e=0)=>{const taper=T.MathUtils.smoothstep(y,high-.055,high),rx=T.MathUtils.lerp(.103,.044,taper)+e,front=T.MathUtils.lerp(.098,.048,taper)+e,back=T.MathUtils.lerp(.070,.040,taper)+e,z=Math.sin(a);return V().set(Math.cos(a)*rx,y,hip.z+Math.sign(z)*Math.pow(Math.abs(z),.60)*(z>=0?front:back));};
-      // Continuous flat white tee bridges the donor chest; open shirt shares its fitted envelope.
-      grid(8,32,(u,v)=>shirt(T.MathUtils.lerp(low+.012,high,u),v*Math.PI*2),white);
-      grid(8,30,(u,v)=>{const a=.36+v*(Math.PI*2-.72);return shirt(T.MathUtils.lerp(low,high-.010,u),a+Math.PI/2,.007);},cloth);
-      // Small collar lies on the curved shoulder envelope.
-      for(const sign of [-1,1])grid(3,2,(u,v)=>{const y=high-.002-u*.032,x=sign*(.020+u*.018+v*.011),q=shirt(y,Math.PI/2,.010);q.x=x;return q;},cloth);
-      for(const side of ['left','right']){sphere(pos(side+'UpperArm').add(V().set(0,-.014,0)),[.039,.035,.045],cloth,side+'UpperArm');limb(side,'UpperArm','LowerArm',.08,spec.shirt==='short'?.65:1.02,.041,cloth);if(spec.shirt!=='short')limb(side,'LowerArm','Hand',0,.83,.030,cloth);}
-      if(spec.tie){line(V().set(0,high+.007,shirt(high,Math.PI/2).z+.006),V().set(0,high-.022,shirt(high-.022,Math.PI/2).z+.007),.009,gray);grid(7,2,(u,v)=>{const y=high-.020-u*.157,w=.010+.006*Math.sin(u*Math.PI),x=(v-.5)*w*2;return V().set(x,y,shirt(y,Math.PI/2).z+.010);},gray);}
+      const low=hip.y+.020,high=neck.y-.020;
+      const shirt=(y,a,e=0)=>{const taper=T.MathUtils.smoothstep(y,high-.050,high),rx=T.MathUtils.lerp(.092,.038,taper)+e,front=T.MathUtils.lerp(.088,.043,taper)+e,back=T.MathUtils.lerp(.056,.036,taper)+e,z=Math.sin(a);return V().set(Math.cos(a)*rx,y,hip.z+Math.sign(z)*Math.pow(Math.abs(z),.65)*(z>=0?front:back));};
+      const opening=.46;
+      grid(9,30,(u,v)=>{const a=opening+v*(Math.PI*2-2*opening)+Math.PI/2;return shirt(T.MathUtils.lerp(low,high-.010,u),a,.007);},cloth);
+      // White tee only spans the open front; its hem tucks behind the visible belt.
+      grid(8,4,(u,v)=>{const y=T.MathUtils.lerp(waist-.004,high-.008,u),left=shirt(y,Math.PI/2+opening,.006),right=shirt(y,Math.PI/2-opening,.006);return left.lerp(right,v);},white);
+      register(shell('boy-white-tee-yoke',(x,y)=>Math.abs(x)<.165&&y>neck.y-.085&&y<neck.y+.025,.014),cloth,false);
+      // Analytic shoulder yoke and a closed white neck band avoid cut donor triangles.
+      grid(5,30,(u,v)=>{const a=opening+v*(Math.PI*2-2*opening)+Math.PI/2,z=Math.sin(a);return V().set(Math.cos(a)*T.MathUtils.lerp(.033,.097,u),neck.y-.008-u*.060,hip.z+Math.sign(z)*Math.pow(Math.abs(z),.65)*(z>=0?T.MathUtils.lerp(.053,.096,u):T.MathUtils.lerp(.038,.062,u)));},cloth);
+      grid(3,24,(u,v)=>{const a=v*Math.PI*2,z=Math.sin(a);return V().set(Math.cos(a)*T.MathUtils.lerp(.045,.060,u),neck.y+.023-u*.036,hip.z+Math.sign(z)*Math.pow(Math.abs(z),.65)*(z>=0?T.MathUtils.lerp(.066,.085,u):T.MathUtils.lerp(.050,.065,u)));},white);
+      // Rounded shoulder cap follows the arm; taper sleeves along the elbow chain.
+      for(const side of ['left','right']){sphere(pos(side+'UpperArm').add(V().set(0,-.010,0)),[.030,.028,.034],cloth,side+'UpperArm');limb(side,'UpperArm','LowerArm',.04,spec.shirt==='short'?.58:1.03,.032,cloth);if(spec.shirt!=='short')limb(side,'LowerArm','Hand',-.04,.86,.026,cloth);}
+      if(spec.tie){line(V().set(0,high+.003,shirt(high,Math.PI/2).z+.006),V().set(0,high-.018,shirt(high-.018,Math.PI/2).z+.007),.007,gray);grid(6,2,(u,v)=>{const y=high-.018-u*.122,w=.009+.004*Math.sin(u*Math.PI);return V().set((v-.5)*w*2,y,shirt(y,Math.PI/2).z+.011);},gray);}
+      // Pants overlap belongs to hips, smoothly returning to torso weights above it.
+      for(const mesh of rec.meshes){if(mesh.userData.sharedCrewGeometry)continue;const g=mesh.geometry,p=g.attributes.position,si=g.attributes.skinIndex,sw=g.attributes.skinWeight;for(let i=0;i<p.count;i++){const keep=T.MathUtils.smoothstep(p.getY(i),hip.y+.113,hip.y+.185);if(keep>=1)continue;const weights=new Map([[boneIndex('hips'),1-keep]]);for(let k=0;k<4;k++){const bi=si.getComponent(i,k);weights.set(bi,(weights.get(bi)||0)+sw.getComponent(i,k)*keep);}const list=[...weights].sort((a,b)=>b[1]-a[1]).slice(0,4),sum=list.reduce((n,a)=>n+a[1],0);for(let k=0;k<4;k++){si.setComponent(i,k,list[k]?.[0]||0);sw.setComponent(i,k,(list[k]?.[1]||0)/sum);}}}
     }else{
       const low=spec.shape==='dress'?waist-.012:waist+.038,high=neck.y-.060;
       grid(7,32,(u,v)=>{const a=v*Math.PI*2,top=high+(spec.neck==='asym'?.027*Math.cos(a):0);return torso(T.MathUtils.lerp(low,top,u),a,.009);},cloth);
@@ -80,8 +86,10 @@ const mat=(color,roughness=.8)=>new T.MeshStandardMaterial({color,roughness,side
     const inner=(isBoy?white:cloth).clone();inner.polygonOffset=true;inner.polygonOffsetFactor=-2;inner.polygonOffsetUnits=-2;register(shell(isBoy?'trouser-inner':'short-inner',(x,y)=>y<waist-.005&&y>(isBoy?floor+.025:shortHem),0),inner,false);
     if(isBoy){
       // Two wide closed leg envelopes plus the continuous donor crotch beneath.
-      for(const side of ['left','right']){const upper=pos(side+'UpperLeg'),knee=pos(side+'LowerLeg'),foot=pos(side+'Foot');patch(12,20,(u,v)=>{const y=T.MathUtils.lerp(waist-.015,floor+.035,u),a=v*Math.PI*2,t=T.MathUtils.clamp((upper.y-y)/(upper.y-foot.y),0,1),center=upper.clone().lerp(foot,t),fold=.0025*Math.cos(a*7+.3*Math.sin(u*5)),rx=.053+.005*Math.sin(u*Math.PI)+fold,rz=.090-.005*u+fold;return V().set(center.x+Math.cos(a)*rx,y,hip.z+.006+Math.sin(a)*(Math.sin(a)>=0?rz:T.MathUtils.lerp(.060,.090,T.MathUtils.smoothstep(u,0,.40))));},white,q=>{const blend=T.MathUtils.smoothstep(knee.y-q.y,-.07,.06);return[side+'UpperLeg',side+'LowerLeg',blend];});}
-      grid(4,32,(u,v)=>{const a=v*Math.PI*2,y=T.MathUtils.lerp(waist,hip.y-.042,u),q=torso(y,a,.018);if(Math.sin(a)<0)q.z=hip.z+Math.sin(a)*.060;return q;},white,'hips');
+      for(const side of ['left','right']){const upper=pos(side+'UpperLeg'),knee=pos(side+'LowerLeg'),foot=pos(side+'Foot');patch(12,20,(u,v)=>{const y=T.MathUtils.lerp(waist-.015,floor+.035,u),a=v*Math.PI*2,t=T.MathUtils.clamp((upper.y-y)/(upper.y-foot.y),0,1),center=upper.clone().lerp(foot,t),fold=.0025*Math.cos(a*7+.3*Math.sin(u*5)),upperBlend=T.MathUtils.smoothstep(waist-y,.015,.15),rx=T.MathUtils.lerp(.034,.053+.005*Math.sin(u*Math.PI),upperBlend)+fold,rz=T.MathUtils.lerp(.055,.090-.005*u,upperBlend)+fold;return V().set(center.x+Math.cos(a)*rx,y,hip.z+.006+Math.sin(a)*(Math.sin(a)>=0?rz:T.MathUtils.lerp(.060,.090,T.MathUtils.smoothstep(u,0,.40))));},white,q=>{if(q.y>hip.y-.08)return['hips',side+'UpperLeg',T.MathUtils.smoothstep(hip.y+.035-q.y,0,.115)];const blend=T.MathUtils.smoothstep(knee.y-q.y,-.07,.06);return[side+'UpperLeg',side+'LowerLeg',blend];});}
+      grid(4,32,(u,v)=>{const a=v*Math.PI*2,y=T.MathUtils.lerp(waist,hip.y-.078,u);return V().set(Math.cos(a)*(.087+.010*u),y,hip.z+Math.sin(a)*(Math.sin(a)>0?T.MathUtils.lerp(.084,.030,u*u):T.MathUtils.lerp(.054,.030,u*u)));},white,'hips');
+      grid(1,32,(u,v)=>{const a=v*Math.PI*2;return V().set(Math.cos(a)*.090,waist-.012*u,hip.z+Math.sin(a)*(Math.sin(a)>0?.087:.057));},gray,'hips');
+      const buckle=new T.TorusGeometry(.008,.0018,4,12);buckle.scale(1.3,.8,1);buckle.translate(0,waist-.006,hip.z+.091);weighted(buckle,silver,'hips');
     }else{
       if(spec.shape==='shorts'){grid(4,32,(u,v)=>torso(T.MathUtils.lerp(waist-.003,hip.y-.040,u),v*Math.PI*2,.015),cloth,'hips');}
       if(spec.shape==='shorts')for(const side of ['left','right']){const p=pos(side+'UpperLeg');grid(5,20,(u,v)=>{const a=v*Math.PI*2;return V().set(p.x+Math.cos(a)*.048,T.MathUtils.lerp(hip.y+.010,shortHem,u),hip.z+.012+Math.sin(a)*.073);},cloth,side+'UpperLeg');}
