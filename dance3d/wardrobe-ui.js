@@ -21,8 +21,9 @@ export function saveWardrobe(outfit){try{localStorage.setItem(key,JSON.stringify
 // so a new item still gets a sensible picture. Colours were checked against the 3D clothes. ----
 const C={pink:['#ffa6cb','#d9578f'],hotpink:['#ff6fa8','#c2286a'],white:['#ffffff','#a998be'],cream:['#f6efe3','#b49c78'],black:['#433c4b','#17121c'],purple:['#6a52a0','#3b2a66'],mint:['#86dcd3','#3a9d92'],navy:['#3a5ba6','#213a74'],brown:['#9a6240','#5d3820'],grey:['#dcd8e3','#8f88a3'],red:['#ef4a72','#a81f47'],gold:['#ffd24a','#c48a00'],blue:['#8cc2ff','#3d7bd6']};
 const HAIR=['#5e3b2c','#3a2219'],SKIN=['#ffe2cf','#e2a988'],INK='#3b1d52';
+const HAIR_COLORS={blonde:['#f6dc8c','#c9a24f'],lightbrown:['#c98f5a','#8f5f35'],brown:['#7a4a2a','#4f2e18'],black:['#2f2a33','#141018'],purple:['#b79be6','#7d62b8'],red:['#c8373e','#8a1f27']};
 const ART={
- hair:{mint:['bob'],rose:['buns'],street:['long'],sport:['tails']},
+ hair:{mint:['bob'],rose:['buns'],street:['long'],sport:['tails'],'hat-mua-chest-hair':['long','lightbrown'],'hat-mua-chest-hair-dark':['long','brown'],'girl-xinh-1-hair':['long','blonde'],'tai-sinh-1-hair':['long','black']},
  top:{mint:['hoodie','mint'],rose:['blouse','white'],street:['jacket','black'],sport:['vest','white'],'puff-hoodie':['hoodie','mint','puff'],sailor:['sailor','white'],'dolce-glitter':['crop','pink','glitter'],'dolce-shirt':['shirt','pink'],'huntrix-golden-lead-top':['coat','cream'],'huntrix-golden-left-top':['coat','cream'],'huntrix-golden-right-top':['coat','cream']},
  bottom:{mint:['shorts','black','mint'],rose:['skirt','pink'],street:['cargo','black'],sport:['capri','purple'],'tiered-skirt':['tiered','pink'],'wide-pants':['wide','black'],'dolce-skirt':['long','pink'],'dolce-pants':['wide','white'],'huntrix-golden-lead-bottom':['skirt','black'],'huntrix-golden-left-bottom':['skirt','black'],'huntrix-golden-right-bottom':['shorts','black']},
  shoes:{mint:['sneaker','black'],rose:['laceboot','brown'],street:['platform','grey'],sport:['sneaker','hotpink'],'fur-boots':['furboot','brown'],'wing-sneakers':['sneaker','black','wing'],'dolce-boots':['boot','white'],'dolce-sneakers':['sneaker','white'],'huntrix-golden-lead-shoes':['tallboot','black'],'huntrix-golden-left-shoes':['tallboot','black'],'huntrix-golden-right-shoes':['tallboot','black']},
@@ -31,7 +32,7 @@ const ART={
 };
 function guess(slot,label){
  const t=String(label||'').toLowerCase(),c=/hồng/.test(t)?'pink':/trắng/.test(t)?'white':/đen/.test(t)?'black':/tím/.test(t)?'purple':/bạc hà|xanh lá/.test(t)?'mint':/xanh/.test(t)?'blue':/đỏ/.test(t)?'red':/vàng/.test(t)?'gold':/nâu/.test(t)?'brown':/kem/.test(t)?'cream':'';
- if(slot==='hair')return[/bob|ngắn/.test(t)?'bob':/búi|tết/.test(t)?'buns':/đuôi/.test(t)?'tails':'long'];
+ if(slot==='hair')return[/bob|ngắn/.test(t)?'bob':/búi|tết/.test(t)?'buns':/đuôi/.test(t)?'tails':'long',/vàng nâu/.test(t)?'lightbrown':/vàng/.test(t)?'blonde':/đen/.test(t)?'black':/tím/.test(t)?'purple':/đỏ/.test(t)?'red':/nâu/.test(t)?'brown':''];
  if(slot==='top')return[/hoodie/.test(t)?'hoodie':/khoác/.test(t)?'jacket':/gile/.test(t)?'vest':/thủy thủ/.test(t)?'sailor':/sơ mi/.test(t)?'shirt':/lấp lánh|croptop/.test(t)?'crop':'blouse',c||'pink',/lấp lánh/.test(t)?'glitter':/tay phồng/.test(t)?'puff':''];
  if(slot==='bottom')return[/váy/.test(t)?(/tầng/.test(t)?'tiered':/dài|bèo/.test(t)?'long':'skirt'):/short/.test(t)?'shorts':/lửng/.test(t)?'capri':/túi hộp/.test(t)?'cargo':/rộng/.test(t)?'wide':'cargo',c||'blue'];
  if(slot==='shoes')return[/bốt/.test(t)?(/lông/.test(t)?'furboot':/dây/.test(t)?'laceboot':'boot'):/đế dày/.test(t)?'platform':'sneaker',c||'white',/cánh/.test(t)?'wing':''];
@@ -83,8 +84,8 @@ function shoe(kind,c,x){
  return s;
 }
 const eyes=(y=38)=>`<ellipse cx="26.5" cy="${y}" rx="2.1" ry="2.7" fill="${INK}"/><ellipse cx="37.5" cy="${y}" rx="2.1" ry="2.7" fill="${INK}"/><circle cx="25.7" cy="${y-1}" r=".8" fill="#fff"/><circle cx="36.7" cy="${y-1}" r=".8" fill="#fff"/><ellipse cx="22.5" cy="${y+5}" rx="3" ry="1.8" fill="#ff9fb5" opacity=".75"/><ellipse cx="41.5" cy="${y+5}" rx="3" ry="1.8" fill="#ff9fb5" opacity=".75"/><path d="M29.5 ${y+6.5}Q32 ${y+8.5} 34.5 ${y+6.5}" fill="none" stroke="#c2286a" stroke-width="1.6" stroke-linecap="round"/>`;
-function head(kind){
- const[h,he]=HAIR,bangs=Q('M17.5 34Q18 19 32 19Q46 19 46.5 34Q41 27 36 29Q33 25 30 29Q24 26 17.5 34Z',h,he);let back='';
+function head(kind,color){
+ const[h,he]=HAIR_COLORS[color]||HAIR,bangs=Q('M17.5 34Q18 19 32 19Q46 19 46.5 34Q41 27 36 29Q33 25 30 29Q24 26 17.5 34Z',h,he);let back='';
  if(kind==='bob')back=P('M13 35Q12 13 32 12Q52 13 51 35L51 48Q46 52 42 48L42 31L22 31L22 48Q18 52 13 48Z',h,he);
  else if(kind==='buns')back=P(circ(19,14,7.5),h,he)+P(circ(45,14,7.5),h,he)+P('M15 36Q14 16 32 15Q50 16 49 36Z',h,he)+P(circ(16,43,3.8)+circ(15.4,50,3.5)+circ(15,56.5,3.2),h,he)+P(circ(48,43,3.8)+circ(48.6,50,3.5)+circ(49,56.5,3.2),h,he);
  else if(kind==='tails')back=P('M19 19Q3 22 5 42Q7 55 15 61Q12 46 16 34Q18 26 23 22Z',h,he)+P('M45 19Q61 22 59 42Q57 55 49 61Q52 46 48 34Q46 26 41 22Z',h,he)+P('M15 35Q15 15 32 14Q49 15 49 35Z',h,he)+'<circle cx="20" cy="20" r="2.8" fill="#ff6fa8"/><circle cx="44" cy="20" r="2.8" fill="#ff6fa8"/>';
@@ -111,7 +112,7 @@ function extra(kind,c){
 }
 function art(slot,v){
  const a=ART[slot]?.[v?.id]||guess(slot,v?.label);
- if(slot==='hair')return head(a[0]);if(slot==='top')return top(a[0],a[1],a[2]);if(slot==='bottom')return bottom(a[0],a[1],a[2]);
+ if(slot==='hair')return head(a[0],a[1]);if(slot==='top')return top(a[0],a[1],a[2]);if(slot==='bottom')return bottom(a[0],a[1],a[2]);
  if(slot==='shoes')return shoe(a[0],a[1],a[2]);if(slot==='face')return face(a[0]);return extra(a[0],a[1]);
 }
 // a whole outfit: its top over its bottom, its shoes at the feet, and a gold sparkle
