@@ -41,6 +41,31 @@ export function createHuntrixStyles(variants,options){
    for(let j=0;j<rows;j++)for(let k=0;k<cols;k++){const n=j*(cols+1)+k;ids.push(n,n+1,n+cols+1,n+1,n+cols+2,n+cols+1);}
    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(a,3));g.setIndex(ids);return surface(g,m,donor.parts.bottom[0]);
   }
+  function fittedGoldenSkirt(){
+   const top=hip.y+.105,bottom=hip.y-.215,cols=64,rows=14,positions=[],indices=[];
+   const blouse=donor.parts.top.find(m=>![].concat(m.material).some(x=>/Accessory_Tie/.test(x.name)));
+   function radialSurface(source,y,c,s){
+    const a=source.geometry.attributes.position,ix=source.geometry.index,origin=V().set(c*.35,y,hip.z+s*.35),ray=new T.Ray(origin,V().set(-c,0,-s));let best=null;
+    for(let i=0;i<ix.count;i+=3){const q=ray.intersectTriangle(V().fromBufferAttribute(a,ix.getX(i)),V().fromBufferAttribute(a,ix.getX(i+1)),V().fromBufferAttribute(a,ix.getX(i+2)),false,V());if(q&&(!best||q.distanceToSquared(origin)<best.distanceToSquared(origin)))best=q;}
+    return best?Math.max(.025,best.x*c+(best.z-hip.z)*s):null;
+   }
+   const rings=[];for(let k=0;k<=cols;k++){
+    const a=k/cols*Math.PI*2,c=Math.cos(a),s=Math.sin(a);
+    const bodyWaist=radialSurface(body,top,c,s)||.075,shirtWaist=radialSurface(blouse,top,c,s);
+    const waist=Math.max(bodyWaist+.007,shirtWaist?shirtWaist*1.045+.003:0);
+    const hips=Math.max(waist, (radialSurface(body,hip.y-.025,c,s)||waist)+.014);
+    rings.push({a,c,s,waist,hips});
+   }
+   for(let j=0;j<=rows;j++)for(const {a,c,s,waist,hips}of rings){
+    const u=j/rows,hipBlend=T.MathUtils.smoothstep(u,0,.43),flare=.016*T.MathUtils.smoothstep(u,.35,1);
+    const fold=.0035*Math.cos(a*16)*T.MathUtils.smoothstep(u,.2,1),r=T.MathUtils.lerp(waist,hips,hipBlend)+flare+fold;
+    positions.push(c*r,T.MathUtils.lerp(top,bottom,u),hip.z+s*r);
+   }
+   for(let j=0;j<rows;j++)for(let k=0;k<cols;k++){const a=j*(cols+1)+k;indices.push(a,a+1,a+cols+1,a+1,a+cols+2,a+cols+1);}
+   const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.setIndex(indices);
+   const mesh=surface(g,new T.MeshToonMaterial({color:'#242634',side:T.DoubleSide}),donor.parts.bottom[0]);
+   mesh.userData.goldenFit={waistMax:Math.max(...rings.map(r=>r.waist)),hipMax:Math.max(...rings.map(r=>r.hips)),hem:bottom};
+  }
   function radial(v,scale){v.x*=scale;v.z=hip.z+(v.z-hip.z)*scale;}
   const topColor=song==='golden'?white:song==='sounds'?silver:song==='takedown'?black:material(role==='lead'?'#e83d4c':role==='left'?'#218bd9':'#f5df32');
   if(slot==='top'){
@@ -90,18 +115,18 @@ export function createHuntrixStyles(variants,options){
     if(song==='golden')return;
     const side=v.x>=0?'left':'right',a=pos(side+'UpperLeg'),b=pos(side+'LowerLeg'),c=pos(side+'Foot'),start=v.y>b.y?a:b,stop=v.y>b.y?b:c,u=T.MathUtils.clamp((start.y-v.y)/(start.y-stop.y),0,1),center=start.clone().lerp(stop,u);
     if(v.y<hip.y-.02)v.sub(center).multiply(new T.Vector3(pants?1.24:1.22,1,pants?1.2:1.22)).add(center);else radial(v,1.15);
-   },song==='golden'?new T.MeshToonMaterial({color:skirt?'#ffffff':'#242634',side:T.DoubleSide}):skirt?material('#fff1cf'):cloth);
+   },song==='golden'?new T.MeshToonMaterial({color:'#242634',side:T.DoubleSide}):skirt?material('#fff1cf'):cloth);
    if(song==='golden'){
     // A continuous inner lining matches the donor surface exactly. At extreme
     // hip flexion, normal-offset outer cloth can move behind the other thigh.
     // Polygon offset keeps this opaque lining over the donor's printed underwear
     // without a second geometric dilation or a split at the centre seam.
-    const lining=new T.MeshToonMaterial({color:skirt?'#ffffff':'#242634',side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+    const lining=new T.MeshToonMaterial({color:'#242634',side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
     const inner=shell(v=>v.y>hip.y-.195&&v.y<hip.y+.115,v=>{},lining,0);
     inner.userData.goldenSafetyLining=true;
    }
-   if(skirt)tube(hip.y+.11,hip.y-(role==='left'?.135:.15),.135,.112,cloth,.07);
-   shell(v=>v.y>hip.y+.075&&v.y<hip.y+.105,v=>radial(v,1.13),song==='how'&&role==='left'?material('#fa65ae'):song==='golden'?black:silver);
+   if(skirt){if(song==='golden')fittedGoldenSkirt();else tube(hip.y+.11,hip.y-(role==='left'?.135:.15),.135,.112,cloth,.07);}
+   shell(v=>v.y>hip.y+.075&&v.y<hip.y+.105,v=>{if(song!=='golden')radial(v,1.13);},song==='how'&&role==='left'?material('#fa65ae'):song==='golden'?black:silver);
    if(pants)for(const sign of [-1,1])box(sign*.105,hip.y-.15,hip.z+.035,.028,.065,.065,cloth);
   }
   if(slot==='shoes'){
