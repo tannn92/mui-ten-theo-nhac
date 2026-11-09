@@ -1,7 +1,7 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=0911.1727';
-import {hideNativeCrewSafety} from './crew-styles.js?v=0911.1727';
-import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=0911.1727';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=0911.1746';
+import {hideNativeCrewSafety} from './crew-styles.js?v=0911.1746';
+import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=0911.1746';
 
 // Four background performers reuse the live A/B skeletons, geometry, materials
 // and morph arrays. Detached binding applies a crew transform AFTER skinning;
