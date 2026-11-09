@@ -1,5 +1,5 @@
 import * as T from 'three';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=0911.2312';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=0911.2348';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 const caches=new WeakMap();
 const V=()=>new T.Vector3();
