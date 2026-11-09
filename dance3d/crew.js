@@ -1,4 +1,5 @@
 import * as T from 'three';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=0911.0848';
 
 // Four background performers reuse the live A/B skeletons, geometry, materials
 // and morph arrays. Detached binding applies a crew transform AFTER skinning;
@@ -29,21 +30,45 @@ export function createCrew(scene,wardrobe){
   }
   return{index,source,root,meshes,spec};
  });
- const point=new T.Vector3(),bonePoint=new T.Vector3();let visible=false,lastTime=null;
+ const point=new T.Vector3(),bonePoint=new T.Vector3();let visible=false,lastTime=null,activeIndices=[0,1,2,3],independent=[];
+ // Frame guard: if a slow device drops under ~45 fps for 3 s while 3+ own-motion backups dance, the outer
+ // ones (crew entries 3 and 4) are hidden for the rest of the song; the inner pair keeps dancing.
+ let lastWall=null,slowFor=0,emaMs=16.7,reduced=false;
+ function setSong(chart,performance=null,tracks=[]){
+  for(const actor of independent)actor.rig.dispose();independent=[];lastWall=null;slowFor=0;emaMs=16.7;reduced=false;
+  const isTrio=/golden|what[- _]it[- _]sounds|takedown|how[- _]it.?s?[- _]done/i.test([chart?.slug,chart?.title].join(' '));
+  const count=performance?.crewCount??(isTrio?2:4);activeIndices=count===0?[]:count===2?[1,2]:[0,1,2,3];
+  for(const [i,spec]of (performance?.crew||[]).entries()){
+   if(i>=activeIndices.length)break;
+   const source=wardrobe.variants[spec.variant??1];if(!source)throw Error('Crew donor is missing');
+   const rig=createIndependentCrewRig(source);let selected=source.meshes.filter(m=>m.isSkinnedMesh&&!m.userData.requiredBottomStyle);
+   if(spec.outfit){selected=[...source.parts.face,...source.parts.upper,...source.parts.lower,...source.parts.feet];for(const slot of ['hair','top','bottom','shoes']){const choice=spec.outfit[slot]??(spec.variant??1),option=wardrobe.options[slot][choice];if(!option||wardrobe.variants[option.variant]!==source)throw Error('Independent crew outfit must use its donor rig');selected.push(...(wardrobe.styles.meshesFor(slot,choice)||source.parts[slot]));}}
+   if(spec.outfit&&wardrobe.options.bottom[spec.outfit.bottom]?.style?.startsWith('huntrix-'))selected=selected.filter(m=>!m.userData.excludeHuntrix);rig.setMeshes(selected);
+   // Same as the shared crew: small background figures skip the MToon outline pass (half the draw calls).
+   for(const m of rig.meshes)if(m.visible&&Array.isArray(m.material)&&m.material.length===2&&m.material[1].isOutline)m.material=m.material[0];
+   rig.setMotion(tracks[i],null,chart);group.add(rig.root);
+   const sign=i%2===0?-1:1,anchor=spec.anchor||[sign*.59,.18,-.85],scale=spec.scale??.8;
+   if(anchor.length!==3||!anchor.every(Number.isFinite)||!Number.isFinite(scale)||scale<=0)throw Error('Invalid crew placement');
+   rig.root.position.fromArray(anchor);rig.root.scale.setScalar(scale);independent.push({index:activeIndices[i],rig,spec,source,anchor});
+  }
+ }
  function update(show,t,aspect){
   visible=!!show;group.visible=visible;lastTime=t;
   // Landscape iPad keeps the authored spacing. Narrow windows pull the row
   // inward instead of losing the outer two dancers beyond the camera edges.
   const spacing=Math.min(1,Math.max(.44,aspect/.95));
-  for(const dancer of dancers)dancer.root.position.x=dancer.spec.x*spacing;
+  for(const dancer of dancers){dancer.root.position.x=dancer.spec.x*spacing;dancer.root.visible=activeIndices.includes(dancer.index)&&!independent.some(a=>a.index===dancer.index);}
+  const now=performance.now();
+  if(visible&&t!=null&&independent.length>2&&!reduced){if(lastWall!=null){const dt=now-lastWall;if(dt<250){emaMs+=(dt-emaMs)*.05;slowFor=emaMs>22?slowFor+dt:0;if(slowFor>3000)reduced=true;}}lastWall=now;}else if(t==null)lastWall=null;
+  for(const [k,actor]of independent.entries()){actor.rig.root.visible=visible&&!(reduced&&k>=2);if(!actor.rig.root.visible)continue;actor.rig.root.position.x=actor.anchor[0]*spacing;actor.rig.update(t,wardrobe.master.humanoid);}
   group.updateMatrixWorld(true);
  }
- function diagnostics(){return{count:dancers.length,visible,sharedSkinning:true,outlinePass:false,time:lastTime,dancers:dancers.map(d=>{
+ function diagnostics(){return{count:activeIndices.length,reduced,frameEmaMs:+emaMs.toFixed(1),independent:independent.map(a=>({index:a.index,id:a.spec.id,position:a.rig.root.position.toArray(),scale:a.rig.root.scale.x,feetWorld:['left','right'].map(side=>a.rig.humanoid.getRawBoneNode(side+'Foot').getWorldPosition(new T.Vector3()).toArray()),...a.rig.diagnostics()})),visible,sharedSkinning:independent.length===0,outlinePass:false,time:lastTime,dancers:dancers.filter(d=>activeIndices.includes(d.index)&&!independent.some(a=>a.index===d.index)).map(d=>{
   d.source.vrm.humanoid.getRawBoneNode('leftHand').getWorldPosition(bonePoint);
   point.copy(bonePoint).applyMatrix4(d.root.matrixWorld);
   return{index:d.index,variant:d.spec.variant,scale:d.spec.scale,position:d.root.position.toArray(),handWorld:point.toArray(),feetWorld:['left','right'].map(side=>d.source.vrm.humanoid.getRawBoneNode(side+'Foot').getWorldPosition(new T.Vector3()).applyMatrix4(d.root.matrixWorld).toArray()),meshes:d.meshes.length,
    sharedGeometry:d.meshes.every((m,i)=>m.geometry===d.source.meshes.filter(x=>x.isSkinnedMesh)[i].geometry),
    sharedSkeleton:d.meshes.every((m,i)=>m.skeleton===d.source.meshes.filter(x=>x.isSkinnedMesh)[i].skeleton)};
  })};}
- return{update,diagnostics,group,dancers};
+ return{update,setSong,diagnostics,group,dancers,sharedVariants(){return [...new Set(dancers.filter(d=>activeIndices.includes(d.index)&&!independent.some(a=>a.index===d.index)).map(d=>d.spec.variant))];},get independent(){return independent;}};
 }

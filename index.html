@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Bản thử 23: bé nhún theo nhạc</title>
+<title>Mũi tên theo nhạc</title>
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="theme-color" content="#8fdcff">
@@ -39,60 +39,286 @@
     };
   })();
 </script>
-<script src="sfx.js?v=0811.2041"></script>
-<link rel="stylesheet" href="dance3d/wardrobe.css?v=0811.2041">
+<script src="sfx.js?v=0911.0848"></script>
+<link rel="stylesheet" href="dance3d/wardrobe.css?v=0911.0848">
 <script type="importmap">{"imports":{"three":"./lib/three.module.js","three/addons/":"./lib/jsm/","@pixiv/three-vrm":"./lib/three-vrm.module.js"}}</script>
-<script src="dance.js?v=0811.2041"></script>
+<script src="dance.js?v=0911.0848"></script>
 <style>
+  /* ===== Look: "kẹo ngọt long lanh". One palette: plum text, pink action, gold stars, mint/yellow/pink for the 3 levels. ===== */
+  :root{
+    --font:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --plum:#3b1d52;--plum2:#6b4880;--pink:#ff4f8b;--pinkd:#c9275f;--pinkl:#ffeaf4;--pinkb:#ffc2dc;--gold:#ffd23f;
+  }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%;background:#2b1d4f;overflow:hidden;touch-action:none;font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif}
+  html,body{height:100%;background:#2b1d4f;overflow:hidden;touch-action:none;font-family:var(--font);color:var(--plum)}
+  button{font-family:inherit;color:inherit}
   #stage{position:fixed;inset:0;width:100%;height:100%;display:block}
   #scene{position:fixed;inset:0;width:100%;height:100%;display:block}
-  .combo{font:800 44px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;paint-order:stroke;stroke:#fff;stroke-width:10px;stroke-linejoin:round;fill:url(#comboGrad);opacity:0}
-  .combolbl{font:800 16px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;paint-order:stroke;stroke:#fff;stroke-width:6px;stroke-linejoin:round;fill:#d6407a;letter-spacing:2px;opacity:0}
-  .say{font:800 66px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;paint-order:stroke;stroke:#fff;stroke-width:14px;stroke-linejoin:round;fill:#21985a;opacity:0}
-  .hudtext{font:800 34px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;fill:#2f9e62}
-  .clock{font:800 26px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;fill:#2f9e62;paint-order:stroke;stroke:#fff;stroke-width:8px;stroke-linejoin:round;font-variant-numeric:tabular-nums}
-  #menu{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(20,70,90,.38);padding:20px}
-  #menu.hide{display:none}
-  .panel{background:#fff;border-radius:26px;padding:22px 24px;width:min(560px,100%);max-height:92vh;overflow:auto;touch-action:pan-y;box-shadow:0 14px 40px rgba(0,0,0,.2)}
-  .panel h1{font-size:23px;color:#21985a;margin-bottom:2px}
-  .panel .sub{font-size:14px;color:#6a7f78;margin-bottom:14px}
-  .song{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;border:0;background:#eefaf0;color:#1d5c3c;border-radius:16px;padding:13px 16px;margin-bottom:9px;font:700 17px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;text-align:left;cursor:pointer}
-  .song span{font-weight:500;font-size:13px;color:#5c8a72;white-space:nowrap}
-  .song:active{background:#d4f3da}
-  label{display:flex;align-items:center;gap:10px;font-size:15px;color:#35574a;margin-top:10px}
-  label input{width:22px;height:22px;accent-color:#2f9e62}
-  #result{font-size:18px;font-weight:800;color:#e0701c;margin-bottom:10px}
-  #result:empty{display:none}
+
+  /* ----- text inside the play scene (SVG) ----- */
+  .combo{font:900 46px var(--font);paint-order:stroke;stroke:#c9275f;stroke-width:9px;stroke-linejoin:round;fill:#fff;opacity:0;font-variant-numeric:tabular-nums}
+  .combolbl{font:800 19px var(--font);fill:#fff;opacity:0}
+  .say{font:900 64px var(--font);paint-order:stroke;stroke:#fff;stroke-width:15px;stroke-linejoin:round;fill:#ff4f8b;opacity:0}
+  .hudtext{font:900 34px var(--font);fill:#3b1d52;font-variant-numeric:tabular-nums}
+  .hudsmall{font:800 22px var(--font);fill:#6b4880;font-variant-numeric:tabular-nums}
+  .clock{font:800 22px var(--font);fill:#6b4880;font-variant-numeric:tabular-nums}
+  .padglyph{--arrow:#fff;--edge:#ff9fcb;opacity:.85}
   #stopBtn{cursor:pointer}
-  .sounds{margin-top:12px;font-size:15px;color:#35574a}
-  .sounds a{color:#2a86c9;font-weight:700}
-  #verMsg{font-weight:700;color:#e0701c}
-  .from{border:0;border-radius:10px;padding:6px 10px;margin-left:4px;background:#eefaf0;color:#1d5c3c;font:700 14px ui-rounded,"SF Pro Rounded",system-ui,sans-serif;cursor:pointer}
-  .from.on{background:#2f9e62;color:#fff}
-  #tapsBox{margin-bottom:10px}
+
+  /* ----- one-shot overlays: confetti canvas, pink edge glow, "turn the iPad" hint ----- */
+  #fx{position:fixed;inset:0;width:100%;height:100%;z-index:60;pointer-events:none}
+  #glow{position:fixed;inset:0;z-index:30;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 55%,rgba(255,120,180,0) 50%,rgba(255,100,170,.6) 100%)}
+  #glow.on{animation:glow .9s ease-out}
+  @keyframes glow{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
+  #rotate{display:none;position:fixed;z-index:35;top:max(10px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);align-items:center;gap:10px;padding:8px 18px 8px 12px;border-radius:26px;background:#fff;border:4px solid var(--pinkb);box-shadow:0 8px 20px rgba(0,0,0,.25);font:900 18px var(--font);color:var(--plum);pointer-events:none;white-space:nowrap}
+  @media (orientation:portrait){body.playing #rotate{display:flex}}
+  #rotate svg{width:34px;height:34px;animation:rot 2.4s ease-in-out infinite}
+  @keyframes rot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+
+  /* ===== Menu panel ===== */
+  #menu{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:rgba(60,20,80,.25);padding:20px}
+  #menu.hide{display:none}
+  .panel{position:relative;width:min(560px,100%);max-height:92vh;overflow-x:hidden;overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;border-radius:32px;padding:0 22px 24px;background:rgba(255,250,253,.97);border:4px solid var(--pinkb);box-shadow:0 18px 50px rgba(110,30,90,.3)}
+  body #menu .panel{background:rgba(255,250,253,.97)}   /* beats wardrobe.css (same weight, later) so the whole panel is one look */
+  #menu:not(.done) #donePanel,#menu.done #mainPanel{display:none}
+  .logo{display:block;width:100%;max-width:440px;height:auto;margin:14px auto 4px;overflow:visible}
+  .logo .tw{transform-box:fill-box;transform-origin:center;animation:tw 2.2s ease-in-out infinite}
+  .logo .tw2{animation-delay:.7s}.logo .tw3{animation-delay:1.4s}
+  @keyframes tw{0%,100%{transform:scale(.3) rotate(0);opacity:.2}50%{transform:scale(1) rotate(45deg);opacity:1}}
+  [id]{scroll-margin-top:74px}
+
+  /* quick jump bar: sticks to the top of the panel while the list scrolls */
+  .tabs{position:sticky;top:0;z-index:5;display:flex;gap:8px;padding:6px 0 12px;margin-bottom:2px;background:linear-gradient(#fffafd 78%,rgba(255,250,253,0))}
+  .tab{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;min-height:56px;border:0;border-radius:20px;background:var(--pinkl);color:var(--plum);font:800 18px var(--font);box-shadow:0 4px 0 var(--pinkb);cursor:pointer}
+  .tab:active{transform:translateY(3px);box-shadow:0 1px 0 var(--pinkb)}
+  .tab .ti{font-size:26px;line-height:1}
+  .tab.gear{flex:0 0 60px}
+
+  #result{font-weight:800;font-size:14px;line-height:1.4;color:#6b3300;background:#fff3d6;border:2px solid #ffd88a;border-radius:16px;padding:9px 12px;margin:2px 0 12px;-webkit-user-select:text;user-select:text}
+  #result:empty{display:none}
+
+  .quick{position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;width:100%;min-height:88px;padding:10px 20px 10px 12px;margin:0 0 16px;border:0;border-radius:28px;color:#fff;background:linear-gradient(180deg,#ff77ab,#f0377d);box-shadow:0 6px 0 var(--pinkd),0 12px 20px rgba(201,39,95,.28),inset 0 2px 0 rgba(255,255,255,.5);text-align:left;cursor:pointer;transition:transform .08s,box-shadow .08s}
+  .quick[hidden]{display:none}
+  .quick::after{content:"";position:absolute;top:-10%;bottom:-10%;left:-90px;width:60px;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(0) skewX(-20deg);animation:shine 3.6s ease-in-out infinite;pointer-events:none}
+  @keyframes shine{0%,62%{transform:translateX(0) skewX(-20deg)}100%{transform:translateX(680px) skewX(-20deg)}}   /* transform only: no layout work while the 3D scene renders */
+  .quick:active{transform:translateY(5px);box-shadow:0 1px 0 var(--pinkd),0 3px 8px rgba(201,39,95,.25),inset 0 2px 0 rgba(255,255,255,.5)}
+  .quick:disabled{opacity:.6;cursor:wait}
+  .q-play{flex:none;width:64px;height:64px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 3px 0 rgba(0,0,0,.14)}
+  .q-play svg{width:30px;height:30px;margin-left:4px;fill:#f0377d}
+  .quick b{display:block;font-size:28px;font-weight:900;line-height:1.1;text-shadow:0 2px 0 rgba(150,20,70,.35)}
+  .quick small{display:inline-block;margin-top:5px;max-width:100%;padding:3px 12px;border-radius:12px;background:rgba(255,255,255,.92);color:var(--plum);font-size:15px;font-weight:800}
+
+  /* songs: one card each, with three big candy buttons */
+  #songs{display:flex;flex-direction:column;gap:14px;font-weight:800;color:var(--plum2)}
+  .card{background:#fff;border:3px solid #ffdcec;border-radius:26px;padding:12px 12px 14px;box-shadow:0 4px 0 #ffd0e6}
+  .cardhead{display:flex;align-items:center;gap:12px;margin:0 2px 12px}
+  .cover{flex:none;width:54px;height:54px;border-radius:17px;display:grid;place-items:center;background:linear-gradient(135deg,hsl(var(--h1,330) 95% 78%),hsl(var(--h2,20) 95% 66%));box-shadow:0 3px 0 rgba(0,0,0,.12),inset 0 2px 0 rgba(255,255,255,.6)}
+  .cover svg{width:30px;height:30px;fill:#fff;stroke:rgba(59,29,82,.4);stroke-width:1.6;stroke-linejoin:round}
+  .cmeta{min-width:0}
+  .ctitle{font-weight:900;font-size:19px;line-height:1.15;color:var(--plum)}
+  .csub{margin-top:3px;font-size:14px;font-weight:700;color:var(--plum2)}
+  .csub .bpm{display:none}
+  body:has(#parent[open]) .csub .bpm{display:inline}
+  .levels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .lvl{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:118px;padding:12px 4px 10px;border:0;border-radius:22px;cursor:pointer;color:var(--plum);background:linear-gradient(180deg,var(--c1),var(--c2));box-shadow:0 6px 0 var(--c3),0 10px 16px rgba(80,30,90,.2),inset 0 2px 0 rgba(255,255,255,.65);transition:transform .08s,box-shadow .08s}
+  .lvl::before{content:"";position:absolute;left:12%;right:12%;top:5px;height:30%;border-radius:18px 18px 40px 40px/12px 12px 22px 22px;background:linear-gradient(rgba(255,255,255,.6),rgba(255,255,255,0));pointer-events:none}
+  .lvl:active{transform:translateY(5px);box-shadow:0 1px 0 var(--c3),0 3px 8px rgba(80,30,90,.2),inset 0 2px 0 rgba(255,255,255,.65)}
+  .lvl:disabled{opacity:.55;cursor:wait}
+  .lvl-de{--c1:#aef5d8;--c2:#62dcad;--c3:#2fa57a}
+  .lvl-vua{--c1:#fff0a0;--c2:#ffc93c;--c3:#d9980b}
+  .lvl-kho{--c1:#ffc2da;--c2:#ff82b2;--c3:#d4457f}
+  .lvl-name{position:relative;font-weight:900;font-size:26px;line-height:1}
+  .stars{position:relative;display:flex;gap:1px}
+  .st{width:27px;height:27px;overflow:visible}
+  .st.on use{fill:url(#gStar);stroke:#d98400;stroke-width:6;stroke-linejoin:round;paint-order:stroke}
+  .st.off use{fill:rgba(59,29,82,.16)}
+  .pads{position:relative;width:52px;height:30px;overflow:visible}
+  .pads rect{fill:rgba(255,255,255,.6);stroke:rgba(59,29,82,.4);stroke-width:2}
+  .pads circle{fill:var(--plum)}
+  .lvl .m{display:none;position:relative;font-size:11px;font-weight:700;opacity:.85}
+  body:has(#parent[open]) .lvl .m{display:block}
+  .crown{position:absolute;top:-12px;right:-5px;font-size:24px;line-height:1;transform:rotate(14deg);filter:drop-shadow(0 2px 0 rgba(0,0,0,.22));pointer-events:none}
+
+  .sec{display:flex;align-items:center;gap:10px;margin:22px 2px 8px;font:900 23px var(--font);color:var(--plum)}
+  .sec .ti{font-size:28px;line-height:1}
+  #outfits{font-size:14px;color:var(--plum2)}
+
+  /* for parents: everything that is not for the child lives here */
+  .parent{margin-top:22px;border-radius:22px;background:#f6f0fa;border:2px dashed #d9c8ea}
+  .parent>summary{display:flex;align-items:center;gap:10px;min-height:60px;padding:0 18px;font:800 17px var(--font);color:var(--plum2);cursor:pointer;list-style:none}
+  .parent>summary::-webkit-details-marker{display:none}
+  .parent>summary::after{content:"▾";margin-left:auto;font-size:20px;transition:transform .2s}
+  .parent[open]>summary::after{transform:rotate(180deg)}
+  .parent .ti{font-size:24px;line-height:1}
+  .pbody{padding:2px 18px 18px;font-size:15px;color:var(--plum)}
+  .sub{font-size:14px;line-height:1.45;color:var(--plum2);margin-bottom:12px}
+  .sounds{margin-top:14px;font-size:15px;color:var(--plum)}
+  .sounds a{color:#1f6fb8;font-weight:800;display:inline-flex;align-items:center;min-height:44px}
+  #verMsg{font-weight:800;color:#6b3300}
+  .from{min-height:44px;border:2px solid #d9c8ea;border-radius:14px;padding:8px 14px;margin:4px 4px 0 0;background:#fff;color:var(--plum);font:800 15px var(--font);cursor:pointer}
+  .from.on{background:var(--plum);border-color:var(--plum);color:#fff}
+  .recbtn{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:48px;margin-top:6px;padding:8px 14px;border:2px solid #d9c8ea;border-radius:14px;background:#fff;font:800 15px var(--font);color:var(--plum);text-align:left;cursor:pointer}
+  .recbtn span{font-weight:600;font-size:13px;color:var(--plum2)}
+  .recbtn:disabled{opacity:.5;cursor:wait}
+  .parent label{display:flex;align-items:center;gap:12px;min-height:50px;margin-top:6px;font-size:15px;color:var(--plum)}
+  .parent label input{flex:none;width:28px;height:28px;accent-color:#ff4f8b}
+  #tapsBox{margin:10px 0}
   #tapsBox.hide{display:none}
-  #taps{width:100%;height:84px;font:13px ui-monospace,monospace;border:1px solid #cfe7d6;border-radius:10px;padding:6px;user-select:text;-webkit-user-select:text}
-  #load{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(255,214,232,.72);backdrop-filter:blur(4px);font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif}
+  #taps{width:100%;height:84px;font:13px ui-monospace,monospace;border:2px solid #d9c8ea;border-radius:12px;padding:8px;color:var(--plum);user-select:text;-webkit-user-select:text}
+  button:focus-visible,summary:focus-visible,a:focus-visible,input:focus-visible{outline:4px solid var(--plum);outline-offset:3px}
+
+  /* ===== Result screen ===== */
+  #donePanel{text-align:center;padding-top:20px}
+  .done-song{display:inline-block;max-width:100%;padding:7px 16px;border-radius:16px;background:#f6f0fa;font-weight:800;font-size:15px;color:var(--plum2)}
+  .done-title{margin:12px 0 0;font-weight:900;font-size:44px;line-height:1.05;color:#e0306f;text-shadow:0 3px 0 #ffd0e6,0 8px 16px rgba(255,79,139,.25)}
+  .done-stars{display:flex;justify-content:center;align-items:flex-end;gap:2px;margin:6px 0 0;height:128px}
+  .dstar{position:relative;flex:none;width:96px;height:96px}
+  .dstar:nth-child(1){transform:rotate(-10deg) translateY(6px)}
+  .dstar:nth-child(2){width:118px;height:118px}
+  .dstar:nth-child(3){transform:rotate(10deg) translateY(6px)}
+  .dstar svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+  .dstar .empty use{fill:#eadcf5;stroke:#d4bde6;stroke-width:5;stroke-linejoin:round}
+  .dstar .full{opacity:0}
+  .dstar .full use{fill:url(#gStar);stroke:#d98400;stroke-width:6;stroke-linejoin:round;paint-order:stroke}
+  .dstar.lit .full{animation:starPop .65s cubic-bezier(.2,1.7,.4,1) forwards}
+  @keyframes starPop{0%{opacity:0;transform:scale(.2) rotate(-60deg)}60%{opacity:1;transform:scale(1.3) rotate(8deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+  .done-score{margin-top:2px;display:flex;align-items:baseline;justify-content:center;gap:8px}
+  .done-num{font-weight:900;font-size:72px;line-height:1;color:var(--plum);font-variant-numeric:tabular-nums;text-shadow:0 4px 0 #ffd0e6}
+  .done-unit{font-weight:800;font-size:21px;color:var(--plum2)}
+  .done-best{min-height:22px;margin-top:2px;font-weight:800;font-size:15px;color:var(--plum2)}
+  .done-record{display:inline-flex;align-items:center;gap:8px;margin:6px 0 2px;padding:8px 18px;border-radius:22px;font-weight:900;font-size:20px;color:#5a3000;background:linear-gradient(180deg,#fff2a8,#ffd23f);box-shadow:0 4px 0 #d9980b;animation:recPulse .9s ease-in-out infinite alternate}
+  .done-record[hidden]{display:none}
+  @keyframes recPulse{to{transform:scale(1.05) rotate(-1.5deg)}}
+  .done-chips{display:flex;justify-content:center;gap:10px;margin:12px 0 6px}
+  .chip{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:20px;background:#fff;border:3px solid #ffe0ee;font-weight:900;font-size:24px;color:var(--plum)}
+  .chip small{font-weight:700;font-size:13px;color:var(--plum2)}
+  .chip svg{width:26px;height:26px;fill:var(--pink)}
+  .done-grades{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;margin:8px 0 2px;font-size:13px;font-weight:700;color:var(--plum2)}
+  .gchip i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+  .gchip b{color:var(--plum)}
+  .done-btns{display:flex;gap:12px;margin-top:16px;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .3s,transform .3s}
+  .done-btns.ready{opacity:1;pointer-events:auto;transform:none}
+  .big{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;min-height:78px;padding:0 10px;border:0;border-radius:28px;font:900 24px var(--font);color:var(--plum);cursor:pointer;background:linear-gradient(180deg,#efe4ff,#cdb8ff);box-shadow:0 6px 0 #9a80e0,0 10px 16px rgba(80,30,140,.18),inset 0 2px 0 rgba(255,255,255,.7);transition:transform .08s,box-shadow .08s}
+  .big:active{transform:translateY(5px);box-shadow:0 1px 0 #9a80e0,inset 0 2px 0 rgba(255,255,255,.7)}
+  .big.pink{color:#fff;background:linear-gradient(180deg,#ff77ab,#f0377d);box-shadow:0 6px 0 var(--pinkd),0 10px 16px rgba(201,39,95,.26),inset 0 2px 0 rgba(255,255,255,.5);text-shadow:0 2px 0 rgba(150,20,70,.35)}
+  .big.pink:active{box-shadow:0 1px 0 var(--pinkd),inset 0 2px 0 rgba(255,255,255,.5)}
+  .big svg{width:30px;height:30px;flex:none}
+  .big:disabled{opacity:.6;cursor:wait}
+
+  .chip{white-space:nowrap}
+  @media (max-width:600px),(max-height:700px){
+    #donePanel{padding-top:12px}
+    .done-song{font-size:13px;padding:5px 12px}
+    .done-title{font-size:32px;margin-top:6px}
+    .done-stars{height:92px;margin-top:4px}
+    .dstar{width:70px;height:70px}.dstar:nth-child(2){width:88px;height:88px}
+    .done-num{font-size:54px}.done-unit{font-size:17px}
+    .done-chips{margin:8px 0 2px}.chip{font-size:20px;padding:6px 10px}.chip svg{width:22px;height:22px}
+    .done-grades{display:none}
+    .done-btns{margin-top:10px}.big{min-height:66px;font-size:21px;border-radius:24px}
+  }
+
+  /* ===== Loading ===== */
+  #load{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(120% 90% at 20% 10%,#fff0f7 0,#ffd3e7 40%,#e4d2ff 100%);font-family:var(--font)}
+  #load.soft{background:rgba(255,214,232,.6);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
   #load.hide{display:none}
-  #load .card{background:#fff;border-radius:28px;padding:26px 30px;width:min(440px,88vw);text-align:center;box-shadow:0 14px 40px rgba(200,60,120,.25);border:4px solid #ffc2dc}
-  #load .face{font-size:44px;animation:ldb 1s ease-in-out infinite}
-  @keyframes ldb{50%{transform:translateY(-8px) rotate(6deg)}}
-  #load .lbl{font-weight:800;font-size:19px;color:#d6457f;margin:8px 0 14px}
-  #load .bar{height:18px;border-radius:9px;background:#ffe3ef;overflow:hidden}
-  #load .fill{height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,#ff8fbd,#ff5c9e);transition:width .2s}
+  #load .sp{position:absolute;width:30px;height:30px;background:radial-gradient(circle,#fff 0,#fff 30%,#ffd23f 100%);clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);animation:tw 2.4s ease-in-out infinite}
+  #load .s1{left:14%;top:22%}#load .s2{left:80%;top:18%;animation-delay:.6s;width:22px;height:22px}#load .s3{left:70%;top:72%;animation-delay:1.1s}#load .s4{left:22%;top:76%;animation-delay:1.7s;width:20px;height:20px}#load .s5{left:50%;top:10%;animation-delay:.3s;width:18px;height:18px}
+  #load .card{position:relative;background:#fff;border-radius:34px;padding:26px 30px 26px;width:min(460px,88vw);text-align:center;box-shadow:0 18px 50px rgba(200,60,120,.28);border:5px solid var(--pinkb)}
+  #load .mascot{display:block;width:120px;height:120px;margin:-86px auto 8px;transform-origin:50% 90%;animation:ldb 1.1s ease-in-out infinite;overflow:visible}
+  @keyframes ldb{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-12px) rotate(5deg)}}
+  #load .lbl{font-weight:900;font-size:22px;line-height:1.25;color:#b82a68;margin:6px 0 16px}
+  #load .bar{height:26px;border-radius:13px;background:#ffe3ef;overflow:hidden;box-shadow:inset 0 2px 4px rgba(200,60,120,.18)}
+  #load .fill{position:relative;height:100%;width:0;border-radius:13px;background:linear-gradient(90deg,#ff8fbd,#ff4f8b 60%,#ffb938);transition:width .2s}
+  #load .fill::after{content:"";position:absolute;left:8px;right:8px;top:4px;height:6px;border-radius:3px;background:rgba(255,255,255,.55)}
   #load .bar.ind .fill{width:35%!important;animation:ldi 1.1s ease-in-out infinite alternate}
-  @keyframes ldi{from{margin-left:0}to{margin-left:65%}}
-  #load button{margin-top:14px;border:0;border-radius:16px;background:#ff5c9e;color:#fff;font:800 17px inherit;font-family:inherit;padding:10px 22px;cursor:pointer}
-  .song:disabled{opacity:.5;cursor:wait}
+  @keyframes ldi{from{transform:translateX(0)}to{transform:translateX(186%)}}
+  #load .tip{margin-top:16px;font-size:16px;font-weight:700;color:var(--plum2)}
+  #load button{margin-top:14px;min-height:56px;border:0;border-radius:20px;background:var(--pink);color:#fff;font:900 20px var(--font);padding:0 28px;cursor:pointer;box-shadow:0 5px 0 var(--pinkd)}
+
+  /* ===== UI pass 2 (2026-11-09) ===== */
+  html,body{-webkit-touch-callout:none}   /* a held thumb never brings up the iPad's copy / look-up bubble */
+  /* level buttons: the stars show what she has EARNED on that level (the same stars as the result screen);
+     how hard = the bars, how many buttons = the dots */
+  .st.off use{fill:rgba(255,255,255,.62);stroke:rgba(59,29,82,.3);stroke-width:5;stroke-linejoin:round}
+  .lvl-foot{position:relative;display:flex;align-items:center;gap:7px}
+  .bars{width:30px;height:24px;overflow:visible}
+  .bars rect{stroke:rgba(255,255,255,.8);stroke-width:1.5}
+  .bars .on{fill:var(--plum)}.bars .off{fill:rgba(59,29,82,.17)}
+  /* a picture for each song */
+  .cover{width:60px;height:60px;border-radius:19px}
+  .cover.emb{background:linear-gradient(135deg,var(--e1),var(--e2))}
+  .lvl .st.new{animation:starPop .7s cubic-bezier(.2,1.7,.4,1) .35s both}   /* a star she just earned lands on the button */
+  .cover svg.emb-art{width:46px;height:46px;fill:none;stroke:none;overflow:visible}
+  /* stop button: a pause sign on touch screens (a touch there pauses); the square stays for mouse and keyboard */
+  #stopBtn .pz-bars{display:none}
+  @media (hover:none) and (pointer:coarse){#stopBtn .pz-bars{display:inline}#stopBtn .pz-sq{display:none}}
+  /* pause sheet: the scene stays frozen behind it, one huge "play" to go on, a smaller way out */
+  #pause{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(43,20,70,.5);touch-action:none}
+  #pause[hidden]{display:none}
+  .pz-card{position:relative;width:min(400px,92vw);padding:66px 26px 26px;border-radius:36px;background:#fffafd;border:5px solid var(--pinkb);box-shadow:0 20px 50px rgba(40,10,60,.45);text-align:center}
+  .pz-mascot{position:absolute;left:50%;top:-62px;width:120px;height:120px;margin-left:-60px;overflow:visible}
+  .pz-title{font:900 28px var(--font);color:var(--plum);margin:0 0 16px}
+  .pz-go{display:grid;place-items:center;width:136px;height:136px;margin:0 auto;border:0;border-radius:50%;background:linear-gradient(180deg,#ff77ab,#f0377d);box-shadow:0 8px 0 var(--pinkd),0 14px 26px rgba(201,39,95,.35),inset 0 3px 0 rgba(255,255,255,.5);cursor:pointer;animation:pzBeat 1.2s ease-in-out infinite}
+  .pz-go svg{width:60px;height:60px;margin-left:9px}
+  .pz-go:active{animation:none;transform:translateY(6px);box-shadow:0 2px 0 var(--pinkd),inset 0 3px 0 rgba(255,255,255,.5)}
+  @keyframes pzBeat{50%{transform:scale(1.06)}}
+  .pz-exit{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-width:170px;min-height:64px;margin-top:24px;padding:0 24px;border:0;border-radius:24px;background:linear-gradient(180deg,#efe4ff,#cdb8ff);box-shadow:0 5px 0 #9a80e0;font:900 21px var(--font);color:var(--plum);cursor:pointer}
+  .pz-exit:active{transform:translateY(4px);box-shadow:0 1px 0 #9a80e0}
+  .pz-exit svg{width:28px;height:28px}
+  /* parents' gate: on a touch screen the ⚙️ fills up while held and opens after 1 second */
+  .tab.gear,.parent>summary{position:relative}
+  .tab.gear::before,.parent>summary::before{content:"";position:absolute;left:14%;right:14%;bottom:6px;height:5px;border-radius:3px;background:var(--pink);transform:scaleX(0);transform-origin:left center;opacity:0;pointer-events:none}
+  .tab.gear.holding::before,.parent>summary.holding::before{opacity:1;transform:scaleX(1);transition:transform 1s linear}
+  #gateHint{position:fixed;z-index:80;width:250px;padding:10px 14px;border-radius:16px;background:var(--plum);color:#fff;font:800 15px/1.3 var(--font);text-align:center;box-shadow:0 8px 20px rgba(0,0,0,.25);pointer-events:none;opacity:0;transform:translateY(-4px);transition:opacity .2s,transform .2s}
+  #gateHint.on{opacity:1;transform:none}
+  /* upright iPad and phone: the sticky bar sits flush with the panel top, so no list peeks above it */
+  @media (max-width:999px){body #menu #mainPanel{padding-top:0}}
+
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
-<div id="load"><div class="card"><div class="face">🌸</div><div class="lbl" id="loadLbl">Đang tải nhân vật và quần áo…</div><div class="bar"><div class="fill" id="loadFill"></div></div><div id="loadRetry" hidden><button onclick="location.reload()">Tải lại</button></div></div></div>
+<!-- shared icons and gradients (used by the menu, the play scene and the result screen) -->
+<svg id="sprite" width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="gStar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff39a"/><stop offset="1" stop-color="#ffb21e"/></linearGradient>
+    <linearGradient id="gBar" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff7eb3"/><stop offset="1" stop-color="#ffb938"/></linearGradient>
+    <linearGradient id="gCombo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff6aa5"/><stop offset="1" stop-color="#e8316f"/></linearGradient>
+    <linearGradient id="gPerfect" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e0286f"/><stop offset=".55" stop-color="#f0501e"/><stop offset="1" stop-color="#e06a00"/></linearGradient>
+    <linearGradient id="gMile" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e06a00"/><stop offset=".5" stop-color="#e0286f"/><stop offset="1" stop-color="#7a56e0"/></linearGradient>
+    <linearGradient id="gLogo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9ec9"/><stop offset="1" stop-color="#ff3f84"/></linearGradient>
+    <radialGradient id="gPad" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#ffe0ee"/></radialGradient>
+    <path id="starP" d="M0,-44 L11.17,-15.37 L41.85,-13.6 L18.07,5.87 L25.86,35.6 L0,19 L-25.86,35.6 L-18.07,5.87 L-41.85,-13.6 L-11.17,-15.37 Z"/>
+    <path id="heartP" d="M0,-10 C-6,-22 -26,-18 -26,-2 C-26,12 -8,22 0,30 C8,22 26,12 26,-2 C26,-18 6,-22 0,-10 Z"/>
+    <path id="sparkP" d="M0,-16 Q2.5,-2.5 16,0 Q2.5,2.5 0,16 Q-2.5,2.5 -16,0 Q-2.5,-2.5 0,-16 Z"/>
+  </defs>
+</svg>
+
+<div id="load" role="status" aria-live="polite">
+  <i class="sp s1"></i><i class="sp s2"></i><i class="sp s3"></i><i class="sp s4"></i><i class="sp s5"></i>
+  <div class="card">
+    <!-- the flower mascot: the same flower as the rings in the game -->
+    <svg class="mascot" viewBox="-64 -64 128 128" aria-hidden="true">
+      <g fill="#fff" stroke="#ff9fcb" stroke-width="4">
+        <circle cx="0" cy="-38" r="19"/><circle cx="27" cy="-27" r="19"/><circle cx="38" cy="0" r="19"/><circle cx="27" cy="27" r="19"/>
+        <circle cx="0" cy="38" r="19"/><circle cx="-27" cy="27" r="19"/><circle cx="-38" cy="0" r="19"/><circle cx="-27" cy="-27" r="19"/>
+      </g>
+      <circle r="31" fill="#ffe36b" stroke="#ffb938" stroke-width="4"/>
+      <ellipse cx="-17" cy="7" rx="7" ry="4.5" fill="#ff9fb5" opacity=".75"/><ellipse cx="17" cy="7" rx="7" ry="4.5" fill="#ff9fb5" opacity=".75"/>
+      <circle cx="-11" cy="-5" r="5" fill="#3b1d52"/><circle cx="11" cy="-5" r="5" fill="#3b1d52"/>
+      <circle cx="-12.6" cy="-6.8" r="1.8" fill="#fff"/><circle cx="9.4" cy="-6.8" r="1.8" fill="#fff"/>
+      <path d="M-8,8 Q0,17 8,8" fill="none" stroke="#3b1d52" stroke-width="3.5" stroke-linecap="round"/>
+    </svg>
+    <div class="lbl" id="loadLbl">Đang tải nhân vật và quần áo…</div>
+    <div class="bar"><div class="fill" id="loadFill"></div></div>
+    <p class="tip" id="loadTip">Chạm khi mũi tên tới vòng hoa nhé!</p>
+    <div id="loadRetry" hidden><button onclick="location.reload()">Tải lại</button></div>
+  </div>
+</div>
 <canvas id="stage"></canvas>
 <svg id="scene" viewBox="0 0 1180 820" preserveAspectRatio="xMidYMid meet"
-     style="--arrow:#ff9d2e;--edge:#c8640a;--ring:#ffffff;--ring2:#ffe36b;--ringfill:rgba(255,255,255,.55);--lane:rgba(255,255,255,.55);--burst:#fff;--hair:#6a4128;--dress:#ffd23f;--dress2:#fff4bf;--skin:#ffdcc4;--shoe:#ff8a3c;--ui:#fff;--uit:#2f9e62;--padedge:#57c26f">
+     style="--arrow:#ff9d2e;--edge:#c8640a;--ring:#ffffff;--ring2:#ffe36b;--ringfill:rgba(255,255,255,.55);--lane:rgba(255,255,255,.55);--burst:#fff;--hair:#6a4128;--dress:#ffd23f;--dress2:#fff4bf;--skin:#ffdcc4;--shoe:#ff8a3c;--ui:#fff;--uit:#ff4f8b;--padedge:#ff9fcb">
   <defs>
     <linearGradient id="b-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fd4ff"/><stop offset=".72" stop-color="#e2f7ff"/></linearGradient>
     <g id="arrowL">
@@ -125,10 +351,15 @@
       <use href="#spark" transform="translate(-108 60) scale(1.4)"/>
       <use href="#spark" transform="translate(-104 -60) scale(1)"/>
     </g>
+    <g id="haloArt" fill="none">
+      <circle r="124" stroke="#ff9fcb" stroke-width="24" opacity=".6"/>
+      <circle r="124" stroke="#fff" stroke-width="9"/>
+    </g>
     <g id="pad">
-      <circle r="94" cy="7" fill="#000" opacity=".12"/>
-      <circle r="94" fill="var(--ui)"/>
-      <circle r="94" fill="none" stroke="var(--padedge)" stroke-width="9"/>
+      <circle r="94" cy="8" fill="#7a2a64" opacity=".2"/>
+      <circle r="94" fill="url(#gPad)"/>
+      <circle r="94" fill="none" stroke="var(--padedge)" stroke-width="10"/>
+      <circle r="76" fill="none" stroke="#fff" stroke-width="4" opacity=".85"/>
     </g>
   </defs>
 
@@ -137,14 +368,19 @@
     <rect x="805" y="515" width="435" height="90" rx="45"/><rect x="805" y="665" width="435" height="90" rx="45"/>
   </g>
   <!-- soft buttons at the edges, under the thumbs: a touch anywhere on that half and row counts, these show where -->
-  <g transform="translate(110 560) scale(.62)"><g id="ghostLU" opacity=".42"><use href="#pad"/></g></g>
-  <g transform="translate(110 710) scale(.62)"><g id="ghostLD" opacity=".42"><use href="#pad"/></g></g>
-  <g transform="translate(1070 560) scale(.62)"><g id="ghostRU" opacity=".42"><use href="#pad"/></g></g>
-  <g transform="translate(1070 710) scale(.62)"><g id="ghostRD" opacity=".42"><use href="#pad"/></g></g>
+  <g transform="translate(110 560) scale(.62)"><g id="ghostLU" opacity=".5"><use href="#pad"/></g></g>
+  <g transform="translate(110 710) scale(.62)"><g id="ghostLD" opacity=".5"><use href="#pad"/></g></g>
+  <g transform="translate(1070 560) scale(.62)"><g id="ghostRU" opacity=".5"><use href="#pad"/></g></g>
+  <g transform="translate(1070 710) scale(.62)"><g id="ghostRD" opacity=".5"><use href="#pad"/></g></g>
   <g transform="translate(330 560) scale(.72)"><g id="ringLU"><use href="#flowerRing"/></g></g>
   <g transform="translate(330 710) scale(.72)"><g id="ringLD"><use href="#flowerRing"/></g></g>
   <g transform="translate(850 560) scale(.72)"><g id="ringRU"><use href="#flowerRing"/></g></g>
   <g transform="translate(850 710) scale(.72)"><g id="ringRD"><use href="#flowerRing"/></g></g>
+  <!-- a soft halo that lights up on the ring an arrow is about to reach -->
+  <g transform="translate(330 560) scale(.72)"><g id="haloLU" opacity="0"><use href="#haloArt"/></g></g>
+  <g transform="translate(330 710) scale(.72)"><g id="haloLD" opacity="0"><use href="#haloArt"/></g></g>
+  <g transform="translate(850 560) scale(.72)"><g id="haloRU" opacity="0"><use href="#haloArt"/></g></g>
+  <g transform="translate(850 710) scale(.72)"><g id="haloRD" opacity="0"><use href="#haloArt"/></g></g>
 
   <g id="notes"></g>
 
@@ -152,49 +388,154 @@
   <g transform="translate(330 710) scale(.72)"><g id="burstLD" opacity="0"><use href="#burstArt"/></g></g>
   <g transform="translate(850 560) scale(.72)"><g id="burstRU" opacity="0"><use href="#burstArt"/></g></g>
   <g transform="translate(850 710) scale(.72)"><g id="burstRD" opacity="0"><use href="#burstArt"/></g></g>
-  <g transform="translate(590 140)"><text id="say" class="say" text-anchor="middle"></text></g>
-  <defs><linearGradient id="comboGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7eb3"/><stop offset="1" stop-color="#e8457f"/></linearGradient></defs>
-  <g transform="translate(590 196)"><text id="comboNum" class="combo" text-anchor="middle"></text><text id="comboLbl" class="combolbl" text-anchor="middle" y="24">liên tiếp ♥</text></g>
 
-  <g id="stopBtn" transform="translate(66 62)">
+  <!-- praise word, then the combo badge under it (both clear of the top bar) -->
+  <g transform="translate(590 142)"><text id="say" class="say" text-anchor="middle" y="22"></text></g>
+  <g transform="translate(590 214)">
+    <g id="comboBadge">
+      <g id="comboBg" opacity="0">
+        <rect x="-106" y="-31" width="212" height="62" rx="31" fill="#c9275f" opacity=".35" transform="translate(0 5)"/>
+        <rect x="-106" y="-31" width="212" height="62" rx="31" fill="url(#gCombo)" stroke="#fff" stroke-width="6"/>
+        <rect x="-86" y="-25" width="172" height="15" rx="7.5" fill="#fff" opacity=".3"/>
+        <use href="#heartP" transform="translate(-76 -1) scale(.62)" fill="#fff"/>
+      </g>
+      <text id="comboNum" class="combo" text-anchor="middle" x="-20" y="15"></text>
+      <text id="comboLbl" class="combolbl" x="20" y="9">liên tiếp</text>
+    </g>
+  </g>
+
+  <!-- top bar: stop, song progress (with a star that travels along it and the clock), score -->
+  <g id="stopBtn" transform="translate(66 62)" role="button" aria-label="Dừng chơi">
     <circle r="44" fill="transparent"/>
-    <circle r="36" fill="var(--ui)"/>
-    <rect x="-13" y="-13" width="26" height="26" rx="5" fill="var(--uit)"/>
+    <circle r="36" cy="5" fill="#7a2a64" opacity=".22"/>
+    <circle r="36" fill="#fff" stroke="#ff9fcb" stroke-width="6"/>
+    <rect class="pz-sq" x="-13" y="-13" width="26" height="26" rx="7" fill="#ff4f8b"/>
+    <g class="pz-bars" fill="#ff4f8b"><rect x="-13" y="-15" width="9.5" height="30" rx="4"/><rect x="3.5" y="-15" width="9.5" height="30" rx="4"/></g>
   </g>
-  <rect x="390" y="50" width="400" height="24" rx="12" fill="var(--ui)"/>
-  <rect id="bar" x="396" y="56" width="0" height="12" rx="6" fill="var(--uit)"/>
-  <text id="clock" class="clock" x="590" y="106" text-anchor="middle"></text>
-  <g transform="translate(1000 62)">
-    <rect x="-130" y="-36" width="284" height="72" rx="36" fill="var(--ui)"/>
-    <text id="score" class="hudtext" x="-104" y="12">0</text>
-    <text id="hits" class="hudtext" x="136" y="12" text-anchor="end" style="font-size:26px">0/0</text>
+  <g transform="translate(590 62)">
+    <rect x="-214" y="-28" width="428" height="56" rx="28" fill="#fff" stroke="#ffc2dc" stroke-width="5"/>
+    <rect x="-186" y="-8" width="262" height="16" rx="8" fill="#ffe3ef"/>
+    <rect id="bar" x="-186" y="-8" width="0" height="16" rx="8" fill="url(#gBar)"/>
+    <g id="knob" transform="translate(-186 0)"><use href="#starP" transform="scale(.4)" fill="url(#gStar)" stroke="#fff" stroke-width="9" paint-order="stroke"/></g>
+    <text id="clock" class="clock" x="198" y="8" text-anchor="end"></text>
   </g>
+  <g transform="translate(1010 62)"><g id="scoreBox">
+    <rect x="-138" y="-28" width="290" height="56" rx="28" fill="#fff" stroke="#ffc2dc" stroke-width="5"/>
+    <use href="#starP" transform="translate(-106 0) scale(.5)" fill="url(#gStar)" stroke="#d98400" stroke-width="7" stroke-linejoin="round"/>
+    <text id="score" class="hudtext" x="-78" y="12">0</text>
+    <use id="hitsIcon" href="#heartP" transform="translate(58 0) scale(.42)" fill="#ff4f8b"/>
+    <text id="hits" class="hudsmall" x="140" y="8" text-anchor="end">0/0</text>
+  </g></g>
 </svg>
+<canvas id="fx" aria-hidden="true"></canvas>
+<div id="glow" aria-hidden="true"></div>
+<div id="rotate" aria-live="polite">
+  <svg viewBox="-20 -20 40 40" aria-hidden="true"><rect x="-8" y="-14" width="16" height="28" rx="3.5" fill="#ff4f8b" stroke="#c9275f" stroke-width="2"/><rect x="-5.5" y="-10.5" width="11" height="18" rx="1.5" fill="#fff"/></svg>
+  <span>Xoay ngang iPad nhé!</span>
+</div>
+<!-- pause (a touch on the stop button while playing, or the iPad leaving the page): the scene stays frozen behind,
+     one big "play" goes on from the same moment, a smaller button leaves the song -->
+<div id="pause" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" hidden>
+  <div class="pz-card">
+    <svg class="pz-mascot" viewBox="-64 -64 128 128" aria-hidden="true">
+      <g fill="#fff" stroke="#ff9fcb" stroke-width="4">
+        <circle cx="0" cy="-38" r="19"/><circle cx="27" cy="-27" r="19"/><circle cx="38" cy="0" r="19"/><circle cx="27" cy="27" r="19"/>
+        <circle cx="0" cy="38" r="19"/><circle cx="-27" cy="27" r="19"/><circle cx="-38" cy="0" r="19"/><circle cx="-27" cy="-27" r="19"/>
+      </g>
+      <circle r="31" fill="#ffe36b" stroke="#ffb938" stroke-width="4"/>
+      <ellipse cx="-17" cy="8" rx="7" ry="4.5" fill="#ff9fb5" opacity=".75"/><ellipse cx="17" cy="8" rx="7" ry="4.5" fill="#ff9fb5" opacity=".75"/>
+      <path d="M-16,-4 Q-11,2 -6,-4 M6,-4 Q11,2 16,-4" fill="none" stroke="#3b1d52" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M-5,11 Q0,15 5,11" fill="none" stroke="#3b1d52" stroke-width="3" stroke-linecap="round"/>
+      <path d="M34,-44 h11 l-11,12 h11 M50,-60 h8 l-8,9 h8" fill="none" stroke="#a98bff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <h2 class="pz-title" id="pauseTitle">Tạm dừng</h2>
+    <button id="pauseGo" class="pz-go" type="button" aria-label="Chơi tiếp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6,3.5 L20.5,12 L6,20.5 Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/></svg></button>
+    <button id="pauseExit" class="pz-exit" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5,11.5 L12,4 L20.5,11.5 M6.5,10 L6.5,20 L17.5,20 L17.5,10" fill="none" stroke="#3b1d52" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Thoát</button>
+  </div>
+</div>
+<div id="gateHint" aria-hidden="true">Bố mẹ: giữ ⚙️ 1 giây để mở</div>
 
 <div id="menu">
-  <div class="panel">
-    <h1>Bản thử 23: bé nhún theo nhạc</h1>
-    <p class="sub">Dễ: ít mũi tên, 2 nút trái phải. Vừa: nhiều mũi tên hơn, 2 nút. Khó: như Vừa nhưng 4 nút (trên, dưới mỗi bên). Mũi tên theo beat, dày lên ở đoạn bốc, thưa ở đoạn chùng. Bấm vào vòng hoa (chạm nửa màn hình trái/phải cũng được), hoặc phím W, S, ↑, ↓. Bé và 4 bạn nhảy theo nhạc. Chọn đồ cho bé ở dưới.</p>
-    <p class="sub">Phiên bản <b id="ver"></b> <button id="checkVer" class="from">Kiểm tra bản mới</button> <span id="verMsg"></span></p>
-    <p id="result"></p>
-    <div id="tapsBox" class="hide"><textarea id="taps" readonly></textarea><button id="copyTaps" class="from">Chép</button></div>
+  <div class="panel" id="mainPanel">
+    <svg class="logo" viewBox="0 0 480 96" role="img" aria-label="Mũi Tên Theo Nhạc">
+      <g transform="translate(48 50)">
+        <g fill="#fff" stroke="#ff9fcb" stroke-width="3">
+          <circle cx="0" cy="-23" r="12"/><circle cx="16" cy="-16" r="12"/><circle cx="23" cy="0" r="12"/><circle cx="16" cy="16" r="12"/>
+          <circle cx="0" cy="23" r="12"/><circle cx="-16" cy="16" r="12"/><circle cx="-23" cy="0" r="12"/><circle cx="-16" cy="-16" r="12"/>
+        </g>
+        <circle r="17" fill="#ffe36b" stroke="#ffb938" stroke-width="3"/><circle r="6" fill="#fff"/>
+      </g>
+      <g font-weight="900" stroke-linejoin="round">
+        <text x="282" y="66" text-anchor="middle" font-size="45" textLength="360" lengthAdjust="spacingAndGlyphs" fill="#c9275f" stroke="#c9275f" stroke-width="14" transform="translate(0 5)">Mũi Tên Theo Nhạc</text>
+        <text x="282" y="66" text-anchor="middle" font-size="45" textLength="360" lengthAdjust="spacingAndGlyphs" fill="url(#gLogo)" stroke="#fff" stroke-width="14" paint-order="stroke">Mũi Tên Theo Nhạc</text>
+      </g>
+      <g transform="translate(463 18)"><use class="tw" href="#sparkP" fill="#ffd23f"/></g>
+      <g transform="translate(108 14)"><use class="tw tw2" href="#sparkP" fill="#ffd23f" transform="scale(.7)"/></g>
+      <g transform="translate(452 86)"><use class="tw tw3" href="#sparkP" fill="#a98bff" transform="scale(.6)"/></g>
+    </svg>
+    <nav class="tabs" aria-label="Đi nhanh tới">
+      <button type="button" class="tab" data-go="songs"><span class="ti">🎵</span>Bài hát</button>
+      <button type="button" class="tab" data-go="outfitRow"><span class="ti">👗</span>Đồ của bé</button>
+      <button type="button" class="tab gear" data-go="parent" aria-label="Dành cho bố mẹ"><span class="ti">⚙️</span></button>
+    </nav>
+    <p id="result" role="status"></p>
+    <button id="quick" class="quick" type="button" hidden>
+      <span class="q-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5,2.5 L21,12 L5,21.5 Z" stroke="#f0377d" stroke-width="3" stroke-linejoin="round"/></svg></span>
+      <span><b>Chơi tiếp</b><small id="quickSub"></small></span>
+    </button>
     <div id="songs">Đang tải…</div>
-    <div class="sounds">Bắt đầu từ: <button class="from on" data-from="0">0:00</button><button class="from" data-from="60">1:00</button><button class="from" data-from="120">2:00</button><button class="from" data-from="180">3:00</button><button class="from" data-from="240">4:00</button></div>
-    <section id="outfitRow" aria-label="Chọn đồ trước khi nhảy"><div id="outfits" role="status">Đang chuẩn bị nhân vật 3D…</div></section>
-    <div class="sounds">Tiếng bấm: <b id="sndName"></b> · <a id="sndLink" href="sfx.html">nghe và chọn tiếng khác</a></div>
-    <label><input type="checkbox" id="tick"> Bật tiếng tick tự kêu khi mũi tên chạm tâm (thay cho tiếng bấm)</label>
-    <label><input type="checkbox" id="edgeLayout"> Bông hoa ra rìa: mũi tên chạy từ giữa ra hai bên</label>
+    <section id="outfitRow" aria-label="Chọn đồ trước khi nhảy">
+      <h2 class="sec"><span class="ti" aria-hidden="true">👗</span>Đồ của bé</h2>
+      <div id="outfits" role="status">Đang chuẩn bị nhân vật 3D…</div>
+    </section>
+    <details id="parent" class="parent">
+      <summary><span class="ti" aria-hidden="true">⚙️</span>Dành cho bố mẹ</summary>
+      <div class="pbody">
+        <p class="sub">Dễ: ít mũi tên, 2 nút trái phải. Vừa: nhiều mũi tên hơn, 2 nút. Khó: như Vừa nhưng 4 nút (trên, dưới mỗi bên). Mũi tên theo beat, dày lên ở đoạn bốc, thưa ở đoạn chùng. Bấm vào vòng hoa (chạm nửa màn hình trái/phải cũng được), hoặc phím W, S, ↑, ↓. Bé và 4 bạn nhảy theo nhạc.</p>
+        <p class="sub">Phiên bản <b id="ver"></b> <button id="checkVer" class="from">Kiểm tra bản mới</button> <span id="verMsg"></span></p>
+        <div id="tapsBox" class="hide"><textarea id="taps" readonly></textarea><button id="copyTaps" class="from">Chép</button></div>
+        <div class="sounds">Bắt đầu từ: <button class="from on" data-from="0">0:00</button><button class="from" data-from="60">1:00</button><button class="from" data-from="120">2:00</button><button class="from" data-from="180">3:00</button><button class="from" data-from="240">4:00</button></div>
+        <div class="sounds">Ghi nhịp gõ (không mũi tên, gõ theo tiếng bạn nghe):<div id="recBtns"></div></div>
+        <div class="sounds">Tiếng bấm: <b id="sndName"></b> · <a id="sndLink" href="sfx.html">nghe và chọn tiếng khác</a></div>
+        <label><input type="checkbox" id="tick"> Bật tiếng tick tự kêu khi mũi tên chạm tâm (thay cho tiếng bấm)</label>
+        <label><input type="checkbox" id="edgeLayout"> Bông hoa ra rìa: mũi tên chạy từ giữa ra hai bên</label>
+      </div>
+    </details>
+  </div>
+
+  <!-- shown instead of the panel above when a song ends -->
+  <div class="panel" id="donePanel" role="dialog" aria-labelledby="doneTitle">
+    <div class="done-song" id="doneSong"></div>
+    <h2 class="done-title" id="doneTitle"></h2>
+    <div class="done-stars" id="doneStars" role="img" aria-label="">
+      <div class="dstar"><svg class="empty" viewBox="-50 -50 100 100"><use href="#starP"/></svg><svg class="full" viewBox="-50 -50 100 100"><use href="#starP"/></svg></div>
+      <div class="dstar"><svg class="empty" viewBox="-50 -50 100 100"><use href="#starP"/></svg><svg class="full" viewBox="-50 -50 100 100"><use href="#starP"/></svg></div>
+      <div class="dstar"><svg class="empty" viewBox="-50 -50 100 100"><use href="#starP"/></svg><svg class="full" viewBox="-50 -50 100 100"><use href="#starP"/></svg></div>
+    </div>
+    <div class="done-score"><span class="done-num" id="doneScore">0</span><span class="done-unit">điểm</span></div>
+    <div class="done-best" id="doneBest"></div>
+    <div class="done-record" id="doneRecord" hidden><span aria-hidden="true">👑</span>Kỷ lục mới!</div>
+    <div class="done-chips">
+      <div class="chip"><svg viewBox="-30 -26 60 60" aria-hidden="true"><use href="#heartP"/></svg><span id="doneHits"></span><small>trúng</small></div>
+      <div class="chip"><span aria-hidden="true">🔥</span><span id="doneCombo"></span><small>liên tiếp</small></div>
+    </div>
+    <div class="done-grades" id="doneGrades"></div>
+    <div class="done-btns" id="doneBtns">
+      <button id="again" class="big pink" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4,12 A8,8 0 1 1 7,18.3" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/><path d="M2.5,6.5 L4.5,13.5 L11,10.5 Z" fill="#fff" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>Chơi lại</button>
+      <button id="home" class="big" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9,18 L9,6 L19,4 L19,16" fill="none" stroke="#3b1d52" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="7" cy="18" r="3" fill="#3b1d52"/><circle cx="17" cy="16" r="3" fill="#3b1d52"/></svg>Bài khác</button>
+    </div>
   </div>
 </div>
 
 <script>
-const V = '0811.2041';  // stamped by the deploy build
+const V = '0911.0848';  // stamped by the deploy build
 // Two rows, low on the screen where hands hold an iPad: 560 and 710. A touch above 635 is the upper row.
 const SPLIT_Y = 635,
   
   // Seconds from the ring centre, matched to what the eye sees at 183 units a second:
   // the white dot, the yellow disc, the white ring, and the arrow still touching the ring.
-  GRADES = [[0.08, 'Tuyệt vời!', 100, '#e8457f'], [0.235, 'Giỏi quá!', 70, '#21985a'], [0.40, 'Tốt!', 40, '#2a86c9'], [0.70, 'Suýt rồi!', 10, '#8a7f73']],
+  // Fourth value = the fill of the praise word. All four are warm: a late tap is still praised ("Suýt rồi!" is orange, not grey).
+  GRADES = [[0.08, 'Tuyệt vời!', 100, 'url(#gPerfect)'], [0.235, 'Giỏi quá!', 70, '#0e8f5c'], [0.40, 'Tốt!', 40, '#2f7de1'], [0.70, 'Suýt rồi!', 10, '#e06a00']],
   WINDOW = 0.70;
 // Arrows always travel at 183 units a second, so timing feels the same either way in. Picked on the menu:
 // 'side' comes out from beside the dancer to the rings; 'updown' falls from the top to the upper rings and
@@ -221,6 +562,17 @@ const NS = 'http://www.w3.org/2000/svg';
 let ctx, source, chart, notes = [], startAt = 0, playing = false, tickNext = 0, firstLive = 0;
 let combo = 0, maxCombo = 0, comboTimer = 0;
 let score = 0, hits = 0, tally = {}, master, musicGain, shownSec = -1, startFrom = 0, playEnd = Infinity;
+// Look and feel (2026-11-08 UI pass). `cur` = the song and level being played, for "Chơi lại". `playable` = arrows that really
+// come in this run (a start at 4:00 skips the ones before it), so "trúng x/y" and the stars are fair. `qual` = grade points earned.
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let cur = null, playable = 0, qual = 0, SONGS = [], quickTarget = null, doneTimers = [];
+// Stars on the result screen: how good a run must be (grade points earned / the most it could earn) for 1, 2 and 3 stars.
+// Every grade counts (Tuyệt vời 100, Giỏi quá 70, Tốt 40, Suýt rồi 10), so a steady "Giỏi quá" run is about 0.7.
+const STAR_CUTS = [0.15, 0.4, 0.7];
+const COMBO_WORDS = { 10: '10 liên tiếp!', 20: '20 liền! Giỏi ghê!', 30: '30 liền! Siêu quá!', 50: '50 liền! Ngôi sao!', 100: '100 liền! Bé là nhất!' };
+const comboWord = n => COMBO_WORDS[n] || (n > 100 && n % 50 === 0 ? `${n} liền! Siêu sao!` : '');
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[(Math.random() * arr.length) | 0];
 // Bounded "nhảy đẹp" demo: only with ?dance=beauty (optional from/to, decimal seconds). Normal game untouched otherwise.
 const DEMO = (() => {
   const q = new URLSearchParams(location.search); if (q.get('dance') !== 'beauty') return null;
@@ -291,22 +643,179 @@ async function checkVersion() {
   } catch (e) { /* offline or local preview: carry on */ }
 }
 
+// ---- sparkles, hearts and confetti: one transparent canvas over everything, awake only while something is flying ----
+const FX = (() => {
+  const cv = $('fx'), g = cv.getContext('2d');
+  // unit shapes (radius 1), drawn scaled; Path2D keeps drawing cheap on an iPad
+  const PATH = {
+    star: new Path2D('M0,-1 L.254,-.349 L.951,-.309 L.411,.133 L.588,.809 L0,.432 L-.588,.809 L-.411,.133 L-.951,-.309 L-.254,-.349 Z'),
+    spark: new Path2D('M0,-1 Q.16,-.16 1,0 Q.16,.16 0,1 Q-.16,.16 -1,0 Q-.16,-.16 0,-1 Z'),
+    heart: new Path2D('M0,-.589 C-.214,-1.018 -.929,-.875 -.929,-.304 C-.929,.196 -.286,.554 0,.84 C.286,.554 .929,.196 .929,-.304 C.929,-.875 .214,-1.018 0,-.589 Z'),
+  };
+  const PINK = ['#ff6fa8', '#ff9fcb', '#ff4f8b'], GOLD = ['#ffd23f', '#ffe27a', '#ffb938'], MINT = ['#5fe3b0', '#9bf2cf'], SKY = ['#7fd4ff', '#b6e8ff'], VIOLET = ['#a98bff', '#c9b8ff'];
+  // what flies out of the ring for each grade (same order as GRADES): the better the tap, the bigger the burst
+  const BURST = [
+    { n: 15, cols: [...PINK, ...GOLD], shapes: ['star', 'heart', 'spark', 'star', 'dot'], speed: [320, 640], size: [17, 32] },
+    { n: 10, cols: [...MINT, ...GOLD, '#fff'], shapes: ['star', 'spark', 'dot'], speed: [260, 500], size: [15, 27] },
+    { n: 7, cols: [...SKY, '#fff'], shapes: ['spark', 'dot', 'spark'], speed: [220, 400], size: [13, 23] },
+    { n: 4, cols: ['#ffc27a', '#fff'], shapes: ['dot', 'spark'], speed: [160, 300], size: [11, 19] },
+  ];
+  let W = 0, H = 0, D = 1, parts = [], running = false, last = 0;
+  function size() { D = Math.min(window.devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = Math.round(W * D); cv.height = Math.round(H * D); }
+  size(); window.addEventListener('resize', size);
+  function draw(p) {
+    const t = p.age / p.life;
+    g.globalAlpha = Math.min(1, (1 - t) * 3.2) * (p.twinkle ? 0.65 + 0.35 * Math.sin(p.age * 16 + p.rot) : 1);
+    if (p.shape === 'ring') {   // a quick shock-wave ring
+      g.beginPath(); g.arc(p.x, p.y, p.r0 + (p.r1 - p.r0) * (1 - Math.pow(1 - t, 3)), 0, 6.2832);
+      g.lineWidth = p.lw * (1 - t * 0.7); g.strokeStyle = p.color; g.stroke(); return;
+    }
+    g.save(); g.translate(p.x, p.y); g.rotate(p.rot);
+    const s = p.size * (1 - t * 0.35);
+    g.fillStyle = p.color;
+    if (p.shape === 'rect') { g.scale(s, s * (Math.abs(Math.cos(p.age * p.flut)) * 0.9 + 0.1)); g.fillRect(-0.5, -0.3, 1, 0.6); }   // paper flutter
+    else if (p.shape === 'dot') { g.beginPath(); g.arc(0, 0, s * 0.45, 0, 6.2832); g.fill(); }
+    else { g.scale(s, s); g.fill(PATH[p.shape]); g.lineWidth = 0.16; g.lineJoin = 'round'; g.strokeStyle = 'rgba(255,255,255,.95)'; g.stroke(PATH[p.shape]); }   // sticker look: white edge
+    g.restore();
+  }
+  function step(now) {
+    const dt = Math.min((now - last) / 1000, 0.05); last = now;
+    g.setTransform(D, 0, 0, D, 0, 0); g.clearRect(0, 0, W, H);
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i]; p.age += dt;
+      if (p.age >= p.life) { parts.splice(i, 1); continue; }
+      p.vx -= p.vx * p.drag * dt; p.vy += p.g * dt - p.vy * p.drag * dt;
+      p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+      draw(p);
+    }
+    g.globalAlpha = 1;
+    if (parts.length) requestAnimationFrame(step); else { running = false; g.clearRect(0, 0, W, H); }
+  }
+  const base = { x: 0, y: 0, vx: 0, vy: 0, g: 0, drag: 0, rot: 0, vr: 0, size: 10, age: 0, life: 1, color: '#fff', shape: 'dot', flut: 8 };
+  function spawn(o) { parts.push({ ...base, ...o }); if (!running) { running = true; last = performance.now(); requestAnimationFrame(step); } }
+  return {
+    // x, y in screen pixels; gi = grade index (0 = best); k = screen pixels per scene unit, so a burst keeps its size on every screen
+    burst(x, y, gi, k = 1) {
+      const c = BURST[Math.min(gi, BURST.length - 1)], n = REDUCED ? Math.ceil(c.n / 3) : c.n, kk = Math.max(k, 0.55);
+      spawn({ shape: 'ring', x, y, r0: 40 * kk, r1: 130 * kk, lw: 10 * kk, color: gi === 0 ? '#ffd23f' : '#fff', life: 0.42 });
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * 6.2832 + rnd(-0.3, 0.3), sp = rnd(...c.speed) * kk;
+        spawn({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60 * kk, g: 520 * kk, drag: 2.2, vr: rnd(-6, 6), rot: rnd(0, 6.28), size: rnd(...c.size) * kk * 0.9, color: pick(c.cols), shape: pick(c.shapes), life: rnd(0.55, 0.95) });
+      }
+    },
+    // big: paper shot up from both bottom corners (end of a song). small: a short rain from the top (a combo mark).
+    confetti(big) {
+      if (REDUCED) return;
+      const cols = [...PINK, ...GOLD, ...MINT, ...SKY, ...VIOLET, '#fff'], n = big ? 90 : 34;
+      for (let i = 0; i < n; i++) {
+        if (big) {
+          const left = i % 2 === 0, a = rnd(1.0, 1.4), sp = rnd(750, 1250);
+          spawn({ x: left ? W * 0.04 : W * 0.96, y: H * 0.98, vx: (left ? 1 : -1) * Math.cos(a) * sp, vy: -Math.sin(a) * sp, g: 1100, drag: 0.9, vr: rnd(-9, 9), rot: rnd(0, 6.28), size: rnd(12, 22), color: pick(cols), shape: pick(['rect', 'rect', 'rect', 'star', 'heart', 'dot']), flut: rnd(6, 12), life: rnd(2.6, 3.8) });
+        } else {
+          spawn({ x: rnd(W * 0.2, W * 0.8), y: -20, vx: rnd(-90, 90), vy: rnd(120, 320), g: 260, drag: 0.5, vr: rnd(-8, 8), rot: rnd(0, 6.28), size: rnd(11, 19), color: pick(cols), shape: pick(['rect', 'rect', 'star', 'heart']), flut: rnd(6, 12), life: rnd(1.6, 2.4) });
+        }
+      }
+      for (let i = 0; i < (big ? 26 : 8); i++) spawn({ x: rnd(0, W), y: rnd(H * 0.1, H * 0.8), size: rnd(10, 22), shape: 'spark', color: pick(['#fff', '#ffe27a', '#fff']), twinkle: true, vr: rnd(-1, 1), life: rnd(1.4, 2.6), vy: rnd(-12, 12) });   // glitter
+    },
+    clear() { parts.length = 0; g.setTransform(D, 0, 0, D, 0, 0); g.clearRect(0, 0, W, H); },
+  };
+})();
+
+// A soft bell, made in code like the tap sounds. Used for the stars on the result screen (the music has stopped by then).
+function chime(freq, delay = 0, vol = 0.2) {
+  if (!ctx || !master) return;
+  const t = ctx.currentTime + delay;
+  for (const [mult, v, len] of [[1, vol, 1.1], [2.01, vol * 0.35, 0.6], [3.02, vol * 0.12, 0.35]]) {
+    const o = ctx.createOscillator(), gn = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = freq * mult;
+    gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(v, t + 0.012); gn.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    o.connect(gn).connect(master); o.start(t); o.stop(t + len + 0.05);
+  }
+}
+
+// ---- songs: one card each, with three big candy buttons (stars = earned there, bars = how hard, dots = how many buttons) ----
+const LEVELS = [{ key: 'de', name: 'Dễ', stars: 1 }, { key: 'vua', name: 'Vừa', stars: 2 }, { key: 'kho', name: 'Khó', stars: 3 }];
+const starSvg = on => `<svg class="st ${on ? 'on' : 'off'}" viewBox="-50 -50 100 100" aria-hidden="true"><use href="#starP"/></svg>`;
+const padsSvg = n => `<svg class="pads" viewBox="0 0 56 32" aria-hidden="true"><rect x="1.5" y="1.5" width="53" height="29" rx="10"/>${n === 2 ? '<circle cx="11" cy="16" r="6"/><circle cx="45" cy="16" r="6"/>' : '<circle cx="11" cy="9.5" r="4.6"/><circle cx="11" cy="22.5" r="4.6"/><circle cx="45" cy="9.5" r="4.6"/><circle cx="45" cy="22.5" r="4.6"/>'}</svg>`;
+const NOTE_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9,18 L9,6 L19,4 L19,16" fill="none" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="7" cy="18" r="3.2"/><circle cx="17" cy="16" r="3.2"/></svg>';
+function coverStyle(slug) { let h = 0; for (const ch of slug) h = (h * 31 + ch.charCodeAt(0)) % 360; return `--h1:${h};--h2:${(h + 55) % 360}`; }
+// UI pass 2: stars on a level button are what she has EARNED there (like the result screen); how hard it is = 1-3 bars
+const barsSvg = n => `<svg class="bars" viewBox="0 0 30 24" aria-hidden="true">${[0, 1, 2].map(i => `<rect x="${1 + i * 10}" y="${15 - i * 6.5}" width="8" height="${8 + i * 6.5}" rx="3" class="${i < n ? 'on' : 'off'}"/>`).join('')}</svg>`;
+// a picture for each song, so a child who cannot read yet finds "the candy song" or "the rain song"; other songs keep the note
+const EMBLEM = {
+  candy: ['#ffd3e6', '#ff8fbf', '<g stroke="#fff" stroke-width="3" stroke-linejoin="round" paint-order="stroke"><path d="M13 24 L4.5 15.5 Q2.5 24 4.5 32.5 Z M35 24 L43.5 15.5 Q45.5 24 43.5 32.5 Z" fill="#ffe36b"/><circle cx="24" cy="24" r="12" fill="#ff4f8b"/></g><path d="M15.5 21 Q22 14.5 31 18 M14.5 27.5 Q24 18.5 33.5 25 M18 33 Q26 27 33 30" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>'],
+  rain: ['#d4f0ff', '#7fc4ff', '<path d="M12.5 30 Q6 30 6 24.5 Q6 19 12 18.5 Q13 10.5 21.5 10.5 Q28 10.5 30.5 16 Q37.5 15 40 21 Q42.5 22.5 42 26 Q41 30 36 30 Z" fill="#fff" stroke="#3d8bff" stroke-width="2.6" stroke-linejoin="round"/><g fill="#3d8bff" stroke="#fff" stroke-width="2" paint-order="stroke"><path d="M15 34 Q12 39 15 41 Q18 39 15 34 Z"/><path d="M24 35.5 Q21 40.5 24 42.5 Q27 40.5 24 35.5 Z"/><path d="M33 34 Q30 39 33 41 Q36 39 33 34 Z"/></g>'],
+  butterfly: ['#eee2ff', '#b99cff', '<g stroke="#fff" stroke-width="2.6" paint-order="stroke"><ellipse cx="15" cy="18" rx="9" ry="11" transform="rotate(-28 15 18)" fill="#9a6bff"/><ellipse cx="33" cy="18" rx="9" ry="11" transform="rotate(28 33 18)" fill="#9a6bff"/><ellipse cx="17" cy="32" rx="6.5" ry="8" transform="rotate(28 17 32)" fill="#ff6fa8"/><ellipse cx="31" cy="32" rx="6.5" ry="8" transform="rotate(-28 31 32)" fill="#ff6fa8"/></g><circle cx="14" cy="17" r="2.6" fill="#fff" opacity=".9"/><circle cx="34" cy="17" r="2.6" fill="#fff" opacity=".9"/><rect x="22.2" y="13" width="3.6" height="24" rx="1.8" fill="#3b1d52"/><path d="M23 13.5 Q20.5 7.5 16.5 6.5 M25 13.5 Q27.5 7.5 31.5 6.5" stroke="#3b1d52" stroke-width="1.8" fill="none" stroke-linecap="round"/>'],
+  heart: ['#ffd9e6', '#ff8fb3', '<path d="M24 40 C10 31 6 24 6 17.5 C6 12 10 8 15 8 C19 8 22 10.5 24 14 C26 10.5 29 8 33 8 C38 8 42 12 42 17.5 C42 24 38 31 24 40 Z" fill="#ff3f84" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M12.5 17 Q13.5 12.5 18 12" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".85"/><path d="M40 3.5 L41.3 6.7 44.5 8 41.3 9.3 40 12.5 38.7 9.3 35.5 8 38.7 6.7 Z" fill="#fff"/>'],
+  sun: ['#fff1b3', '#ffb84d', `<g fill="#ff9f1c" stroke="#fff" stroke-width="2" paint-order="stroke">${[0, 45, 90, 135, 180, 225, 270, 315].map(a => `<rect x="21.5" y="2.5" width="5" height="9" rx="2.5" transform="rotate(${a} 24 24)"/>`).join('')}</g><circle cx="24" cy="24" r="11" fill="#ffe14d" stroke="#fff" stroke-width="3"/><path d="M18.5 22 Q20 19.5 22 21 M26 21 Q28 19.5 29.5 22" stroke="#c46a00" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M19.5 26.5 Q24 31 28.5 26.5" stroke="#c46a00" stroke-width="2" fill="none" stroke-linecap="round"/>`],
+};
+function paintCover(cover, s) {
+  const k = `${s.slug} ${s.title}`.normalize('NFC').toLowerCase();
+  const em = EMBLEM[/dolce|kẹo|candy/.test(k) ? 'candy' : /mưa|rain/.test(k) ? 'rain' : /tái sinh|bướm|butterfly/.test(k) ? 'butterfly' : /tình|love|heart/.test(k) ? 'heart' : /golden|nắng|sun/.test(k) ? 'sun' : ''];
+  cover.style.cssText = coverStyle(s.slug);
+  if (!em) { cover.innerHTML = NOTE_SVG; return; }
+  cover.classList.add('emb'); cover.style.setProperty('--e1', em[0]); cover.style.setProperty('--e2', em[1]);
+  cover.innerHTML = `<svg class="emb-art" viewBox="0 0 48 48" aria-hidden="true">${em[2]}</svg>`;
+}
+const BEST_KEY = 'spike-best';   // { "slug|level": { score, stars } }, kept on this device
+function readBest() { try { return JSON.parse(localStorage.getItem(BEST_KEY) || '{}') || {}; } catch (e) { return {}; } }
+function writeBest(o) { try { localStorage.setItem(BEST_KEY, JSON.stringify(o)); } catch (e) {} }
+// the stars she has earned on each level (best whole run), and a gold crown where she has all 3
+function refreshBadges() {
+  const best = readBest();
+  document.querySelectorAll('#songs .card').forEach(card => card.querySelectorAll('.lvl').forEach(b => {
+    const rec = best[`${card.dataset.slug}|${b.dataset.level}`], got = rec ? rec.stars : 0, had = b.dataset.got != null ? +b.dataset.got : got;
+    b.dataset.got = got;   // a newly earned star pops in (once) when the list shows again
+    b.querySelectorAll('.stars .st').forEach((s, i) => { s.setAttribute('class', `st ${i < got ? 'on' : 'off'}${i < got && i >= had ? ' new' : ''}`); if (i < got && i >= had) s.addEventListener('animationend', () => s.classList.remove('new'), { once: true }); });
+    let c = b.querySelector('.crown');
+    if (rec && rec.stars >= 3) { if (!c) { c = document.createElement('span'); c.className = 'crown'; c.setAttribute('aria-hidden', 'true'); c.textContent = '👑'; b.appendChild(c); } }
+    else if (c) c.remove();
+  }));
+}
+// one big button at the top that plays the last song and level again
+function refreshQuick() {
+  let last = null;
+  try { last = JSON.parse(localStorage.getItem('spike-last') || 'null'); } catch (e) {}
+  const s = last && SONGS.find(x => x.slug === last.slug), L = s && LEVELS.find(x => x.key === last.level && s.levels[SOURCE_LEVEL[x.key]] != null);
+  quickTarget = L ? { s, level: L.key } : null;
+  $('quick').hidden = !L;
+  if (L) $('quickSub').textContent = `${s.title} · ${L.name}`;
+}
+
 async function loadList() {
   const list = (await (await fetch(`songs/index.json?v=${V}`)).json()).songs;
-  const box = $('songs'); box.textContent = '';
+  SONGS = list;
+  const box = $('songs'), recBox = $('recBtns'); box.textContent = ''; recBox.textContent = '';
   for (const s of list) {
-    const head = document.createElement('p');
-    head.className = 'sub';
-    head.textContent = `${s.title} · ${Math.floor(s.duration / 60)}:${String(Math.round(s.duration % 60)).padStart(2, '0')} · ${Math.round(s.bpm)} BPM`;
-    box.appendChild(head);
-    for (const [key, label] of [['de', 'Dễ'], ['vua', 'Vừa'], ['kho', 'Khó']].filter(([k]) => s.levels[SOURCE_LEVEL[k]] != null)) {
+    const card = document.createElement('div');
+    card.className = 'card'; card.dataset.slug = s.slug;
+    const head = document.createElement('div');
+    head.className = 'cardhead';
+    const cover = document.createElement('div');
+    cover.className = 'cover'; paintCover(cover, s);
+    const meta = document.createElement('div');
+    meta.className = 'cmeta';
+    const title = document.createElement('div');
+    title.className = 'ctitle'; title.textContent = s.title;
+    const sub = document.createElement('div');
+    sub.className = 'csub'; sub.textContent = mmss(Math.round(s.duration));
+    const bpm = document.createElement('span');
+    bpm.className = 'bpm'; bpm.textContent = ` · ${Math.round(s.bpm)} BPM`;   // shown only in the parents' area
+    sub.appendChild(bpm); meta.append(title, sub); head.append(cover, meta); card.appendChild(head);
+    const row = document.createElement('div');
+    row.className = 'levels';
+    for (const L of LEVELS.filter(L => s.levels[SOURCE_LEVEL[L.key]] != null)) {
+      const key = L.key, pads = isTwoLane(key) ? 2 : 4;
       const b = document.createElement('button');
-      b.className = 'song';
+      b.type = 'button';
+      b.className = `song lvl lvl-${key}`;
       b.dataset.level = key;
-      b.textContent = label;
+      b.setAttribute('aria-label', `${L.name}, ${pads} nút`);
+      b.innerHTML = `<span class="stars" aria-hidden="true">${[1, 2, 3].map(() => starSvg(false)).join('')}</span><span class="lvl-name">${L.name}</span><span class="lvl-foot">${barsSvg(L.stars)}${padsSvg(pads)}</span>`;   // stars: filled in by refreshBadges()
       const m = document.createElement('span');
-      m.textContent = `${s.levels[SOURCE_LEVEL[key]]} mũi tên · ${isTwoLane(key) ? 2 : 4} nút`;
-      fetch(`songs/${s.slug}/chart.json?v=${V}`).then(r => r.json()).then(c => { if (!DEMO) m.textContent = `${levelNotes(c, key).length} mũi tên · ${isTwoLane(key) ? 2 : 4} nút`; }).catch(() => {});
+      m.className = 'm';
+      m.textContent = `${s.levels[SOURCE_LEVEL[key]]} mũi tên · ${pads} nút`;
+      fetch(`songs/${s.slug}/chart.json?v=${V}`).then(r => r.json()).then(c => { if (!DEMO) { const n = levelNotes(c, key).length; m.textContent = `${n} mũi tên · ${pads} nút`; b.setAttribute('aria-label', `${L.name}, ${n} mũi tên, ${pads} nút`); } }).catch(() => {});
       if (DEMO) {   // demo: count only the arrows inside the demo window (same clamp as start())
         fetch(`songs/${s.slug}/chart.json?v=${V}`).then(r => r.json()).then(c => {
           let f = Math.max(0, Math.min(DEMO.from, c.duration)), t = Math.min(DEMO.to, c.duration);
@@ -316,16 +825,18 @@ async function loadList() {
       }
       b.appendChild(m);
       b.addEventListener('click', () => start(s, key));
-      box.appendChild(b);
+      row.appendChild(b);
     }
+    card.appendChild(row);
+    box.appendChild(card);
+    // "Ghi nhịp gõ" is a tool for the parents: it lives in their area, never among the buttons the child presses
     const r = document.createElement('button');
-    r.className = 'song'; r.dataset.level = 'rec';
-    r.textContent = 'Ghi nhịp gõ';
-    const rm = document.createElement('span'); rm.textContent = 'không mũi tên, gõ theo tiếng bạn nghe';
-    r.appendChild(rm);
+    r.type = 'button'; r.className = 'song recbtn'; r.dataset.level = 'rec';
+    r.textContent = `Ghi nhịp gõ · ${s.title}`;
     r.addEventListener('click', () => start(s, 'rec'));
-    box.appendChild(r);
+    recBox.appendChild(r);
   }
+  refreshBadges(); refreshQuick();
   return list;
 }
 
@@ -338,13 +849,66 @@ async function loadDance() {
       return { files: Object.fromEntries(man.files.map(n => [n, `dance/${n}?v=${V}`])), json: async n => (await fetch(`dance/${n}?v=${V}`)).json() };
     }
   }
-  const bytes = await fetch(`dance.bin?v=${V}`).then(r => r.arrayBuffer());
   const key = await crypto.subtle.importKey('raw', keyBytes(), 'AES-GCM', false, ['decrypt']);
-  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(bytes, 0, 12) }, key, new Uint8Array(bytes, 12));
-  const n = new DataView(plain).getUint32(0, true), head = JSON.parse(new TextDecoder().decode(new Uint8Array(plain, 4, n)));
+  async function open(buf) {   // AES-GCM, then gzip inside (newer builds); old plain payloads still load
+    let plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(buf, 0, 12) }, key, new Uint8Array(buf, 12));
+    const mg = new Uint8Array(plain, 0, 2);
+    if (mg[0] === 0x1f && mg[1] === 0x8b) {
+      if (typeof DecompressionStream !== 'function') throw new Error('gzip bundle needs DecompressionStream (iPadOS 16.4+)');
+      plain = await new Response(new Blob([plain]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+    }
+    return plain;
+  }
   const files = {};
-  for (const f of head.files) files[f.name] = URL.createObjectURL(new Blob([new Uint8Array(plain, 4 + n + f.at, f.len)], { type: f.type }));
-  return { files, json: async name => { if (!files[name]) throw new Error('no ' + name); return (await fetch(files[name])).json(); } };
+  function unpack(plain) {
+    const n = new DataView(plain).getUint32(0, true), head = JSON.parse(new TextDecoder().decode(new Uint8Array(plain, 4, n)));
+    for (const f of head.files) files[f.name] = URL.createObjectURL(new Blob([new Uint8Array(plain, 4 + n + f.at, f.len)], { type: f.type }));
+  }
+  const idx = await fetch(`dance/index.bin?v=${V}`);
+  if (!idx.ok) {   // older single-file builds
+    unpack(await open(await fetch(`dance.bin?v=${V}`).then(r => r.arrayBuffer())));
+    return { files, json: async name => { if (!files[name]) throw new Error('no ' + name); return (await fetch(files[name])).json(); } };
+  }
+  // Parts (v2): names come from the content, so a part already saved on this iPad (Cache Storage) is never
+  // downloaded again; a new release only downloads the parts that changed.
+  const index = JSON.parse(new TextDecoder().decode(await open(await idx.arrayBuffer())));
+  const store = await (self.caches ? caches.open('dance-parts').catch(() => null) : null);
+  const core = index.parts.filter(p => !p.lazy), total = core.reduce((a, p) => a + p.size, 0) || 1;
+  let got = 0;
+  async function download(p, counted) {
+    let r = store && await store.match(p.file).catch(() => null);
+    if (r) { if (counted) { got += p.size; LOAD.pct = Math.min(99, Math.floor(got / total * 100)); LOAD.update(); } return r.arrayBuffer(); }
+    r = await fetch(p.file);
+    if (!r.ok) throw new Error('part ' + p.file + ' ' + r.status);
+    const rd = r.body.getReader(), chunks = [];
+    for (;;) {
+      const { done, value } = await rd.read(); if (done) break;
+      chunks.push(value);
+      if (counted) { got += value.length; LOAD.pct = Math.min(99, Math.floor(got / total * 100)); LOAD.mb = got / 1048576; LOAD.update(); }
+    }
+    const buf = await new Blob(chunks).arrayBuffer();
+    if (store) store.put(p.file, new Response(buf.slice(0))).catch(() => {});   // full storage: still plays, just not saved
+    return buf;
+  }
+  const loading = new Map();
+  function load(p, counted) {
+    if (!loading.has(p.id)) loading.set(p.id, download(p, counted).then(open).then(unpack).catch(e => { loading.delete(p.id); throw e; }));
+    return loading.get(p.id);
+  }
+  const partOf = {};
+  for (const p of index.parts) for (const n of p.names) { partOf[n] = p; if (p.lazy) files[n] = 'lazy:' + n; }
+  await Promise.all(core.map(p => load(p, true)));
+  if (store) store.keys().then(ks => { const keep = new Set(index.parts.map(p => new URL(p.file, location.href).href)); for (const k of ks) if (!keep.has(k.url)) store.delete(k); }).catch(() => {});
+  // After the start, fetch the songs' dance parts one by one in the background, so every song opens at once later.
+  setTimeout(async () => { for (const p of index.parts) if (p.lazy && p.id !== 'extra') await load(p, false).catch(() => {}); }, 3000);
+  return {
+    files,
+    json: async name => {
+      if (!files[name]) throw new Error('no ' + name);
+      if (files[name].startsWith('lazy:')) await load(partOf[name], false);
+      return (await fetch(files[name])).json();
+    },
+  };
 }
 let danceReady = null;
 function idleLoop() { if (!playing) Dance.draw(null); requestAnimationFrame(idleLoop); }
@@ -364,22 +928,27 @@ function renderLoad() {
   const ind = !L.msg && ((L.step === 'bundle' && L.pct == null) || L.step === 'char' || L.step === 'music');
   bar.classList.toggle('ind', ind);
   $('loadFill').style.width = (L.step === 'bundle' ? (L.pct || 0) : 100) + '%';
+  loadEl.classList.toggle('soft', L.step === 'music' && !L.msg);   // opening a level: see-through, the dancer stays visible behind
 }
 window.LOAD.update = renderLoad;
+// one friendly line while waiting, picked at random (no reading needed to play, it is for the parent beside her)
+const TIPS = ['Chạm khi mũi tên tới vòng hoa nhé!', 'Chạm nửa màn hình bên trái hoặc bên phải đều được!', 'Cùng nhún nhảy theo nhạc nào!', 'Bé cầm iPad ở hai bên cho dễ chơi nhé!'];
+$('loadTip').textContent = TIPS[(Math.random() * TIPS.length) | 0];
 function setLoad(step, hideNow) { LOAD.step = step; LOAD.msg = null; renderLoad(); loadEl.classList.toggle('hide', !!hideNow); }
 renderLoad();
 const slowTimer = setTimeout(() => {
   if (Dance.ready) return;
   LOAD.msg = 'Mạng chậm quá, thử tải lại nhé'; renderLoad(); $('loadRetry').hidden = false; loadEl.classList.remove('hide');
 }, 60000);
-function setSongButtons(off) { document.querySelectorAll('.song').forEach(b => { b.disabled = off; }); }
+function setSongButtons(off) { document.querySelectorAll('.song, .quick, #again').forEach(b => { b.disabled = off; }); }
 
 let starting = false;
 async function start(s, level) {
   if (starting || playing) return;
   starting = true; setSongButtons(true); setLoad('music');
+  cur = { s, level };
   try { await startRun(s, level); }
-  catch (e) { console.warn('start', e); $('result').textContent = 'Có lỗi, thử lại nhé.'; }
+  catch (e) { console.warn('start', e); $('menu').classList.remove('done'); $('result').textContent = 'Có lỗi, thử lại nhé.'; }
   finally { starting = false; setSongButtons(false); setLoad('done', true); }
 }
 async function startRun(s, level) {
@@ -394,13 +963,14 @@ async function startRun(s, level) {
   try {
     data = await audioBytes(base, c);
   } catch (e) {
+    $('menu').classList.remove('done');
     $('result').textContent = 'Không mở được nhạc. Hãy mở đúng đường link đầy đủ có khóa.';
     return;
   }
   const buffer = await ctx.decodeAudioData(data);
   chart = c;
   await danceReady;
-  Dance.setSong(DANCE ? await DANCE.json(`moves/${s.slug}.groove.json`).catch(() => null) : null, c);   // the gentle beat dance
+  await Dance.setSong(DANCE ? await DANCE.json(`moves/${s.slug}.groove.json`).catch(() => null) : null, c);   // the gentle beat dance
   $('notes').textContent = '';
   recording = level === 'rec'; taps = [];
   let demoFrom = null, demoTo = null;
@@ -412,15 +982,20 @@ async function startRun(s, level) {
   twoLane = isTwoLane(level); setStage();
   notes = recording ? [] : levelNotes(chart, level).filter(n => !DEMO || (n.t >= demoFrom && n.t <= demoTo)).map(n => ({ ...n, el: null, done: n.t < startFrom }));  // arrows before the start are gone
   playEnd = DEMO ? demoTo : Infinity;
+  playable = notes.filter(n => !n.done).length; qual = 0;   // only the arrows that really come in this run
+  doneTimers.forEach(clearTimeout); doneTimers = []; FX.clear(); $('doneBtns').classList.remove('ready');
   score = hits = 0;
-  combo = maxCombo = 0; clearTimeout(comboTimer); $('comboNum').style.opacity = $('comboLbl').style.opacity = 0;
+  combo = maxCombo = 0; clearTimeout(comboTimer); comboVis(0);
   firstLive = tickNext = Math.max(notes.findIndex(n => !n.done), 0);
   tally = {};
   $('score').textContent = '0';
-  $('hits').textContent = `0/${notes.length}`;
+  $('hits').textContent = `0/${playable}`;
+  $('hitsIcon').style.display = recording ? 'none' : '';
+  $('bar').setAttribute('width', '0'); $('knob').setAttribute('transform', `translate(${BAR_X} 0)`);
   $('result').textContent = '';
   shownSec = -1;
   $('clock').textContent = `0:00 / ${mmss(chart.duration)}`;
+  if (!recording && !DEMO) { try { localStorage.setItem('spike-last', JSON.stringify({ slug: s.slug, level })); } catch (e) {} }
   if (source) { try { source.onended = null; source.stop(); } catch (e) {} try { source.disconnect(); } catch (e) {} }
   source = ctx.createBufferSource();
   source.buffer = buffer;
@@ -430,6 +1005,8 @@ async function startRun(s, level) {
   if (DEMO) source.start(at, startFrom, playEnd - startFrom); else source.start(at, startFrom);
   source.onended = () => { if (playing) finish(); };
   playing = true;
+  document.body.classList.add('playing');
+  $('menu').classList.remove('done');
   $('menu').classList.add('hide');
   requestAnimationFrame(frame);
 }
@@ -442,12 +1019,65 @@ function showTaps() {
 function finish(early) {
   const at = early ? `Dừng ở ${mmss(heardClock())} · ` : '';
   playing = false;
+  document.body.classList.remove('playing');
   try { source.onended = null; source.stop(); } catch (e) {}
   $('notes').textContent = '';
-  $('result').textContent = at + `Trúng ${hits}/${notes.length} · ${score} điểm · Combo cao nhất ${maxCombo} · ` + GRADES.map(g => `${g[1]} ${tally[g[1]] || 0}`).join(' · ');
-  if (recording) { $('result').textContent = `Đã ghi ${taps.length} lần gõ. Bấm "Chép" rồi dán gửi cho tôi.`; showTaps(); }
+  clearTimeout(comboTimer); comboVis(0);
+  // the text line stays for the parents ("Dừng ở m:ss" lets them name the moment); the child sees the result screen below
+  $('result').textContent = at + `Trúng ${hits}/${playable} · ${score} điểm · Combo cao nhất ${maxCombo} · ` + GRADES.map(g => `${g[1]} ${tally[g[1]] || 0}`).join(' · ');
+  if (recording) { $('result').textContent = `Đã ghi ${taps.length} lần gõ. Bấm "Chép" rồi dán gửi cho tôi.`; showTaps(); $('parent').open = true; }
   else $('tapsBox').classList.add('hide');
   $('menu').classList.remove('hide');
+  refreshQuick();
+  if (!early && !recording && playable > 0 && cur) showDone();   // a song that ran to its end gets the celebration
+}
+
+// ---- result screen: stars pop one by one with a bell, the score counts up, paper flies ----
+const CHIP_COLORS = ['#e0286f', '#0e8f5c', '#2f7de1', '#e06a00'];   // same order as GRADES
+function countUp(el, to, ms) {
+  el.textContent = to > 0 && !REDUCED ? '0' : String(to);
+  if (to <= 0 || REDUCED) return;
+  const t0 = performance.now();
+  (function f(now) { const k = Math.min((now - t0) / ms, 1); el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(f); })(t0);
+  doneTimers.push(setTimeout(() => { el.textContent = String(to); }, ms + 120));   // lands on the exact number even if frames were skipped
+}
+function showDone() {
+  const q = qual / (100 * Math.max(playable, 1));
+  const stars = hits === 0 ? 0 : q >= STAR_CUTS[2] ? 3 : q >= STAR_CUTS[1] ? 2 : 1;
+  const L = LEVELS.find(x => x.key === cur.level);
+  $('doneSong').textContent = `${cur.s.title} · ${L ? L.name : ''}`;
+  $('doneTitle').textContent = ['Thử lại nhé!', 'Hay lắm!', 'Giỏi quá!', 'Tuyệt vời!'][stars];
+  $('doneStars').setAttribute('aria-label', `${stars} trên 3 sao`);
+  $('doneHits').textContent = `${hits}/${playable}`;
+  $('doneCombo').textContent = maxCombo;
+  $('doneGrades').innerHTML = GRADES.map((g, i) => `<span class="gchip"><i style="background:${CHIP_COLORS[i]}"></i>${g[1]} <b>${tally[g[1]] || 0}</b></span>`).join('');
+  // a record only counts for a whole song from the start (not from 2:00, not the short demo)
+  let record = false, best = null;
+  if (startFrom === 0 && !DEMO) {
+    const all = readBest(), key = `${cur.s.slug}|${cur.level}`, prev = all[key];
+    if (!prev || score > prev.score || stars > prev.stars) {
+      record = !!prev && score > prev.score;
+      all[key] = { score: Math.max(score, prev ? prev.score : 0), stars: Math.max(stars, prev ? prev.stars : 0) }; writeBest(all);
+    }
+    best = all[key]; refreshBadges();
+  }
+  $('doneBest').textContent = best && !record ? `Kỷ lục: ${best.score}` : '';
+  $('doneRecord').hidden = !record;
+  const els = [...$('doneStars').querySelectorAll('.dstar')];
+  els.forEach(e => e.classList.remove('lit'));
+  $('doneBtns').classList.remove('ready');   // the buttons wake up after the show, so a last tap of the song cannot hit them
+  $('menu').classList.add('done');
+  doneTimers.forEach(clearTimeout); doneTimers = [];
+  const T = (fn, ms) => doneTimers.push(setTimeout(fn, ms)), FIRST = 450, GAP = 430, BELLS = [784, 988, 1319];
+  countUp($('doneScore'), score, 1300);
+  for (let i = 0; i < stars; i++) T(() => {
+    els[i].classList.add('lit'); chime(BELLS[i], 0, 0.2);
+    const r = els[i].getBoundingClientRect(); FX.burst(r.left + r.width / 2, r.top + r.height / 2, 1, 1.1);
+  }, FIRST + i * GAP);
+  if (stars >= 2) T(() => FX.confetti(true), FIRST + (stars - 1) * GAP + 150);
+  else if (stars === 1) T(() => FX.confetti(false), FIRST + 150);
+  if (record) T(() => chime(1568, 0, 0.16), FIRST + stars * GAP + 250);
+  T(() => $('doneBtns').classList.add('ready'), FIRST + Math.max(stars, 1) * GAP + 700);
 }
 
 function scheduleTicks(now) {
@@ -472,15 +1102,20 @@ function makeNote(n) {
   n.el = g;
 }
 
+const BAR_X = -186, BAR_W = 262;   // the song progress bar inside its pill (scene units)
+const barEl = $('bar'), knobEl = $('knob');
 function frame() {
   if (!playing) return;
   const now = heardClock();
   if (now >= playEnd) { finish(); return; }
   scheduleTicks(audioClock());
+  const near = {};   // per lane: how far (seconds) the closest arrow is from its ring, so the ring can light up as one arrives
   for (let i = firstLive; i < notes.length; i++) {
     const n = notes[i];
     if (n.t - MAX_TRAVEL > now) break;  // nothing later can be on screen yet
     if (n.done) continue;
+    const gap = n.t - now;
+    if (gap < 0.55 && gap > -0.3) { const a = Math.abs(gap); if (!(a >= (near[n.lane] ?? 9))) near[n.lane] = a; }
     const travel = travelOf(n.lane);
     if (n.t - travel > now) continue;  // made only as it comes in
     if (!n.el) makeNote(n);
@@ -503,35 +1138,53 @@ function frame() {
   const next = b[lo + 1] ?? b[lo] + 0.5;
   const phase = Math.min(Math.max((now - b[lo]) / (next - b[lo]), 0), 1);
   Dance.draw(now);
-  $('bar').setAttribute('width', String(388 * Math.min(Math.max(now, 0) / chart.duration, 1)));
+  const prog = Math.min(Math.max(now, 0) / chart.duration, 1);
+  barEl.setAttribute('width', String(BAR_W * prog));
+  knobEl.setAttribute('transform', `translate(${BAR_X + BAR_W * prog} 0)`);
+  // the rings and soft buttons swell a little on every beat (feel the music), and a ring glows as its arrow arrives
+  const pulse = Number.isFinite(phase) ? 1 + 0.055 * Math.pow(1 - phase, 3) : 1;
+  for (const l of VISIBLE) {
+    const st = STAGE[l], a = near[l];
+    st.ring.setAttribute('transform', `translate(${st.x} ${st.y}) scale(${(0.72 * pulse).toFixed(3)})`);
+    st.ghost.setAttribute('transform', `translate(${st.gx} ${st.y}) scale(${(0.62 * (1 + (pulse - 1) * 0.6)).toFixed(3)})`);
+    st.halo.setAttribute('opacity', a === undefined ? '0' : (Math.max(0, 1 - a / 0.5) * 0.95).toFixed(2));
+  }
   const sec = Math.floor(Math.max(now, 0));
   if (sec !== shownSec) { shownSec = sec; $('clock').textContent = `${mmss(sec)} / ${mmss(chart.duration)}`; }
   requestAnimationFrame(frame);
 }
 
-function pop(el, frames, ms) { el.animate(frames, { duration: ms, easing: 'ease-out' }); }
+function pop(el, frames, ms, easing = 'ease-out') { el.animate(frames, { duration: ms, easing }); }
+const SPRING = 'cubic-bezier(.2,1.5,.4,1)';   // overshoots a little, so things "boing" into place
 
 // Combo: consecutive hits. A miss (note passes its window unhit) resets it.
 // Bonus: each hit scores grade points x (1 + min(combo, 50) / 100), so up to +50%.
+// The badge is a pink pill with a heart; it boings on every hit and more on a mark (10, 20, 30, 50, 100).
+function comboVis(v) { $('comboNum').style.opacity = $('comboLbl').style.opacity = $('comboBg').style.opacity = v; }
 function comboShow() {
-  const num = $('comboNum'), lbl = $('comboLbl');
+  const num = $('comboNum');
   clearTimeout(comboTimer);
   if (combo < 2) return;
   num.textContent = combo;
-  num.style.opacity = lbl.style.opacity = 1;
-  pop(num, [{ transform: 'scale(.6)' }, { transform: 'scale(1.25)', offset: .35 }, { transform: 'scale(1)' }], 260);
-  comboTimer = setTimeout(() => { num.style.opacity = lbl.style.opacity = 0; }, 1500);
+  num.style.fontSize = combo >= 100 ? '36px' : '';
+  comboVis(1);
+  const mark = comboWord(combo) !== '';
+  pop($('comboBadge'), [{ transform: 'scale(.6)' }, { transform: `scale(${mark ? 1.5 : 1.22})`, offset: .35 }, { transform: 'scale(1)' }], mark ? 460 : 260, SPRING);
+  comboTimer = setTimeout(() => comboVis(0), 1500);
 }
 function comboBreak() {
   if (combo === 0) return;
   const had = combo >= 2;
   combo = 0; clearTimeout(comboTimer);
-  const num = $('comboNum'), lbl = $('comboLbl');
   if (had) {
-    pop(num, [{ transform: 'translateX(-8px)' }, { transform: 'translateX(8px)' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(0)' }], 260);
-    comboTimer = setTimeout(() => { num.style.opacity = lbl.style.opacity = 0; }, 260);
+    pop($('comboBadge'), [{ transform: 'translateX(-8px)' }, { transform: 'translateX(8px)' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(0)' }], 260);
+    comboTimer = setTimeout(() => comboVis(0), 260);
   }
 }
+// the whole screen edge glows pink for a moment (a combo mark)
+function flashGlow() { const g = $('glow'); g.classList.remove('on'); void g.offsetWidth; g.classList.add('on'); }
+// scene units to screen pixels, so a burst sits on its ring on every screen size
+function screenOf(x, y) { const m = $('scene').getScreenCTM(); return [m.a * x + m.e, m.d * y + m.f, m.a]; }
 
 function tap(lane) {
   if (!playing) return;
@@ -539,12 +1192,12 @@ function tap(lane) {
     taps.push(+heardClock().toFixed(3));
     hitSound(ctx.currentTime);
     pop($('ring' + lane), [{ transform: 'scale(.86)' }, { transform: 'scale(1)' }], 180);
-    pop($('ghost' + lane), [{ transform: 'scale(.8)', opacity: .9 }, { transform: 'scale(1)', opacity: .42 }], 220);
+    pop($('ghost' + lane), [{ transform: 'scale(.8)', opacity: .95 }, { transform: 'scale(1)', opacity: .5 }], 220);
     $('hits').textContent = `${taps.length} lần gõ`;
     return;
   }
   pop($('ring' + lane), [{ transform: 'scale(.86)' }, { transform: 'scale(1)' }], 180);
-  pop($('ghost' + lane), [{ transform: 'scale(.8)', opacity: .9 }, { transform: 'scale(1)', opacity: .42 }], 220);
+  pop($('ghost' + lane), [{ transform: 'scale(.8)', opacity: .95 }, { transform: 'scale(1)', opacity: .5 }], 220);
   const now = heardClock();
   let best = null, bestGap = WINDOW + 1;
   for (let i = firstLive; i < notes.length; i++) {
@@ -559,33 +1212,46 @@ function tap(lane) {
   best.done = true;
   if (best.el) { best.el.remove(); best.el = null; }
   combo++; if (combo > maxCombo) maxCombo = combo;
-  hits++; score += Math.round(grade[2] * (1 + Math.min(combo, 50) / 100)); tally[grade[1]] = (tally[grade[1]] || 0) + 1;
+  hits++; score += Math.round(grade[2] * (1 + Math.min(combo, 50) / 100)); tally[grade[1]] = (tally[grade[1]] || 0) + 1; qual += grade[2];
   if (!$('tick').checked) hitSound(ctx.currentTime);
   comboShow();
   $('score').textContent = score;
-  $('hits').textContent = `${hits}/${notes.length}`;
+  $('hits').textContent = `${hits}/${playable}`;
+  pop($('scoreBox'), [{ transform: 'scale(1)' }, { transform: 'scale(1.1)', offset: .3 }, { transform: 'scale(1)' }], 240);
   pop($('burst' + lane), [{ transform: 'scale(.55)', opacity: 1 }, { transform: 'scale(1.45)', opacity: 0 }], 520);
-  const say = $('say');
-  say.textContent = grade[1];
-  say.style.fill = grade[3];
-  pop(say, [{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1.12)', opacity: 1, offset: .15 }, { transform: 'scale(1)', opacity: 1, offset: .3 }, { opacity: 1, offset: .75 }, { opacity: 0 }], 620);
+  // stars, hearts and sparkles fly out of the ring: the better the tap, the more of them
+  const st = STAGE[lane];
+  if (st) { const [px, py, k] = screenOf(st.x, st.y); FX.burst(px, py, GRADES.indexOf(grade), k); }
+  // the praise word; on a combo mark (10, 20, 30, 50, 100) it says the mark instead, in gold, with paper and a pink glow
+  const mark = comboWord(combo), say = $('say');
+  say.textContent = mark || grade[1];
+  say.style.fill = mark ? 'url(#gMile)' : grade[3];
+  pop(say, [{ transform: 'scale(.5) translateY(12px)', opacity: 0 }, { transform: `scale(${mark ? 1.35 : 1.15}) translateY(0)`, opacity: 1, offset: .18 }, { transform: 'scale(1) translateY(0)', opacity: 1, offset: .32 }, { transform: 'scale(1) translateY(0)', opacity: 1, offset: .72 }, { transform: 'scale(1) translateY(-16px)', opacity: 0 }], mark ? 1000 : 700);
+  if (mark) { FX.confetti(false); flashGlow(); }
 }
 
 // Places rings, bursts, soft pads and lane bars for the current layout, and shows 2 or 4 lanes.
+// STAGE[lane] keeps where each lane's ring and soft button sit, so frame() can make them swell on the beat and a burst can find its ring.
+let STAGE = {}, VISIBLE = [];
 function setStage() {
   const defs = document.querySelector('#scene defs');
   if (!$('arrowLM')) {
     for (const [id, ref] of [['arrowLM', '#arrowL'], ['arrowRM', '#arrowR']]) { const g = document.createElementNS(NS, 'g'); g.id = id; const u = document.createElementNS(NS, 'use'); u.setAttribute('href', ref); g.appendChild(u); defs.appendChild(g); }
-    for (const kind of ['ring', 'burst', 'ghost']) for (const side of ['L', 'R']) {
+    for (const kind of ['ring', 'burst', 'ghost', 'halo']) for (const side of ['L', 'R']) {
       const src = $(kind + side + 'U').parentNode, c = src.cloneNode(true); c.querySelector('[id]').id = kind + side + 'M'; src.parentNode.insertBefore(c, src.nextSibling);
     }
+    // a pale copy of the arrow on each soft button, so a thumb learns which button goes with which arrow
+    for (const l of ['LU', 'LD', 'RU', 'RD', 'LM', 'RM']) { const u = document.createElementNS(NS, 'use'); u.setAttribute('href', '#arrow' + l); u.setAttribute('class', 'padglyph'); u.setAttribute('transform', 'scale(.55)'); $('ghost' + l).appendChild(u); }
   }
   buildLanes(); MAX_TRAVEL = Math.max(...Object.keys(LANES).map(travelOf));
+  STAGE = {}; VISIBLE = [];
   for (const l of ['LU', 'LD', 'RU', 'RD', 'LM', 'RM']) {
     const [, y, x] = LANES[l], show = twoLane ? l[1] === 'M' : l[1] !== 'M';
-    for (const kind of ['ring', 'burst']) { const g = $(kind + l).parentNode; g.setAttribute('transform', `translate(${x} ${y}) scale(.72)`); g.style.display = show ? '' : 'none'; }
+    for (const kind of ['ring', 'burst', 'halo']) { const g = $(kind + l).parentNode; g.setAttribute('transform', `translate(${x} ${y}) scale(.72)`); g.style.display = show ? '' : 'none'; }
     const ghost = $('ghost' + l).parentNode, gx = l[0] === 'L' ? 110 : 1070;
     ghost.setAttribute('transform', `translate(${gx} ${y}) scale(.62)`); ghost.style.display = show && LAYOUT === 'center' ? '' : 'none';
+    STAGE[l] = { x, y, gx, ring: $('ring' + l).parentNode, ghost, halo: $('halo' + l) };
+    if (show) VISIBLE.push(l);
   }
   const bars = document.querySelectorAll('#scene > g[fill="var(--lane)"] rect');
   bars.forEach((r, i) => {
@@ -599,22 +1265,41 @@ $('edgeLayout').checked = LAYOUT === 'edge';
 $('edgeLayout').addEventListener('change', e => { LAYOUT = e.target.checked ? 'edge' : 'center'; localStorage.setItem('spike-layout', LAYOUT); setStage(); });
 setStage();
 window.addEventListener('pointerdown', e => {
-  if (!playing || e.target.closest?.('#stopBtn')) return;
+  if (!playing || paused || e.target.closest?.('#stopBtn, #pause')) return;
   const m = $('scene').getScreenCTM().inverse();
   const y = m.b * e.clientX + m.d * e.clientY + m.f;
   tap((e.clientX < innerWidth / 2 ? 'L' : 'R') + (twoLane ? 'M' : y < SPLIT_Y ? 'U' : 'D'));
 });
 window.addEventListener('keydown', e => {
   if (e.repeat) return;
+  if (paused) { if (e.key === 'Escape') { e.preventDefault(); leavePause(); } else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); resumeGame(); } return; }
   let lane = { w: 'LU', s: 'LD', ArrowUp: 'RU', ArrowDown: 'RD', ' ': 'LD' }[e.key];
   if (lane && twoLane) lane = lane[0] + 'M';
   if (lane) { e.preventDefault(); tap(lane); }
   if (e.key === 'Escape' && playing) finish(true);
 });
-$('stopBtn').addEventListener('pointerdown', e => { e.stopPropagation(); if (playing) finish(true); });
+// Stop button: a mouse click stops at once (as before; Esc too). On a touch screen it pauses instead, so a stray thumb or
+// palm never loses the song: a big "play" goes on from the same moment, "Thoát" leaves the song like the old stop.
+$('stopBtn').addEventListener('pointerdown', e => { e.stopPropagation(); if (!playing) return; if (e.pointerType === 'touch' || e.pointerType === 'pen') pauseGame(); else finish(true); });
 document.addEventListener('gesturestart', e => e.preventDefault());
+// ---- pause: the audio clock stops (ctx.suspend), so music, arrows and dancer freeze together and resume in step ----
+let paused = false;
+function showPause(on) { paused = on; $('pause').hidden = !on; document.body.classList.toggle('paused', on); }
+function pauseGame() {
+  if (!playing || paused || !ctx) return;
+  showPause(true);
+  ctx.suspend().catch(() => {});
+  setTimeout(() => { if (paused) $('pauseGo').focus({ preventScroll: true }); }, 60);
+}
+function resumeGame() { if (!paused) return; showPause(false); ctx.resume().catch(() => {}); }
+function leavePause() { if (!paused) return; showPause(false); if (playing) finish(true); ctx.resume().catch(() => {}); }
+$('pauseGo').addEventListener('click', resumeGame);
+$('pauseExit').addEventListener('click', leavePause);
+// leaving the page (home button, another app, a call) pauses too, and coming back shows the big "play"
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
 
-window.spike = { geo: { SPEED, SPLIT_Y, LANES }, get state() { return { dance: Dance.ready, danceMoves: Dance.hasMoves, playing, now: ctx ? heardClock() : 0, score, hits, combo, maxCombo, total: notes.length, live: $('notes').childElementCount, tick: tickNext }; }, tap };
+// total = the arrows that really come in this run (a start at 4:00 skips the ones before it); all = every arrow of the level
+window.spike = { geo: { SPEED, SPLIT_Y, LANES }, get state() { return { dance: Dance.ready, danceMoves: Dance.hasMoves, playing, now: ctx ? heardClock() : 0, score, hits, combo, maxCombo, total: playable, all: notes.length, live: $('notes').childElementCount, tick: tickNext }; }, tap };
 $('copyTaps').addEventListener('click', () => { $('taps').select(); navigator.clipboard?.writeText($('taps').value).catch(() => {}); document.execCommand?.('copy'); });
 function pickFrom(sec) {
   startFrom = sec;
@@ -647,13 +1332,65 @@ function showOutfits() {
   Dance.mountWardrobe($('outfits'));
   $('outfitRow').hidden = false;
 }
-// Keep the visible loading/error state until the avatar is usable.
-$('songs').addEventListener('click', e => {
-  if (!Dance.ready) {
+// Keep the visible loading/error state until the avatar is usable (covers every button that starts a run).
+$('menu').addEventListener('click', e => {
+  if (!Dance.ready && e.target.closest('.song, .quick, #again')) {
     e.preventDefault(); e.stopImmediatePropagation();
     $('outfitRow').scrollIntoView({ block: 'nearest' });
   }
 }, true);
+// the outfit picker says which tile was chosen: a little burst of sparkles flies out of that tile
+$('outfits').addEventListener('wardrobe-equip', e => { const r = e.target.getBoundingClientRect?.(); if (r && r.width) FX.burst(r.left + r.width / 2, r.top + r.height / 2, 1, 0.5); });
+// Parents' gate. On a touch screen the ⚙️ (the tab and the "Dành cho bố mẹ" row) opens only after a 1-second hold, so a
+// child exploring the menu cannot change the layout, the start time or the sounds by accident. A short tap shows a hint.
+// Mouse and keyboard open it at once; closing it is always free.
+const GATE_MS = 1000;
+(() => {
+  let timer = 0, armed = null, seq = null, hintT = 0;   // seq: the touch on a gate that the next click belongs to
+  const gateOf = t => t?.closest?.('.tab.gear, #parent > summary');
+  const hint = $('gateHint');
+  function showHint(g) {
+    const r = g.getBoundingClientRect();
+    hint.style.left = Math.round(Math.max(8, Math.min(innerWidth - 258, r.left + r.width / 2 - 125))) + 'px';
+    hint.style.top = Math.round(Math.min(innerHeight - 70, r.bottom + 8)) + 'px';
+    hint.classList.add('on'); clearTimeout(hintT); hintT = setTimeout(() => hint.classList.remove('on'), 2200);
+  }
+  document.addEventListener('pointerdown', e => {
+    const g = gateOf(e.target);
+    if (!g || (e.pointerType !== 'touch' && e.pointerType !== 'pen')) { seq = null; return; }
+    seq = { open: $('parent').open, t: performance.now() };
+    if (seq.open) return;   // already open: scrolling to it or closing it is free
+    clearTimeout(timer); armed = g; g.classList.add('holding');
+    timer = setTimeout(() => {
+      g.classList.remove('holding'); armed = null; hint.classList.remove('on');
+      $('parent').open = true; $('parent').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
+    }, GATE_MS);
+  }, true);
+  const release = early => () => { if (!armed) return; clearTimeout(timer); armed.classList.remove('holding'); if (early) showHint(armed); armed = null; };
+  document.addEventListener('pointerup', release(true), true);
+  document.addEventListener('pointercancel', () => { release(false)(); seq = null; }, true);   // the finger started a scroll: no hint
+  document.addEventListener('click', e => {
+    if (!gateOf(e.target) || !seq || performance.now() - seq.t > 8000) return;   // keyboard or mouse: no gate
+    const s = seq; seq = null;
+    if (s.open) return;
+    e.preventDefault(); e.stopImmediatePropagation();   // a short tap (not allowed yet), or the tap that ends a finished hold
+  }, true);
+})();
+// quick jump bar (songs / outfits / parents), one big "play again", and the two buttons of the result screen
+document.querySelectorAll('.tab[data-go]').forEach(b => b.addEventListener('click', () => {
+  if (b.dataset.go === 'parent') $('parent').open = true;
+  $(b.dataset.go).scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
+}));
+// On a mouse-and-keyboard computer the parents' area starts open (a parent is at the screen); on an iPad it starts closed.
+if (matchMedia('(pointer: fine)').matches) $('parent').open = true;
+$('quick').addEventListener('click', () => { if (quickTarget) start(quickTarget.s, quickTarget.level); });
+$('again').addEventListener('click', () => { if (cur) start(cur.s, cur.level); });
+$('home').addEventListener('click', () => { doneTimers.forEach(clearTimeout); doneTimers = []; FX.clear(); $('menu').classList.remove('done'); });
+// The scene is made for a landscape screen. Held upright, it sits on the bottom edge (under the dancer, not over her face) and a hint asks to turn the iPad.
+const portraitMQ = matchMedia('(orientation: portrait)');
+function alignScene() { $('scene').setAttribute('preserveAspectRatio', portraitMQ.matches ? 'xMidYMax meet' : 'xMidYMid meet'); }
+if (portraitMQ.addEventListener) portraitMQ.addEventListener('change', alignScene); else portraitMQ.addListener(alignScene);
+alignScene();
 danceReady = loadDance().then(b => { DANCE = b; setLoad('char'); return Dance.init($('stage'), b); }).then(() => { clearTimeout(slowTimer); showOutfits(); setLoad('done'); $('loadLbl').textContent = 'Sẵn sàng!'; setTimeout(() => { if (!starting) loadEl.classList.add('hide'); }, 500); }).catch(e => {
   $('outfits').textContent = 'Không mở được nhân vật 3D. Hãy tải lại trang. ' + e.message;
   $('outfits').setAttribute('role', 'alert');

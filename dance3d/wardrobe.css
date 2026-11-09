@@ -1,9 +1,37 @@
-.wardrobe3d{display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:left;width:100%;margin-top:8px}.wardrobe3d section>strong{font-size:12px;display:block;margin-bottom:5px;color:#8b5274}.wardrobe3d section>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.wardrobe3d button{width:100%;min-width:0;overflow-wrap:anywhere;min-height:40px;padding:7px 5px;border:1px solid #dcc6d4;border-radius:9px;background:#fff7fb;color:#79566c;font:inherit;font-size:11px;cursor:pointer}.wardrobe3d button[aria-pressed=true]{background:#d89cbe;color:#fff;border-color:#b7799e}.wardrobe3d section[data-wardrobe-slot="accessory"]{grid-column:1/-1}.wardrobe3d section[data-wardrobe-slot="accessory"]>div{grid-template-columns:repeat(4,minmax(0,1fr))}.wardrobe3d button:focus-visible{outline:3px solid #71486c;outline-offset:2px}
-@media(min-width:1000px){body #menu{justify-content:flex-end;background:rgba(244,228,237,.12);padding-right:3vw}body #menu .panel{width:480px;background:rgba(255,250,253,.96)}}@media(max-width:600px){.wardrobe3d{gap:7px}.wardrobe3d button{font-size:10px}}
+/* Outfit picker (presentation only, UI pass 2026-11-09): one big tile per choice with a picture drawn in code; the label
+   under it is for the grown-ups. A chosen tile has a pink frame and a tick (not colour alone). */
+.wardrobe3d{display:flex;flex-direction:column;gap:20px;width:100%;margin-top:6px;text-align:left}
+.wardrobe3d section{scroll-margin-top:84px}
+.wardrobe3d .wsec-head{display:flex;align-items:center;gap:10px;margin:0 2px 10px}
+.wardrobe3d .wsec-ic{flex:none;display:grid;place-items:center;width:42px;height:42px;border-radius:15px;background:#fff0f7;box-shadow:inset 0 0 0 2px #ffd6e8}
+.wardrobe3d .wsec-ic svg{width:34px;height:34px;overflow:visible}
+.wardrobe3d section strong{font-size:18px;font-weight:900;line-height:1.2;color:#3b1d52}
+.wardrobe3d .wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(94px,1fr));gap:9px}
+.wardrobe3d .wgrid.wsets{grid-template-columns:repeat(auto-fill,minmax(118px,1fr))}
+.wardrobe3d .wtile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:5px;width:100%;min-width:0;min-height:100px;margin:0;padding:8px 5px 9px;border:3px solid #eadcf5;border-radius:20px;background:#fff;color:#3b1d52;font:inherit;font-size:13px;font-weight:800;line-height:1.15;text-align:center;overflow-wrap:anywhere;cursor:pointer;box-shadow:0 3px 0 #eadcf5;-webkit-touch-callout:none;transition:transform .1s,box-shadow .1s,border-color .15s,background-color .15s}
+.wardrobe3d .wtile:active{transform:translateY(3px);box-shadow:0 0 0 #eadcf5}
+.wardrobe3d .wt-pic{flex:none;display:grid;place-items:center;width:60px;height:60px;border-radius:17px;background:radial-gradient(circle at 50% 42%,#fff 0,#f3ebfb 74%);pointer-events:none}
+.wardrobe3d .wt-pic svg{width:56px;height:56px;overflow:visible}
+.wardrobe3d .wset .wt-pic{width:88px;height:88px;border-radius:22px}
+.wardrobe3d .wset .wt-pic svg{width:84px;height:84px}
+.wardrobe3d .wt-name{display:block;max-width:100%;pointer-events:none}
+.wardrobe3d .wt-brand{display:block;width:max-content;max-width:100%;margin:0 auto 3px;padding:1px 8px;border-radius:9px;font-size:11px;font-weight:900;color:#fff;background:#c2286a}
+.wardrobe3d .wt-brand[data-brand="golden"]{color:#4a2a00;background:#ffd24a}
+.wardrobe3d .wt-sep{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+.wardrobe3d .wtile[aria-pressed=true]{border-color:#ff4f8b;background:#fff2f8;box-shadow:0 3px 0 #ff9fcb,0 0 0 3px rgba(255,79,139,.2)}
+.wardrobe3d .wtile[aria-pressed=true] .wt-pic{background:radial-gradient(circle at 50% 42%,#fff 0,#ffd9ea 78%)}
+.wardrobe3d .wtile[aria-pressed=true]::after{content:"";position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;box-sizing:border-box;border:3px solid #fff;background:#ff4f8b url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='white' stroke-width='3.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/15px no-repeat;box-shadow:0 2px 4px rgba(120,30,80,.3);pointer-events:none}
+.wardrobe3d .wtile.wpop{animation:wpop .42s cubic-bezier(.2,1.6,.4,1)}
+@keyframes wpop{0%{transform:scale(.9)}55%{transform:scale(1.07)}100%{transform:scale(1)}}
+.wardrobe3d .wtile:focus-visible{outline:4px solid #3b1d52;outline-offset:3px}
+@media (prefers-reduced-motion:reduce){.wardrobe3d .wtile.wpop{animation:none}}
+@media(min-width:1000px){body #menu{justify-content:flex-end;background:rgba(244,228,237,.12);padding-right:3vw}body #menu .panel{width:480px;background:rgba(255,250,253,.96)}}
 body:has(#menu:not(.hide)) #scene{opacity:0;pointer-events:none}
 @media(max-width:999px){body #menu{align-items:flex-end;padding:10px;background:transparent}body #menu .panel{max-height:52vh;width:min(560px,100%);padding:16px 18px}}
-
-@media(max-width:380px){.wardrobe3d section[data-wardrobe-slot="accessory"]>div{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.wardrobe3d section[data-wardrobe-slot="face"]{grid-column:1/-1}
-.wardrobe3d section[data-wardrobe-slot="face"]>div{grid-template-columns:repeat(4,minmax(0,1fr))}
-@media(max-width:380px){.wardrobe3d section[data-wardrobe-slot="face"]>div{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* picture shortcuts to each group of clothes */
+.wardrobe3d .wjump{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:2px 0 -4px}
+.wardrobe3d .wj{display:grid;place-items:center;width:52px;height:52px;padding:0;border:3px solid #eadcf5;border-radius:18px;background:#fff;box-shadow:0 3px 0 #eadcf5;cursor:pointer;-webkit-touch-callout:none}
+.wardrobe3d .wj svg{width:38px;height:38px;overflow:visible;pointer-events:none}
+.wardrobe3d .wj:active{transform:translateY(3px);box-shadow:none}
+.wardrobe3d .wj:focus-visible{outline:4px solid #3b1d52;outline-offset:3px}
+@media(max-width:420px){.wardrobe3d .wjump{gap:5px}.wardrobe3d .wj{width:44px;height:44px;border-radius:15px}.wardrobe3d .wj svg{width:32px;height:32px}}
