@@ -1,10 +1,10 @@
-import {buildDolceCrewHair} from './dolce-hair.js?v=0911.1821';
-import {buildDolceCrewStyles} from './dolce-crew-styles.js?v=0911.1821';
-import {buildHatMuaCrewHair} from './crew-hair.js?v=0911.1821';
-import {buildHatMuaCrewStyles} from './crew-styles.js?v=0911.1821';
-import {buildClothingStyles} from './clothing-styles.js?v=0911.1821';
-import {buildHuntrixStyles} from './huntrix-styles.js?v=0911.1821';
-import {buildHatMuaStyles} from './hat-mua-styles.js?v=0911.1821';
+import {buildDolceCrewHair} from './dolce-hair.js?v=0911.1832';
+import {buildDolceCrewStyles} from './dolce-crew-styles.js?v=0911.1832';
+import {buildHatMuaCrewHair} from './crew-hair.js?v=0911.1832';
+import {buildHatMuaCrewStyles} from './crew-styles.js?v=0911.1832';
+import {buildClothingStyles} from './clothing-styles.js?v=0911.1832';
+import {buildHuntrixStyles} from './huntrix-styles.js?v=0911.1832';
+import {buildHatMuaStyles} from './hat-mua-styles.js?v=0911.1832';
 
 // Every cooperative step is a synchronous rest-pose transaction. The renderer
 // always sees the live pose, never a donor left at rest across an event-loop yield.
@@ -47,9 +47,9 @@ export function createLazyStyles(variants,options){
   stats.builds++;stats.milliseconds+=task.milliseconds;stats.choices.push({slot:task.slot,index:task.index,milliseconds:task.milliseconds});
   task.resolve(records.get(task.key)?.meshes);return true;
  }
- function schedule(){if(timer!==null)return;if(![...pending.values()].some(t=>!paused||t.priority>=100))return;if([...pending.values()].some(t=>t.priority>=100)){timer=true;foregroundChannel.port2.postMessage(0);}else timer=setTimeout(pump,0);}
+ function schedule(){if(timer!==null)return;if(![...pending.values()].some(t=>!paused||t.priority>=100))return;if([...pending.values()].some(t=>t.priority>=100||(!paused&&t.priority>=99))){timer=true;foregroundChannel.port2.postMessage(0);}else timer=setTimeout(pump,0);}
  function pump(){const taskStart=performance.now();timer=null;const task=[...pending.values()].filter(t=>!paused||t.priority>=100).sort((a,b)=>b.priority-a.priority||a.sequence-b.sequence)[0];if(!task)return;
-  try{do{if(step(task))break;}while(performance.now()-taskStart<5);}catch(error){console.error('Wardrobe build failed',error);}stats.maxTaskMs=Math.max(stats.maxTaskMs,performance.now()-taskStart);schedule();
+  const slice=task.priority>=99&&task.priority<100&&!paused?12:5;try{do{if(step(task))break;}while(performance.now()-taskStart<slice);}catch(error){console.error('Wardrobe build failed',error);}stats.maxTaskMs=Math.max(stats.maxTaskMs,performance.now()-taskStart);schedule();
  }
  function ensureStyle(slot,index){if(isStyleReady(slot,index))return records.get(keyFor(slot,index))?.meshes;const task=taskFor(slot,index,100);while(!step(task)){}return records.get(task.key)?.meshes;}
  function ensureOutfit(outfit){for(const [slot,index] of Object.entries(outfit))if(options[slot])ensureStyle(slot,index);}

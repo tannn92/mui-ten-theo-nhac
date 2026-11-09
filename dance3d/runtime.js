@@ -1,13 +1,13 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=0911.1821';
-import {createSongBackgrounds} from './song-backgrounds.js?v=0911.1821';
-import {loadWardrobe} from './wardrobe.js?v=0911.1821';
-import {createChoreography} from './choreography.js?v=0911.1821';
-import {createPoseBank} from './pose-bank.js?v=0911.1821';
-import {applyFaceExpression} from './face-expressions.js?v=0911.1821';
-import {createCrew} from './crew.js?v=0911.1821';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=0911.1821';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=0911.1821';
+import {createPerformanceLibrary} from './performance-library.js?v=0911.1832';
+import {createSongBackgrounds} from './song-backgrounds.js?v=0911.1832';
+import {loadWardrobe} from './wardrobe.js?v=0911.1832';
+import {createChoreography} from './choreography.js?v=0911.1832';
+import {createPoseBank} from './pose-bank.js?v=0911.1832';
+import {applyFaceExpression} from './face-expressions.js?v=0911.1832';
+import {createCrew} from './crew.js?v=0911.1832';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=0911.1832';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=0911.1832';
 export async function createRuntime(canvas,bundle){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
@@ -111,6 +111,14 @@ export async function createRuntime(canvas,bundle){
  songMoves=moves;backdrop.setSong(chart);motion.setSong(moves,chart);const matched=captured?.setSong(moves,chart);if(loaded?.lead&&!matched)throw Error('Lead track song identity mismatch');crew.setSong(chart,crewEntry,loaded?.crewData);bakeCapturedFades();lastTime=null;idleStart=performance.now();return true;},outfits:presets,get outfit(){const i=presets.findIndex((_,i)=>physicalSlots.every(s=>wardrobe.variantFor(s,wardrobe.outfit[s])===i&&!wardrobe.options[s][wardrobe.outfit[s]].style));return i>=0&&!(wardrobe.outfit.accessory>0)?presets[i].id:'mixed';},setOutfit(id){const i=presets.findIndex(p=>p.id===id);if(i>=0){physicalSlots.forEach(s=>{const choice=wardrobe.options?.[s]?.findIndex(o=>o.variant===i)??i;if(choice>=0)equip(s,choice);});if(wardrobe.slots.includes('accessory'))equip('accessory',0);}},mountWardrobe(container){refresh=mountWardrobe(container,config,equipFromUI,()=>wardrobe.outfit);},test:{wardrobe,camera,scene,renderer,motion,poseBank,crew,captured}};
  // Warm both crew costumes while the loading state is still visible. Otherwise
  // their first shader compilation can stall the first audible dance beat.
+ // Owner 2026-11-09: trying clothes on must not wait. Sew the shop (set items first) while the loading screen is up, for
+ // at most 4 s, then keep sewing the rest of the shop in the background ahead of the crew looks. Priority 99 pauses
+ // while a song plays; a tap on an unsewn item still jumps the queue at 100.
+ {const shop=[],seen=new Set(),add=(slot,i)=>{const o=wardrobe.options?.[slot]?.[i],k=slot+':'+i;if(o?.style&&!o.crewOnly&&!seen.has(k)){seen.add(k);shop.push({[slot]:i});}};
+  for(const set of config.sets||[])for(const [slot,i] of Object.entries(set.selection||{}))add(slot,i);
+  for(const [slot,items] of Object.entries(wardrobe.options||{}))items.forEach((_,i)=>add(slot,i));
+  const t0=performance.now(),st=wardrobe.styles;if(st?.ensureStyle)for(const x of shop){if(performance.now()-t0>4000)break;const [slot,i]=Object.entries(x)[0];try{st.ensureStyle(slot,i);}catch(e){console.warn('shop sew',e);}}
+  if(wardrobe.prepareOutfit)shop.forEach((x,k)=>wardrobe.prepareOutfit(x,{priority:99}).catch(e=>console.warn('shop sew',e)));}
  draw(null);crew.update(true,0,width/height);
  if(renderer.compileAsync)await renderer.compileAsync(scene,camera);else renderer.compile(scene,camera);
  renderer.render(scene,camera);crew.update(false,null,width/height);draw(null);
