@@ -1,18 +1,18 @@
-import {buildHuntrixHair} from './huntrix-hair.js?v=1011.0608';
-import {buildHuntrixTrioStyles} from './huntrix-trio-styles.js?v=1011.0608';
-import {buildTaiSinhCrewStyles} from './tai-sinh-crew-styles.js?v=1011.0608';
-import {buildTaiSinhHair} from './tai-sinh-hair.js?v=1011.0608';
-import {buildTaiSinhStyles} from './tai-sinh-styles.js?v=1011.0608';
-import {buildGirlXinhBoyStyles} from './girl-xinh-boys-styles.js?v=1011.0608';
-import {buildGirlXinhHair} from './girl-xinh-hair.js?v=1011.0608';
-import {buildGirlXinhLeadStyles} from './girl-xinh-lead.js?v=1011.0608';
-import {buildDolceCrewHair} from './dolce-hair.js?v=1011.0608';
-import {buildDolceCrewStyles} from './dolce-crew-styles.js?v=1011.0608';
-import {buildHatMuaCrewHair} from './crew-hair.js?v=1011.0608';
-import {buildHatMuaCrewStyles} from './crew-styles.js?v=1011.0608';
-import {buildClothingStyles} from './clothing-styles.js?v=1011.0608';
-import {buildHuntrixStyles} from './huntrix-styles.js?v=1011.0608';
-import {buildHatMuaStyles} from './hat-mua-styles.js?v=1011.0608';
+import {buildHuntrixHair} from './huntrix-hair.js?v=1011.0639';
+import {buildHuntrixTrioStyles} from './huntrix-trio-styles.js?v=1011.0639';
+import {buildTaiSinhCrewStyles} from './tai-sinh-crew-styles.js?v=1011.0639';
+import {buildTaiSinhHair} from './tai-sinh-hair.js?v=1011.0639';
+import {buildTaiSinhStyles} from './tai-sinh-styles.js?v=1011.0639';
+import {buildGirlXinhBoyStyles} from './girl-xinh-boys-styles.js?v=1011.0639';
+import {buildGirlXinhHair} from './girl-xinh-hair.js?v=1011.0639';
+import {buildGirlXinhLeadStyles} from './girl-xinh-lead.js?v=1011.0639';
+import {buildDolceCrewHair} from './dolce-hair.js?v=1011.0639';
+import {buildDolceCrewStyles} from './dolce-crew-styles.js?v=1011.0639';
+import {buildHatMuaCrewHair} from './crew-hair.js?v=1011.0639';
+import {buildHatMuaCrewStyles} from './crew-styles.js?v=1011.0639';
+import {buildClothingStyles} from './clothing-styles.js?v=1011.0639';
+import {buildHuntrixStyles} from './huntrix-styles.js?v=1011.0639';
+import {buildHatMuaStyles} from './hat-mua-styles.js?v=1011.0639';
 
 // Every cooperative step is a synchronous rest-pose transaction. The renderer
 // always sees the live pose, never a donor left at rest across an event-loop yield.
