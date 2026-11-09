@@ -132,7 +132,7 @@ export function mountWardrobe(container,config,equip,current){
   b.append(p,name);return b;};
  if(config.sets?.length){const items=section('sets','Chọn cả bộ');for(const set of config.sets){const b=tile(set.label,setArt(set,options));b.classList.add('wset');b.dataset.outfitSet=set.id;b.onclick=()=>{for(const[slot,index]of Object.entries(set.selection))equip(slot,index);fire(b,{set:set.id});};items.append(b);sets.push([b,set]);}}
  for(const [slot,values] of Object.entries(options)){const items=section(slot,titles[slot]||slot);
-  values.forEach((v,i)=>{const b=tile(v.label,art(slot,v));b.dataset.slot=slot;b.dataset.choice=i;b.dataset.optionId=v.id;b.onclick=()=>{equip(slot,i);fire(b,{slot,index:i});};items.append(b);buttons.push(b);});
+  values.forEach((v,i)=>{if(v.crewOnly)return;const b=tile(v.label,art(slot,v));b.dataset.slot=slot;b.dataset.choice=i;b.dataset.optionId=v.id;b.onclick=()=>{equip(slot,i);fire(b,{slot,index:i});};items.append(b);buttons.push(b);});
  }
  // a whole-outfit tile looks chosen while every piece of it is on
  const refresh=()=>{const now=current();buttons.forEach(b=>b.setAttribute('aria-pressed',now[b.dataset.slot]===Number(b.dataset.choice)));sets.forEach(([b,set])=>b.setAttribute('aria-pressed',Object.entries(set.selection||{}).every(([s,i])=>now[s]===i)));};refresh();return refresh;

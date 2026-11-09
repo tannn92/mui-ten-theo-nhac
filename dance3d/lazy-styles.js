@@ -1,6 +1,7 @@
-import {buildClothingStyles} from './clothing-styles.js?v=0911.1341';
-import {buildHuntrixStyles} from './huntrix-styles.js?v=0911.1341';
-import {buildHatMuaStyles} from './hat-mua-styles.js?v=0911.1341';
+import {buildHatMuaCrewStyles} from './crew-styles.js?v=0911.1551';
+import {buildClothingStyles} from './clothing-styles.js?v=0911.1551';
+import {buildHuntrixStyles} from './huntrix-styles.js?v=0911.1551';
+import {buildHatMuaStyles} from './hat-mua-styles.js?v=0911.1551';
 
 // Every cooperative step is a synchronous rest-pose transaction. The renderer
 // always sees the live pose, never a donor left at rest across an event-loop yield.
@@ -13,6 +14,9 @@ export function createLazyStyles(variants,options){
  const nodeList=[...nodes],rest=capture(nodeList),liveState=capture(nodeList),parts=[],records=new Map(),built=new Set(),pending=new Map();
  const stats={builds:0,milliseconds:0,steps:0,maxStepMs:0,maxTaskMs:0,slowSteps:[],choices:[]};
  let paused=false,timer=null,sequence=0;
+ // User requests keep the same 5 ms slices, but skip nested timers' 4 ms clamp.
+ // Message tasks still yield to rendering/input; low-priority prewarm retains timers.
+ const foregroundChannel=new MessageChannel();foregroundChannel.port1.onmessage=pump;
  const keyFor=(slot,index)=>slot+':'+index;
  function validate(slot,index){const option=options[slot]?.[index];if(!Number.isInteger(index)||!option)throw Error('Món đồ không tồn tại');return option;}
  function isStyleReady(slot,index){return !validate(slot,index).style||built.has(keyFor(slot,index));}
@@ -21,7 +25,7 @@ export function createLazyStyles(variants,options){
   const option=validate(slot,index),key=keyFor(slot,index);let task=pending.get(key);
   if(task){task.priority=Math.max(task.priority,priority);return task;}
   const selected=Object.fromEntries(Object.entries(options).map(([s,items])=>[s,items.map((o,i)=>s===slot&&i===index?o:{...o,style:null})]));
-  const factory=option.style.startsWith('hat-mua-')?buildHatMuaStyles:option.style.startsWith('huntrix-')?buildHuntrixStyles:buildClothingStyles;
+  const factory=option.style.startsWith('hat-mua-crew-')?buildHatMuaCrewStyles:option.style.startsWith('hat-mua-')?buildHatMuaStyles:option.style.startsWith('huntrix-')?buildHuntrixStyles:buildClothingStyles;
   let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});
   // Sync fallback callers may have no async consumer; still propagate via throw.
   promise.catch(()=>{});
@@ -40,7 +44,7 @@ export function createLazyStyles(variants,options){
   stats.builds++;stats.milliseconds+=task.milliseconds;stats.choices.push({slot:task.slot,index:task.index,milliseconds:task.milliseconds});
   task.resolve(records.get(task.key)?.meshes);return true;
  }
- function schedule(){if(timer!==null)return;if(![...pending.values()].some(t=>!paused||t.priority>=100))return;timer=setTimeout(pump,0);}
+ function schedule(){if(timer!==null)return;if(![...pending.values()].some(t=>!paused||t.priority>=100))return;if([...pending.values()].some(t=>t.priority>=100)){timer=true;foregroundChannel.port2.postMessage(0);}else timer=setTimeout(pump,0);}
  function pump(){const taskStart=performance.now();timer=null;const task=[...pending.values()].filter(t=>!paused||t.priority>=100).sort((a,b)=>b.priority-a.priority||a.sequence-b.sequence)[0];if(!task)return;
   try{do{if(step(task))break;}while(performance.now()-taskStart<5);}catch(error){console.error('Wardrobe build failed',error);}stats.maxTaskMs=Math.max(stats.maxTaskMs,performance.now()-taskStart);schedule();
  }
