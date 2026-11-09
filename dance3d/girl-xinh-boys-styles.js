@@ -1,6 +1,6 @@
 // Derived from approved natural-boy base SHA256 67328828cdd461c54cf863d06e672e941ec0b75d558521f477bc87434697d5b7.
 import * as T from 'three';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=0911.1911';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=0911.1921';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 const caches=new WeakMap();
 const V=()=>new T.Vector3();

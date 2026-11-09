@@ -1,7 +1,7 @@
 import * as T from 'three';
 import {VRMHumanoid,VRMSpringBoneManager,VRMSpringBoneJoint} from '@pixiv/three-vrm';
-import {limitSkirtSprings} from './skirt-safety.js?v=0911.1911';
-import {createCapturedMotion} from './captured-motion.js?v=0911.1911';
+import {limitSkirtSprings} from './skirt-safety.js?v=0911.1921';
+import {createCapturedMotion} from './captured-motion.js?v=0911.1921';
 
 // A private bone hierarchy for one performer. Geometry/materials stay shared;
 // never call VRMHumanoid.clone(), which keeps the source raw bone references.
