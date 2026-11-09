@@ -1,4 +1,4 @@
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=0911.2348';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1011.0039';
 import * as T from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // Independent additions: caller retains ownership of numeric wardrobe indices.
