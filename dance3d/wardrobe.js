@@ -1,10 +1,11 @@
+import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=0911.1911';
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {VRMLoaderPlugin} from '@pixiv/three-vrm';
-import {createAccessories} from './accessories.js?v=0911.1844';
-import {getWardrobeOptions,wardrobeDefaults} from './wardrobe-ui.js?v=0911.1844';
-import {addSkirtShorts,limitSkirtSprings} from './skirt-safety.js?v=0911.1844';
-import {createLazyStyles} from './lazy-styles.js?v=0911.1844';
+import {createAccessories} from './accessories.js?v=0911.1911';
+import {getWardrobeOptions,wardrobeDefaults} from './wardrobe-ui.js?v=0911.1911';
+import {addSkirtShorts,limitSkirtSprings} from './skirt-safety.js?v=0911.1911';
+import {createLazyStyles} from './lazy-styles.js?v=0911.1911';
 
 const physicalSlots=['hair','top','bottom','shoes'];
 const vector=new T.Vector3();
@@ -101,7 +102,7 @@ export async function loadWardrobe(scene,config,onProgress=()=>{}){
  }
  for(const variant of variants){if(variant.spec.id==='rose')addSkirtShorts(variant);else if(variant.spec.id==='street')addSkirtShorts(variant,'dolce-pants');}
  if(audit.unknown.length)throw Error('Chưa phân loại material: '+audit.unknown.map(x=>x.material).join(', '));
- const outfit=wardrobeDefaults(config),accessories=createAccessories(master.vrm,options.accessory.map(o=>o.style?.startsWith('hat-mua-')?{...o,id:'none'}:o)),styles=createLazyStyles(variants,options);
+ const outfit=wardrobeDefaults(config),accessories=createAccessories(master.vrm,options.accessory.map(o=>o.style?{...o,id:'none'}:o)),styles=createLazyStyles(variants,options);
  styles.ensureOutfit(outfit);
  const variantFor=(slot,choice=outfit[slot])=>options[slot]?.[choice]?.variant;
  const meshesFor=(slot,choice=outfit[slot])=>slot==='face'?master.parts.face:styles.meshesFor(slot,choice)||variants[variantFor(slot,choice)]?.parts[slot]||[];
@@ -111,7 +112,7 @@ export async function loadWardrobe(scene,config,onProgress=()=>{}){
  for(const key of Object.keys(variant.parts)){
  const slot=key==='upper'?'top':key==='lower'?'bottom':key==='feet'?'shoes':key;
  const show=key==='face'?i===0:i===variantFor(slot)&&(!physicalSlots.includes(key)||!styles.meshesFor(slot,outfit[slot]));
- variant.parts[key].forEach(mesh=>mesh.visible=show&&!(mesh.userData.excludeHatMua&&options.bottom[outfit.bottom].style?.startsWith('hat-mua-'))&&!(mesh.userData.excludeHuntrix&&options.bottom[outfit.bottom].style?.startsWith('huntrix-'))&&(!mesh.userData.requiredBottomStyle||options.bottom[outfit.bottom].style===mesh.userData.requiredBottomStyle));
+ variant.parts[key].forEach(mesh=>mesh.visible=show&&!(mesh.userData.excludeHatMua&&options.bottom[outfit.bottom].style?.startsWith('hat-mua-'))&&!(mesh.userData.excludeHuntrix&&options.bottom[outfit.bottom].style?.startsWith('huntrix-'))&&!hideNativeGirlXinhSafety(mesh,options.bottom[outfit.bottom])&&(!mesh.userData.requiredBottomStyle||options.bottom[outfit.bottom].style===mesh.userData.requiredBottomStyle));
  }
  });
  for(const slot of [...physicalSlots,'accessory'])styles.meshesFor(slot,outfit[slot])?.forEach(mesh=>mesh.visible=true);

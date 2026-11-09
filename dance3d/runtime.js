@@ -1,13 +1,13 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=0911.1844';
-import {createSongBackgrounds} from './song-backgrounds.js?v=0911.1844';
-import {loadWardrobe} from './wardrobe.js?v=0911.1844';
-import {createChoreography} from './choreography.js?v=0911.1844';
-import {createPoseBank} from './pose-bank.js?v=0911.1844';
-import {applyFaceExpression} from './face-expressions.js?v=0911.1844';
-import {createCrew} from './crew.js?v=0911.1844';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=0911.1844';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=0911.1844';
+import {createPerformanceLibrary} from './performance-library.js?v=0911.1911';
+import {createSongBackgrounds} from './song-backgrounds.js?v=0911.1911';
+import {loadWardrobe} from './wardrobe.js?v=0911.1911';
+import {createChoreography} from './choreography.js?v=0911.1911';
+import {createPoseBank} from './pose-bank.js?v=0911.1911';
+import {applyFaceExpression} from './face-expressions.js?v=0911.1911';
+import {createCrew} from './crew.js?v=0911.1911';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=0911.1911';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=0911.1911';
 export async function createRuntime(canvas,bundle){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
@@ -76,7 +76,7 @@ export async function createRuntime(canvas,bundle){
   sewing(true);const job=wardrobe.prepareOutfit?wardrobe.prepareOutfit(sel,{priority:100}):new Promise(r=>requestAnimationFrame(()=>setTimeout(r,30)));
   Promise.resolve(job).then(put).catch(e=>console.warn('sew',e)).finally(()=>sewing(false));}
  function resize(){const w=canvas.clientWidth||innerWidth,h=canvas.clientHeight||innerHeight;if(w===width&&h===height)return;width=w;height=h;renderer.setSize(w,h,false);backdrop.resize(w,h);const aspect=w/h,half=1.12;camera.left=-half*aspect;camera.right=half*aspect;camera.top=half;camera.bottom=-half;camera.updateProjectionMatrix();}
-  function crewSelection(s){const out={hair:s.hair??1};for(const k of ['hair','top','bottom','shoes']){if(k==='hair'&&!s.selectionIds?.hair)continue;const i=wardrobe.options[k]?.findIndex(o=>o.id===s.selectionIds?.[k]);if(!(i>=0))return null;out[k]=i;}return out;}
+  function crewSelection(s){const out={hair:s.hair??1};for(const k of ['hair','top','bottom','shoes','accessory']){if((k==='hair'||k==='accessory')&&!s.selectionIds?.[k])continue;const i=wardrobe.options[k]?.findIndex(o=>o.id===s.selectionIds?.[k]);if(!(i>=0))return null;out[k]=i;}return out;}
  function themedCrew(entry,chart){const slug=chart?.slug||Object.keys(raw.performances||{}).find(k=>raw.performances[k]===entry);const pool=(config.crewOutfits?.[slug]||[]).map(s=>({s,sel:crewSelection(s)})).filter(x=>x.sel);if(!entry?.crew?.length||!pool.length)return entry;
   for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
   // Boy slots get boy looks and girl slots girl looks (role, default girl); a role without looks borrows from the whole pool.
@@ -96,7 +96,9 @@ export async function createRuntime(canvas,bundle){
  const capturedY=(capture?.root[1]||0)-captureReferenceOffset;let groundedY=capturedY;
  if(captureWeight<1){let low=Infinity;for(const side of ['left','right']){wardrobe.master.humanoid.getRawBoneNode(side+'Foot').getWorldPosition(v);low=Math.min(low,v.y);}const authoredY=wardrobe.master.scene.position.y+.075-low;groundedY=T.MathUtils.lerp(authoredY,capturedY,captureWeight);}
  for(let i=0;i<wardrobe.variants.length;i++){const variant=wardrobe.variants[i],vrm=variant.vrm;vrm.scene.position.y=groundedY+(variant.restOffset||0);const active=needed.has(i);if(active){vrm.scene.updateMatrixWorld(true);if(seek||!variant.wasActive)vrm.springBoneManager?.reset();applyFaceExpression(vrm,wardrobe.options.face[wardrobe.outfit.face],clock);vrm.update(dt);}variant.wasActive=active;}
- const compact=menuOpen&&width<1000;camera.zoom=compact?.55:1;camera.updateProjectionMatrix();camera.position.x=menuOpen&&width>=1000?.47:0;camera.position.y=compact?-.4:.75;camera.lookAt(camera.position.x,camera.position.y,0);crew.update(crewVisible,playing?t:null,width/height,captureWeight===1&&capture?.root?capture.root:null);renderer.render(scene,camera);
+ const side=menuOpen&&width<1000&&width>height&&height<=600,compact=menuOpen&&width<1000&&!side;camera.zoom=compact?.55:1;camera.updateProjectionMatrix();
+  // landscape phone: the menu panel covers the right part, so centre the dancer in the free strip on the left
+  camera.position.x=menuOpen&&width>=1000?.47:side?(1-(width-10-Math.min(470,width*.58))/width)*1.12*width/height:0;camera.position.y=compact?-.4:.75;camera.lookAt(camera.position.x,camera.position.y,0);crew.update(crewVisible,playing?t:null,width/height,captureWeight===1&&capture?.root?capture.root:null);renderer.render(scene,camera);
  lastSnapshot={time:playing?t:null,motionSource:captureWeight===1?'captured':captureWeight>0?'blend':'authored',captured:{asset:captureAsset,available:!!captured,matched:captured?.matched||false,active:captureWeight>0,weight:captureWeight,source:'cac-center',transition:'continuous-relative-120hz',sourceTime:capture?.sourceTime??null,localTime:capture?.localTime??null,index:capture?.index??null,next:capture?.next??null,alpha:capture?.alpha??null,t0:captured?.t0??null,duration:captured?.duration??null,entryFade:captured?.entryFade??null,exitFade:captured?.exitFade??null},activeVariants:[...needed].sort((a,b)=>a-b),source:captureWeight>0?capture.localTime:sample.layers[0]?.time,layers:[...sample.layers.map(l=>({...l,weight:l.weight*(1-captureWeight)})).filter(l=>l.weight>0),...(captureWeight>0?[{clip:'cac-center',time:capture.localTime,weight:captureWeight}]:[])],clipIds:captureWeight===1?['cac-center']:captureWeight>0?['cac-center',...sample.layers.map(l=>l.clip)]:sample.layers.map(l=>l.clip),mode:sample.mode,phraseId:sample.phraseId,energy:sample.energy,amplitude:sample.amplitude,rootX,rootZ,sourceRoot,speed:sample.phaseRate,phaseRate:sample.phaseRate,rootVelocity:sample.rootVelocity,beatPhase:sample.beatPhase,rootPosition:[rootX,wardrobe.master.scene.position.y,rootZ],yaw:rootYaw,seek,drawMs:performance.now()-started,triangles:renderer.info.render.triangles,calls:renderer.info.render.calls};
  }
  function snapshot(){const bones={};for(const name of ['hips','spine','chest','neck','head','leftShoulder','rightShoulder','leftUpperArm','rightUpperArm','leftLowerArm','rightLowerArm','leftHand','rightHand','leftUpperLeg','rightUpperLeg','leftLowerLeg','rightLowerLeg','leftFoot','rightFoot']){const b=wardrobe.master.humanoid.getRawBoneNode(name);if(!b)continue;b.getWorldPosition(v);const world=v.toArray(),screen=v.clone().project(camera);bones[name]={world,screen:[(screen.x+1)*width/2,(1-screen.y)*height/2],quaternion:b.quaternion.toArray()};}return{...lastSnapshot,backdrop:backdrop.diagnostics(),crew:crew.diagnostics(),selection:{...wardrobe.outfit},bones,finite:Object.values(bones).every(b=>b.world.every(Number.isFinite)),face:{id:wardrobe.options.face[wardrobe.outfit.face].id,values:wardrobe.options.face[wardrobe.outfit.face].values},parts:wardrobe.variants.flatMap((v,i)=>Object.entries(v.parts).flatMap(([slot,ms])=>ms.map(m=>({slot,variant:i,visible:m.visible,meshId:m.uuid,geometryId:m.geometry.uuid,indexCount:m.geometry.index?.count||0})))).concat((wardrobe.styleParts||[]).map(p=>({slot:p.slot,variant:p.variant,donor:p.donor,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count}))).concat((wardrobe.accessoryParts||[]).map(p=>({slot:p.slot,variant:p.variant,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count}))),accessories:(wardrobe.accessoryParts||[]).map(p=>({slot:p.slot,variant:p.variant,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count})),audit:wardrobe.audit};}
