@@ -2,7 +2,7 @@ import * as T from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 export const crewSpecs=[
  {id:1,name:'Gingham hồng · váy trắng',top:'#edb9cf',pattern:'gingham',neck:'corset',bottom:'#fffdfb',shape:'pleated',fur:true,bow:true},
- {id:2,name:'Burgundy · váy hồng',top:'#ba1855',neck:'corset',bottom:'#eab6c9',shape:'pleated',fur:true,beret:true,lace:true},
+ {id:2,name:'Burgundy · váy hồng',top:'#ba1855',neck:'corset',bottom:'#eab6c9',shape:'pleated',fur:true,beret:false,lace:true},
  {id:3,name:'Hồng bèo ba tầng',top:'#e9b8cb',neck:'tube',bottom:'#edc2d4',shape:'tiers',fur:false,trim:true},
  {id:4,name:'Corset hồng · short',top:'#edbdd0',neck:'corset',bottom:'#edbdd0',shape:'shorts',fur:false,trim:true,sleeve:true,lace:true},
  {id:6,name:'Trắng đan dây · cargo hồng',top:'#ffffff',neck:'corset',bottom:'#f15aa4',shape:'cargo',fur:false,sleeves:true,lace:true},

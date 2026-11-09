@@ -1,7 +1,8 @@
-import {buildHatMuaCrewStyles} from './crew-styles.js?v=0911.1612';
-import {buildClothingStyles} from './clothing-styles.js?v=0911.1612';
-import {buildHuntrixStyles} from './huntrix-styles.js?v=0911.1612';
-import {buildHatMuaStyles} from './hat-mua-styles.js?v=0911.1612';
+import {buildHatMuaCrewHair} from './crew-hair.js?v=0911.1619';
+import {buildHatMuaCrewStyles} from './crew-styles.js?v=0911.1619';
+import {buildClothingStyles} from './clothing-styles.js?v=0911.1619';
+import {buildHuntrixStyles} from './huntrix-styles.js?v=0911.1619';
+import {buildHatMuaStyles} from './hat-mua-styles.js?v=0911.1619';
 
 // Every cooperative step is a synchronous rest-pose transaction. The renderer
 // always sees the live pose, never a donor left at rest across an event-loop yield.
@@ -25,7 +26,7 @@ export function createLazyStyles(variants,options){
   const option=validate(slot,index),key=keyFor(slot,index);let task=pending.get(key);
   if(task){task.priority=Math.max(task.priority,priority);return task;}
   const selected=Object.fromEntries(Object.entries(options).map(([s,items])=>[s,items.map((o,i)=>s===slot&&i===index?o:{...o,style:null})]));
-  const factory=option.style.startsWith('hat-mua-crew-')?buildHatMuaCrewStyles:option.style.startsWith('hat-mua-')?buildHatMuaStyles:option.style.startsWith('huntrix-')?buildHuntrixStyles:buildClothingStyles;
+  const factory=option.style.startsWith('hat-mua-crew-hair-')?buildHatMuaCrewHair:option.style.startsWith('hat-mua-crew-')?buildHatMuaCrewStyles:option.style.startsWith('hat-mua-')?buildHatMuaStyles:option.style.startsWith('huntrix-')?buildHuntrixStyles:buildClothingStyles;
   let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});
   // Sync fallback callers may have no async consumer; still propagate via throw.
   promise.catch(()=>{});

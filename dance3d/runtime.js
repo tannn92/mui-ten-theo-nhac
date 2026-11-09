@@ -1,13 +1,13 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=0911.1612';
-import {createSongBackgrounds} from './song-backgrounds.js?v=0911.1612';
-import {loadWardrobe} from './wardrobe.js?v=0911.1612';
-import {createChoreography} from './choreography.js?v=0911.1612';
-import {createPoseBank} from './pose-bank.js?v=0911.1612';
-import {applyFaceExpression} from './face-expressions.js?v=0911.1612';
-import {createCrew} from './crew.js?v=0911.1612';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=0911.1612';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=0911.1612';
+import {createPerformanceLibrary} from './performance-library.js?v=0911.1619';
+import {createSongBackgrounds} from './song-backgrounds.js?v=0911.1619';
+import {loadWardrobe} from './wardrobe.js?v=0911.1619';
+import {createChoreography} from './choreography.js?v=0911.1619';
+import {createPoseBank} from './pose-bank.js?v=0911.1619';
+import {applyFaceExpression} from './face-expressions.js?v=0911.1619';
+import {createCrew} from './crew.js?v=0911.1619';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=0911.1619';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=0911.1619';
 export async function createRuntime(canvas,bundle){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
@@ -76,7 +76,7 @@ export async function createRuntime(canvas,bundle){
   sewing(true);const job=wardrobe.prepareOutfit?wardrobe.prepareOutfit(sel,{priority:100}):new Promise(r=>requestAnimationFrame(()=>setTimeout(r,30)));
   Promise.resolve(job).then(put).catch(e=>console.warn('sew',e)).finally(()=>sewing(false));}
  function resize(){const w=canvas.clientWidth||innerWidth,h=canvas.clientHeight||innerHeight;if(w===width&&h===height)return;width=w;height=h;renderer.setSize(w,h,false);backdrop.resize(w,h);const aspect=w/h,half=1.12;camera.left=-half*aspect;camera.right=half*aspect;camera.top=half;camera.bottom=-half;camera.updateProjectionMatrix();}
-  function crewSelection(s){const out={hair:s.hair??1};for(const k of ['top','bottom','shoes']){const i=wardrobe.options[k]?.findIndex(o=>o.id===s.selectionIds?.[k]);if(!(i>=0))return null;out[k]=i;}return out;}
+  function crewSelection(s){const out={hair:s.hair??1};for(const k of ['hair','top','bottom','shoes']){if(k==='hair'&&!s.selectionIds?.hair)continue;const i=wardrobe.options[k]?.findIndex(o=>o.id===s.selectionIds?.[k]);if(!(i>=0))return null;out[k]=i;}return out;}
  function themedCrew(entry,chart){const slug=chart?.slug||Object.keys(raw.performances||{}).find(k=>raw.performances[k]===entry);const pool=(config.crewOutfits?.[slug]||[]).map(s=>({s,sel:crewSelection(s)})).filter(x=>x.sel);if(!entry?.crew?.length||!pool.length)return entry;
   for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
   return {...entry,crew:entry.crew.map((c,i)=>({...c,variant:pool[i%pool.length].s.variant??1,outfit:pool[i%pool.length].sel}))};}

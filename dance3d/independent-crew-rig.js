@@ -1,7 +1,7 @@
 import * as T from 'three';
 import {VRMHumanoid,VRMSpringBoneManager,VRMSpringBoneJoint} from '@pixiv/three-vrm';
-import {limitSkirtSprings} from './skirt-safety.js?v=0911.1612';
-import {createCapturedMotion} from './captured-motion.js?v=0911.1612';
+import {limitSkirtSprings} from './skirt-safety.js?v=0911.1619';
+import {createCapturedMotion} from './captured-motion.js?v=0911.1619';
 
 // A private bone hierarchy for one performer. Geometry/materials stay shared;
 // never call VRMHumanoid.clone(), which keeps the source raw bone references.
@@ -35,7 +35,7 @@ export function createIndependentCrewRig(source){
  for(const originalGroup of source.vrm.springBoneManager?.colliderGroups||[]){const colliders=originalGroup.colliders.map(o=>{const copy=mapping.get(o);if(!copy)throw Error('Crew spring collider missing');copy.shape=o.shape;return copy;});groups.set(originalGroup,{...originalGroup,colliders});}
  for(const original of source.vrm.springBoneManager?.joints||[]){const bone=mapping.get(original.bone),child=mapping.get(original.child)||null;if(!bone)throw Error('Crew spring bone missing');bone.quaternion.copy(original._initialLocalRotation);bone.updateMatrix();const joint=new VRMSpringBoneJoint(bone,child,original.settings,original.colliderGroups.map(g=>groups.get(g)));if(original.center)joint.center=mapping.get(original.center)||null;springs.addJoint(joint);}
  model.updateMatrixWorld(true);springs.setInitState();limitSkirtSprings({springBoneManager:springs});let previousTime=null,springAccumulator=0;
- const names=Object.keys(raw),rotation=new T.Quaternion(),rootTarget=new T.Vector3(),identity=new T.Quaternion();let capture=null,index=new Map(),lastWeight=0,coverage=null;
+ const names=Object.keys(raw),rotation=new T.Quaternion(),rootTarget=new T.Vector3(),identity=new T.Quaternion();let capture=null,index=new Map(),lastWeight=0,coverage=null,rootScale=[1,1,1];
  function setMeshes(selected){for(const m of meshes)m.visible=false;for(const original of selected){const copy=mapping.get(original);if(!copy?.isMesh)throw Error('Crew garment is not in donor rig');if(!copy.parent)mapping.get(original.parent)?.add(copy);copy.visible=true;}for(const m of meshes)if(!m.visible)m.removeFromParent();}
  function setMotion(data,moves,chart){coverage=data?.coverage??null;if(coverage){let end=-Infinity;for(const interval of coverage){if(!Array.isArray(interval)||interval.length!==2||!interval.every(Number.isFinite)||interval[0]<end||interval[1]<=interval[0]||interval[0]<data.t0||interval[1]>data.t0+data.duration+.001)throw Error('Invalid crew coverage intervals');end=interval[1];}}capture=data?createCapturedMotion(data):null;index=new Map(capture?.boneNames.map((n,i)=>[n,i])||[]);if(capture&&!capture.setSong(moves,chart))throw Error('Crew track song identity mismatch');}
  function update(t,fallback){
@@ -44,8 +44,10 @@ export function createIndependentCrewRig(source){
   for(const name of names){const target=humanoid.getNormalizedBoneNode(name),base=fallback?.getNormalizedBoneNode(name);if(base)target.quaternion.copy(base.quaternion);else target.quaternion.identity();const i=index.get(name);if(weight&&i!==undefined)target.quaternion.slerp(rotation.fromArray(pose.q,i*4),weight);}
   const hips=humanoid.getNormalizedBoneNode('hips');hips.position.copy(baseHips);humanoid.update();
   model.position.copy(source.vrm.scene.position);model.quaternion.copy(source.vrm.scene.quaternion);
-  if(pose&&weight){rootTarget.fromArray(pose.root);rootTarget.y+=source.restOffset||0;model.position.lerp(rootTarget,weight);model.quaternion.slerp(identity,weight);}
+  if(pose&&weight){rootTarget.fromArray(pose.root);rootTarget.x*=rootScale[0];rootTarget.z*=rootScale[2];rootTarget.y+=source.restOffset||0;model.position.lerp(rootTarget,weight);model.quaternion.slerp(identity,weight);}
   model.updateWorldMatrix(true,true);const dt=previousTime==null?0:t-previousTime,seek=previousTime==null||dt<0||dt>.15;previousTime=t;if(seek){springs.reset();springAccumulator=0;}else{springAccumulator+=Math.max(0,dt);if(springAccumulator>=1/30-1e-6){springs.update(Math.min(.05,springAccumulator));springAccumulator=0;}}model.updateMatrixWorld(true);return weight;
  }
- return{root,model,humanoid,meshes,mapping,setMeshes,setMotion,update,diagnostics(){return{independentBones:true,springJoints:springs.joints.size,springHz:30,weight:lastWeight,matched:capture?.matched||false,meshCount:meshes.filter(m=>m.visible).length,sharedGeometry:meshes.every(m=>originals.some(o=>o.isMesh&&o.geometry===m.geometry))};},dispose(){for(const s of skeletons.values())s.dispose();root.removeFromParent();}};
+ // Backups keep their formation spot: scale the captured sideways/forward travel (bounce and kneel height stay).
+ function setRootScale(v){rootScale=Array.isArray(v)&&v.length===3&&v.every(Number.isFinite)?v:[1,1,1];}
+ return{root,model,humanoid,meshes,mapping,setMeshes,setMotion,setRootScale,update,diagnostics(){return{independentBones:true,springJoints:springs.joints.size,springHz:30,weight:lastWeight,matched:capture?.matched||false,meshCount:meshes.filter(m=>m.visible).length,sharedGeometry:meshes.every(m=>originals.some(o=>o.isMesh&&o.geometry===m.geometry))};},dispose(){for(const s of skeletons.values())s.dispose();root.removeFromParent();}};
 }
