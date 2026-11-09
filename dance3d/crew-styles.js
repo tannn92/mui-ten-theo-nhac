@@ -73,7 +73,7 @@ export function* buildHatMuaCrewStyles(variants,options){
    if(spec.shape==='furshorts'){grid(6,28,(u,v)=>{const y=T.MathUtils.lerp(waist-.006,hip.y-.050,u),a=v*Math.PI,[rx,rz]=section(y);return V().set(Math.cos(a)*(rx+.012),y,hip.z+Math.sin(a)*(rz+.025));},cloth,'hips');}
    if(spec.shape==='furshorts')for(const side of ['left','right']){const p=pos(side+'UpperLeg').add(V().set(0,-.053,.025));fluff(p,.043,.060,.032,white,side+'UpperLeg');for(let j=0;j<65;j++){const a=rand(j+3)*Math.PI*2; sphere(p.clone().add(V().set(Math.cos(a)*.044,(rand(j+111)-.5)*.031,Math.sin(a)*.060)),[.012,.013,.012],white,side+'UpperLeg');}}
    grid(2,48,(u,v)=>oval(waist-u*.014,v*Math.PI*2,.009),spec.id===3?silver:cloth,'hips');
-   if(spec.shape==='cargo')for(const sign of [-1,1]){const g=new T.BoxGeometry(.047,.045,.010,1,1,1);g.translate(sign*.061,waist-.075,hip.z+section(hip.y)[1]+.065);weighted(g,cloth,'hips');}
+   // Detached cargo box patches removed; keep the continuous skirt surface.
    if(spec.id===2)grid(1,48,(u,v)=>{const a=v*Math.PI*2,[rx,rz]=section(hip.y-.025);return V().set(Math.cos(a)*(rx+.016),hem+.006-u*.005,hip.z+Math.sin(a)*(rz+.016));},white,'hips');
    if([1,3,6,11].includes(spec.id)){const g=new T.TorusGeometry(.011,.002,5,16);g.scale(1.3,.8,1);g.translate(0,waist-.006,hip.z+section(waist)[1]+.014);weighted(g,silver,'hips');}
   }
