@@ -1,5 +1,5 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=0911.1020';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=0911.1104';
 
 // Four background performers reuse the live A/B skeletons, geometry, materials
 // and morph arrays. Detached binding applies a crew transform AFTER skinning;

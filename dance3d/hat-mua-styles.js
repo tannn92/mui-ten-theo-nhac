@@ -1,5 +1,5 @@
 import * as T from 'three';
-import {createChestLengthHair} from './chest-length-hair.js?v=0911.1020';
+import {createChestLengthHair} from './chest-length-hair.js?v=0911.1104';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 export function hatMuaOptions(){return Object.fromEntries(['top','bottom','shoes','accessory'].map(slot=>[slot,[1,2,3].map(set=>({id:'hat-mua-'+set+'-'+slot,style:'hat-mua-'+set+'-'+slot,variant:1,label:'Hạt Mưa '+set+' · '+slot}))]));}
 export const hatMuaSets=[1,2,3].map(set=>({id:'hat-mua-'+set,label:'Hạt Mưa · Bộ '+set,selectionIds:Object.fromEntries(['top','bottom','shoes','accessory'].map(slot=>[slot,'hat-mua-'+set+'-'+slot]))}));
