@@ -1,0 +1,63 @@
+import * as T from 'three';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+const V=()=>new T.Vector3();
+const fringeCache=new WeakMap(),goldMaps=new WeakMap(),darkMaps=new WeakMap();
+function goldMap(old,id=4){if(!old)return old;if(goldMaps.has(old)&&goldMaps.get(old).has(id))return goldMaps.get(old).get(id);const img=old.image,c=document.createElement('canvas');c.width=img.width;c.height=img.height;const ctx=c.getContext('2d');ctx.drawImage(img,0,0);const data=ctx.getImageData(0,0,c.width,c.height),a=data.data;for(let i=0;i<a.length;i+=4){const l=(.2126*a[i]+.7152*a[i+1]+.0722*a[i+2])/255,k=.48+Math.sqrt(l);a[i]=Math.min(255,(id===203?173:158)*k);a[i+1]=Math.min(255,(id===203?163:120)*k);a[i+2]=Math.min(255,(id===203?151:78)*k);}ctx.putImageData(data,0,0);const t=old.clone();t.source=new T.Source(c);t.needsUpdate=true;if(!goldMaps.has(old))goldMaps.set(old,new Map());goldMaps.get(old).set(id,t);return t;}
+function darkMap(old){if(!old)return old;if(darkMaps.has(old))return darkMaps.get(old);const c=document.createElement('canvas'),img=old.image;c.width=img.width;c.height=img.height;const x=c.getContext('2d');x.drawImage(img,0,0);const d=x.getImageData(0,0,c.width,c.height);for(let i=0;i<d.data.length;i+=4){const l=(d.data[i]+d.data[i+1]+d.data[i+2])/765,k=.48+Math.sqrt(l);d.data[i]=38*k;d.data[i+1]=31*k;d.data[i+2]=38*k;}x.putImageData(d,0,0);const t=old.clone();t.source=new T.Source(c);t.needsUpdate=true;darkMaps.set(old,t);return t;}
+function tintNative(m,id){m.color.set('#ffffff');if(m.shadeColorFactor)m.shadeColorFactor.set([4,202,203].includes(id)?'#c0b6ab':'#847d87');m.map=[4,202,203].includes(id)?goldMap(m.map,id):darkMap(m.map);m.shadeMultiplyTexture=[4,202,203].includes(id)?goldMap(m.shadeMultiplyTexture,id):darkMap(m.shadeMultiplyTexture);return m;}
+function cropLower(g,id){if(![4,8,105,106,201,202,203,204].includes(id))return g;const p=g.attributes.position;for(let i=0;i<p.count;i++){let x=p.getX(i),y=p.getY(i),z=p.getZ(i);if(id>=201){if(y<1.17)y=1.17+(y-1.17)*.48;x*=1.01;z=-.02+(z+.02)*1.01;if(z>.01)y=Math.max(y,1.116);p.setXYZ(i,x,y,z);}else if(y<1.075)p.setY(i,1.075+(y-1.075)*(id===106?.65:.20));}g.computeVertexNormals();return g;}
+
+
+function fringeGeometry(source){if(fringeCache.has(source))return fringeCache.get(source);const g=source.geometry,p=g.attributes.position,ix=g.index,parent=Array.from({length:p.count},(_,i)=>i),find=x=>{while(parent[x]!==x){parent[x]=parent[parent[x]];x=parent[x];}return x;};for(let i=0;i<ix.count;i+=3){const a=ix.getX(i);parent[find(ix.getX(i+1))]=find(a);parent[find(ix.getX(i+2))]=find(a);}const bounds=new Map();for(const id of new Set(ix.array)){const root=find(id);let b=bounds.get(root);if(!b)bounds.set(root,b={minZ:Infinity,maxZ:-Infinity,maxX:0,minY:Infinity});b.minZ=Math.min(b.minZ,p.getZ(id));b.maxZ=Math.max(b.maxZ,p.getZ(id));b.maxX=Math.max(b.maxX,Math.abs(p.getX(id)));b.minY=Math.min(b.minY,p.getY(id));}const keep=new Set([...bounds].filter(([,b])=>b.minZ>.0&&b.maxZ>.065&&b.maxX<.151&&b.minY>.95).map(([id])=>id)),ids=[];for(let i=0;i<ix.count;i+=3)if(keep.has(find(ix.getX(i))))ids.push(ix.getX(i),ix.getX(i+1),ix.getX(i+2));const out=g.clone();out.clearGroups();out.setIndex(ids);fringeCache.set(source,out);return out;}
+export const dolceHairSpecs=[{id:'g1',name:'Dolce · tóc dài thẳng'},{id:'g2',name:'Dolce · đuôi ngựa cao'},{id:'g3',name:'Dolce · tóc gợn sóng'},{id:'g4',name:'Dolce · tóc buộc nửa'},{id:'g5',name:'Dolce · tóc búi'},{id:'g6',name:'Dolce · tóc bob'},{id:'b1',name:'Dolce · two-block'},{id:'b2',name:'Dolce · mái phẩy nâu'},{id:'b3',name:'Dolce · tóc dựng khói'},{id:'b4',name:'Dolce · tóc ngôi lệch'}];
+export function dolceHairOptions(){return{hair:dolceHairSpecs.map(s=>({id:`dolce-crew-hair-${s.id}`,style:`dolce-crew-hair-${s.id}`,variant:1,crewOnly:true,label:s.name}))};}
+export function* buildDolceCrewHair(variants,options){
+ const records=new Map(),parts=[],timings=[];
+ for(const[index,opt]of(options.hair||[]).entries()){
+  if(!opt.style?.startsWith('dolce-crew-hair-'))continue;
+  const tag=opt.style.split('-').at(-1),id=({g1:11,g2:4,g3:1,g4:104,g5:105,g6:106,b1:201,b2:202,b3:203,b4:204})[tag],donor=variants[opt.variant],source=donor.parts.hair.find(m=>/HairBack/.test([].concat(m.material)[0]?.name))||donor.parts.hair[0],body=donor.meshes.find(m=>[].concat(m.material).some(x=>/Body.*SKIN/.test(x.name))),start=performance.now(),skeleton=body.skeleton;
+  const indexOf=name=>{const n=donor.vrm.humanoid.getRawBoneNode(name);const i=skeleton.bones.findIndex(b=>b.name===n.name);if(i<0)throw Error('Crew hair missing bone '+name);return i;},head=indexOf('head'),chest=indexOf('upperChest');
+  const dark=id===203?'#a99d8d':[4,202].includes(id)?'#9d713f':'#241c24',light=id===203?'#c0b5a4':[4,202].includes(id)?'#ba8a50':'#30252f',mat=new T.MeshStandardMaterial({color:dark,roughness:.42,metalness:0,side:T.DoubleSide}),shine=new T.MeshToonMaterial({color:light,side:T.DoubleSide});
+  const rec={id:opt.id,index,slot:'hair',meshes:[]},batches=new Map([[mat,[]],[shine,[]]]);
+  // Existing closed scalp contains no native buns or braids. Keep UVs/weights.
+  const scalp=cropLower(source.geometry.clone(),id);scalp.clearGroups();const scalpMat=tintNative([].concat(source.material)[0].clone(),id);
+  const cap=new T.SkinnedMesh(scalp,id>=201?new T.MeshStandardMaterial({color:dark,roughness:.65,side:T.DoubleSide}):scalpMat);cap.name=opt.id+'_scalp';cap.position.copy(source.position);cap.quaternion.copy(source.quaternion);cap.scale.copy(source.scale);cap.bind(source.skeleton,source.bindMatrix);cap.visible=false;cap.frustumCulled=false;source.parent.add(cap);rec.meshes.push(cap);
+  const fringeSource=donor.parts.hair.find(m=>m!==source);if(fringeSource&&id<201){const g=cropLower(fringeGeometry(fringeSource).clone(),id),m=tintNative([].concat(fringeSource.material)[0].clone(),id);const f=new T.SkinnedMesh(g,m);f.name=opt.id+'_native-fringe';f.position.copy(fringeSource.position);f.quaternion.copy(fringeSource.quaternion);f.scale.copy(fringeSource.scale);f.bind(fringeSource.skeleton,fringeSource.bindMatrix);f.visible=false;f.frustumCulled=false;fringeSource.parent.add(f);rec.meshes.push(f);
+   const bg=cropLower(g.clone(),id),p=bg.attributes.position,si=bg.attributes.skinIndex,sw=bg.attributes.skinWeight;for(let i=0;i<p.count;i++){p.setXYZ(i,-p.getX(i),p.getY(i),-.04-p.getZ(i));si.setXYZW(i,head,0,0,0);sw.setXYZW(i,1,0,0,0);}bg.computeVertexNormals();const b=new T.SkinnedMesh(bg,m);b.name=opt.id+'_combed-back';b.position.copy(body.position);b.quaternion.copy(body.quaternion);b.scale.copy(body.scale);b.bind(skeleton,body.bindMatrix);b.visible=false;b.frustumCulled=false;body.parent.add(b);rec.meshes.push(b);}
+
+  function geometry(g,material=mat,rigid=false){const p=g.attributes.position,si=[],sw=[];for(let i=0;i<p.count;i++){const lower=rigid?0:T.MathUtils.smoothstep(1.035-p.getY(i),0,.28)*.38;si.push(head,chest,0,0);sw.push(1-lower,lower,0,0);}g.setAttribute('skinIndex',new T.Uint16BufferAttribute(si,4));g.setAttribute('skinWeight',new T.Float32BufferAttribute(sw,4));g.deleteAttribute('uv');batches.get(material).push(g);}
+  function lock(points,width=.019,depth=.009,wave=0,phase=0,rigid=false){
+   const curve=new T.CatmullRomCurve3(points.map(a=>new T.Vector3(...a))),p=[],ix=[],rows=28,cols=8;
+   for(let j=0;j<=rows;j++){const u=j/rows,c=curve.getPoint(u),t=curve.getTangent(u).normalize(),across=V().crossVectors(t,V().set(0,0,1)).normalize();if(across.lengthSq()<.1)across.set(1,0,0);const out=V().crossVectors(across,t).normalize(),taper=.035+.965*Math.pow(Math.max(0,Math.sin(Math.PI*u)),.38);c.addScaledVector(across,wave*Math.sin(u*Math.PI*3+phase)*Math.sin(u*Math.PI));for(let k=0;k<=cols;k++){const a=k/cols*Math.PI*2,v=c.clone().addScaledVector(across,Math.cos(a)*width*taper).addScaledVector(out,Math.sin(a)*depth*taper);p.push(...v.toArray());}}
+   for(let j=0;j<rows;j++)for(let k=0;k<cols;k++){const a=j*(cols+1)+k;ix.push(a,a+1,a+cols+1,a+1,a+cols+2,a+cols+1);}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(p,3));g.setIndex(ix);g.computeVertexNormals();geometry(g,mat,rigid);
+   // Thin strand highlight follows the actual top surface, never across the face.
+   const hp=[],hi=[];for(let j=0;j<=rows;j++){const u=j/rows,c=curve.getPoint(u),t=curve.getTangent(u).normalize(),across=V().crossVectors(t,V().set(0,0,1)).normalize(),taper=.035+.965*Math.pow(Math.max(0,Math.sin(Math.PI*u)),.38);c.addScaledVector(across,wave*Math.sin(u*Math.PI*3+phase)*Math.sin(u*Math.PI));c.z+=depth*taper+.0003;hp.push(c.x-.0015*taper,c.y,c.z,c.x+.0015*taper,c.y,c.z);}for(let j=0;j<rows;j++){const a=j*2;hi.push(a,a+1,a+2,a+1,a+3,a+2);}const hg=new T.BufferGeometry();hg.setAttribute('position',new T.Float32BufferAttribute(hp,3));hg.setIndex(hi);hg.computeVertexNormals();geometry(hg,shine,rigid);
+  }
+  function sweep(side,part=.0){}
+  function back(length=.73,wave=0){for(let j=0;j<15;j++){const a=Math.PI*.12+j/14*Math.PI*.76,x=Math.cos(a)*.113,z=-Math.sin(a)*.135-.015;lock([[x*.70,1.21,z*.70],[x,1.10,z],[x*1.12,.94,z*1.03],[x*(1.1+.10*Math.sin(j)),length+.018*Math.sin(j*2),z+.016*Math.sin(j)]],id===1?.020:.024,.010,wave,j);}}
+  function frontLong(side,length,wave=0,count=3){for(let j=0;j<count;j++){const s=side;lock([[s*(.103+j*.009),1.18,.072],[s*(.135+j*.008),1.075,.068],[s*(.14+j*.013),.92,.055],[s*(.15+j*.015),length+.015*j,.075]],id===1?.015:.018,.008,wave,j);}}
+  if([1,6,10,11,104].includes(id)){
+   back(id===11?.69:id===1?.72:.70,id===11?0:.008);sweep(-1,id===6||id===10?.035:0);sweep(1,id===6||id===10?.035:0);
+   if(id===1){frontLong(-1,.73,.019,4);frontLong(1,.73,.019,4);}else if(id===11){frontLong(-1,.72,0,3);frontLong(1,.72,0,3);}else{frontLong(-1,.69,.009,5);frontLong(1,.83,.006,2);}
+  }else if(id===2){
+   sweep(-1);sweep(1);back(.96,.001);
+   for(const sign of[-1,1])for(let strand=0;strand<3;strand++){const points=[];for(let j=0;j<=28;j++){const u=j/28,a=u*Math.PI*12+strand*Math.PI*2/3;points.push([sign*(.127+.010*Math.sin(u*Math.PI))+.0065*Math.cos(a),1.066-u*.34,.045+.0065*Math.sin(a)]);}lock(points,.0068,.0052,0,strand);}
+  }else if(id===3){
+   back(.97,.003);
+   for(const s of[-1,1])for(let j=0;j<5;j++)lock([[s*.119,1.071,-.010],[s*(.153+j*.006),1.024,.015],[s*(.155+j*.005),.938,.039],[s*(.145+j*.005),.912+.005*j,.052]],.015,.008,.006,j);
+  }else if(id===4){
+   sweep(-1,.045);sweep(1,.045);back(1.085,0);for(let j=0;j<12;j++){const a=j/12*Math.PI*2;lock([[.025,1.224,-.119],[.058+Math.cos(a)*.025,1.213,-.169],[.085+Math.cos(a)*.032,1.02,-.172],[.065+Math.cos(a)*.030,.79+.025*Math.sin(a),-.145]],.017,.008,.004,j);}
+  }else if(id===8){
+   sweep(-1);sweep(1);back(1.085,0);for(let j=0;j<10;j++){const a=j/10*Math.PI*2;lock([[0,1.048,-.15],[Math.cos(a)*.024,.98,-.17],[Math.cos(a)*.025,.83,-.16]],.016,.008,.002,j);}
+  }
+  if(id===104||id===105){for(let j=0;j<14;j++){const a=j/14*Math.PI*2;lock([[Math.cos(a)*.028,1.20,-.11],[Math.cos(a)*.045,1.25,-.13],[Math.cos(a)*.030,1.29,-.10],[0,1.24,-.08]],.015,.008,0,j,true);}}
+  if(id===106)back(.985,.001);
+  if(id>=201){for(let j=0;j<11;j++){const x=(j-5)*.020,part=id===202?.035:id===204?-.045:0;const target=id===203?1.235+.023*Math.sin(j*1.7):1.12+.018*Math.abs(j-5)/5;if(id===203)lock([[x*.8,1.18,.055],[x,1.215,.080],[x*1.08,1.248+.013*Math.sin(j*1.7),.075]],.013,.006,0,j,true);else lock([[part+x*.35,1.235,.065],[x*.80,1.205,.125],[x+(id===202?.018:id===204?.025:0),target,.151]],.018,.004,0,j,true);}}
+
+  if(id===202)for(let j=0;j<3;j++)lock([[-.035+j*.012,1.23,.09],[.045+j*.008,1.185,.15],[.065+j*.006,1.13,.155],[.035+j*.006,1.105,.15]],.015,.005,0,j,true);
+  for(const[material,geos]of batches){if(!geos.length)continue;const g=mergeGeometries(geos,false);for(const x of geos)x.dispose();g.computeBoundingSphere();const mesh=new T.SkinnedMesh(g,material);mesh.name=opt.id+(material===mat?'_locks':'_sheen');mesh.position.copy(body.position);mesh.quaternion.copy(body.quaternion);mesh.scale.copy(body.scale);mesh.bind(skeleton,body.bindMatrix);mesh.visible=false;mesh.frustumCulled=false;body.parent.add(mesh);rec.meshes.push(mesh);}
+  rec.buildMs=performance.now()-start;records.set('hair:'+index,rec);for(const mesh of rec.meshes)parts.push({slot:'hair',variant:index,donor:opt.variant,mesh});timings.push({id,index,milliseconds:rec.buildMs,meshes:rec.meshes.length});yield;
+ }
+ return{records,parts,timings,meshesFor:(s,i)=>records.get(s+':'+i)?.meshes,hide(){for(const p of parts)p.mesh.visible=false;}};
+}
+export function createDolceCrewHair(...args){const it=buildDolceCrewHair(...args);let step;do{step=it.next();}while(!step.done);return step.value;}

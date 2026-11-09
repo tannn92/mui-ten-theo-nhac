@@ -1,8 +1,10 @@
-import {buildHatMuaCrewHair} from './crew-hair.js?v=0911.1658';
-import {buildHatMuaCrewStyles} from './crew-styles.js?v=0911.1658';
-import {buildClothingStyles} from './clothing-styles.js?v=0911.1658';
-import {buildHuntrixStyles} from './huntrix-styles.js?v=0911.1658';
-import {buildHatMuaStyles} from './hat-mua-styles.js?v=0911.1658';
+import {buildDolceCrewHair} from './dolce-hair.js?v=0911.1703';
+import {buildDolceCrewStyles} from './dolce-crew-styles.js?v=0911.1703';
+import {buildHatMuaCrewHair} from './crew-hair.js?v=0911.1703';
+import {buildHatMuaCrewStyles} from './crew-styles.js?v=0911.1703';
+import {buildClothingStyles} from './clothing-styles.js?v=0911.1703';
+import {buildHuntrixStyles} from './huntrix-styles.js?v=0911.1703';
+import {buildHatMuaStyles} from './hat-mua-styles.js?v=0911.1703';
 
 // Every cooperative step is a synchronous rest-pose transaction. The renderer
 // always sees the live pose, never a donor left at rest across an event-loop yield.
@@ -26,7 +28,7 @@ export function createLazyStyles(variants,options){
   const option=validate(slot,index),key=keyFor(slot,index);let task=pending.get(key);
   if(task){task.priority=Math.max(task.priority,priority);return task;}
   const selected=Object.fromEntries(Object.entries(options).map(([s,items])=>[s,items.map((o,i)=>s===slot&&i===index?o:{...o,style:null})]));
-  const factory=option.style.startsWith('hat-mua-crew-hair-')?buildHatMuaCrewHair:option.style.startsWith('hat-mua-crew-')?buildHatMuaCrewStyles:option.style.startsWith('hat-mua-')?buildHatMuaStyles:option.style.startsWith('huntrix-')?buildHuntrixStyles:buildClothingStyles;
+  const factory=option.style.startsWith('dolce-crew-hair-')?buildDolceCrewHair:option.style.startsWith('dolce-crew-')?buildDolceCrewStyles:option.style.startsWith('hat-mua-crew-hair-')?buildHatMuaCrewHair:option.style.startsWith('hat-mua-crew-')?buildHatMuaCrewStyles:option.style.startsWith('hat-mua-')?buildHatMuaStyles:option.style.startsWith('huntrix-')?buildHuntrixStyles:buildClothingStyles;
   let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});
   // Sync fallback callers may have no async consumer; still propagate via throw.
   promise.catch(()=>{});
