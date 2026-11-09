@@ -1,3 +1,4 @@
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=0911.1844';
 import * as T from 'three';
 
 // Extra garments use the existing donor skeleton and its skin mask. All meshes
@@ -39,9 +40,8 @@ export function* buildClothingStyles(variants,options){
   const mesh=new T.SkinnedMesh(geometry,material);mesh.name=record.id+'_surface_'+record.meshes.length;
   mesh.position.copy(source.position);mesh.quaternion.copy(source.quaternion);mesh.scale.copy(source.scale);mesh.bind(source.skeleton,source.bindMatrix);source.parent.add(mesh);mesh.visible=false;mesh.frustumCulled=false;record.meshes.push(mesh);return mesh;
  }
- function triangles(source){const p=source.geometry.attributes.position,ix=source.geometry.index,out=[];
-  for(let i=0;i<ix.count;i+=3){const ids=[ix.getX(i),ix.getX(i+1),ix.getX(i+2)],v=ids.map(id=>V().fromBufferAttribute(p,id));out.push({ids,triangle:new T.Triangle(...v)});}return out;
- }
+ function triangles(source){return geometryTriangles(source.geometry);}
+ function nearest(tris,v){const hit=getTriangleQuery(tris).nearest(v);return hit?{...hit.record,p:hit.point,d:hit.distanceSq}:null;}
  function dolceMaterial(source,style){
   const original=[].concat(source?.material||[])[0],m=new T.MeshToonMaterial({map:original?.map||null,alphaTest:original?.alphaTest||.5,side:T.DoubleSide});
   m.customProgramCacheKey=()=>style;
@@ -88,11 +88,11 @@ export function* buildClothingStyles(variants,options){
   const source=donor.parts.bottom[0],inv=source.matrixWorld.clone().invert(),hip=position('hips').applyMatrix4(inv),tris=triangles(source);
   for(let layer=0;layer<3;layer++){
    const positions=[],samples=[],indices=[],cols=96,rows=10;
-   for(let j=0;j<=rows;j++)for(let k=0;k<=cols;k++){if(k%8===0)yield;
+   for(let j=0;j<=rows;j++)for(let k=0;k<=cols;k++){if((j*(cols+1)+k)%128===0)yield;
     const u=j/rows,a=k/cols*Math.PI*2,fold=Math.sin(a*7.+layer*1.5),rx=.108+.016*layer+.030*u,rz=.077+.010*layer+.029*u;
     const y=hip.y+.030-layer*.050-u*.075+.009*fold*u;
     const target=V().set(Math.cos(a)*rx,y,Math.sin(a)*rz+hip.z),anchor=V().set(Math.cos(a)*.13,y,Math.sin(a)*.10+hip.z);let best=null;
-    for(const t of tris){const p=t.triangle.closestPointToPoint(anchor,V()),d=p.distanceToSquared(anchor);if(!best||d<best.d)best={p,d,...t};}
+    best=nearest(tris,anchor);
     target.x+=Math.cos(a)*.013*fold*u;target.z+=Math.sin(a)*.013*fold*u;
     positions.push(...target.toArray());samples.push({ids:best.ids,bary:best.triangle.getBarycoord(best.p,V())});
    }
@@ -114,13 +114,13 @@ export function* buildClothingStyles(variants,options){
   belt.geometry.setIndex(beltIds);belt.geometry.clearGroups();belt.material=sequinMaterial();
   // Fit the sequinned sash outside the skirt, not inside its flared waistband.
   const skirtTris=donor.parts.bottom.flatMap(triangles),beltPos=belt.geometry.attributes.position;
-  function skirtSurface(x,y,z){const direction=V().set(x,0,z).normalize(),ray=new T.Ray(direction.clone().multiplyScalar(.5).setY(y),direction.clone().negate());let best=null;for(const t of skirtTris){const hit=ray.intersectTriangle(t.triangle.a,t.triangle.b,t.triangle.c,false,V());if(hit&&(!best||hit.lengthSq()>best.lengthSq()))best=hit;}return best;}
-  for(const id of new Set(beltIds)){yield;const v=V().fromBufferAttribute(beltPos,id),hit=skirtSurface(v.x,v.y,v.z);if(hit)beltPos.setXYZ(id,hit.x*1.035,v.y,hit.z*1.035);}
+  function skirtSurface(x,y,z){const direction=V().set(x,0,z).normalize(),ray=new T.Ray(direction.clone().multiplyScalar(.5).setY(y),direction.clone().negate());let best=null;for(const t of getTriangleQuery(skirtTris).rayCandidates(ray)){const hit=ray.intersectTriangle(t.triangle.a,t.triangle.b,t.triangle.c,false,V());if(hit&&(!best||hit.lengthSq()>best.lengthSq()))best=hit;}return best;}
+  let beltStep=0;for(const id of new Set(beltIds)){if(beltStep++%128===0)yield;const v=V().fromBufferAttribute(beltPos,id),hit=skirtSurface(v.x,v.y,v.z);if(hit)beltPos.setXYZ(id,hit.x*1.035,v.y,hit.z*1.035);}
   belt.geometry.computeVertexNormals();belt.geometry.computeBoundingSphere();
   const silver=new T.MeshStandardMaterial({color:'#e6edf7',metalness:.65,roughness:.23,emissive:'#555860',emissiveIntensity:.25});
   for(let i=0;i<21;i++){
    const u=i/20*2-1,ray=new T.Ray(V().set(u*.078,hipY+.052-.014*(1-u*u),.35),V().set(0,0,-1));let best=null;
-   for(const t of tris){const hit=ray.intersectTriangle(t.triangle.a,t.triangle.b,t.triangle.c,false,V());if(hit&&(!best||hit.z>best.p.z))best={p:hit,...t};}
+   for(const t of getTriangleQuery(tris).rayCandidates(ray)){const hit=ray.intersectTriangle(t.triangle.a,t.triangle.b,t.triangle.c,false,V());if(hit&&(!best||hit.z>best.p.z))best={p:hit,...t};}
    if(!best)continue;
    const sample={ids:best.ids,bary:best.triangle.getBarycoord(best.p,V())},link=new T.TorusGeometry(.0047,.0012,5,10);link.scale(1,.75,1);if(i%2)link.rotateY(.65);const surface=skirtSurface(best.p.x,best.p.y,best.p.z)||best.p;link.translate(surface.x*1.04,best.p.y,surface.z*1.04+.003);
    skinDetail(record,body,link,silver,Array.from({length:link.attributes.position.count},()=>sample));
@@ -128,11 +128,11 @@ export function* buildClothingStyles(variants,options){
   for(const [side,sign] of [['left',1],['right',-1]])for(let ribbon=0;ribbon<1;ribbon++){
    const hip=position(side+'UpperLeg').applyMatrix4(inv),knee=position(side+'LowerLeg').applyMatrix4(inv),foot=position(side+'Foot').applyMatrix4(inv);
    const start=position('hips').applyMatrix4(inv).y-.025,end=foot.y+.035,positions=[],samples=[],indices=[],rows=64,cols=16;
-   for(let j=0;j<=rows;j++)for(let k=0;k<=cols;k++){if(k%8===0)yield;
+   for(let j=0;j<=rows;j++)for(let k=0;k<=cols;k++){if((j*(cols+1)+k)%128===0)yield;
     const u=j/rows,v=k/cols-.5,y=T.MathUtils.lerp(start,end,u),c=y>knee.y?hip.clone().lerp(knee,T.MathUtils.clamp((hip.y-y)/(hip.y-knee.y),0,1)):knee.clone().lerp(foot,T.MathUtils.clamp((knee.y-y)/(knee.y-foot.y),0,1));
     const fold=Math.sin(u*Math.PI*5+sign*.7),width=.115*(1-.12*u),x=c.x+sign*(.108+.015*fold+v*width),z=c.z+.012+.030*Math.sin(u*Math.PI*5+sign*.7+v*2.4)+.016*Math.sin(v*Math.PI*2);
     const target=V().set(c.x+sign*.04,y,c.z);let best=null;
-    for(const t of tris){const p=t.triangle.closestPointToPoint(target,V()),d=p.distanceToSquared(target);if(!best||d<best.d)best={p,d,...t};}
+    best=nearest(tris,target);
     positions.push(x,y+.014*Math.cos(v*Math.PI*2+u*16),z);samples.push({ids:best.ids,bary:best.triangle.getBarycoord(best.p,V())});
    }
    for(let j=0;j<rows;j++)for(let k=0;k<cols;k++){const a=j*(cols+1)+k;indices.push(a,a+1,a+cols+1,a+1,a+cols+2,a+cols+1);}
@@ -153,11 +153,11 @@ export function* buildClothingStyles(variants,options){
   for(let i=0;i<ix.count;i+=3){const a=[ix.getX(i),ix.getX(i+1),ix.getX(i+2)];if(a.every(j=>p.getY(j)>hip.y+.02&&p.getY(j)<neck.y-.006))ids.push(...a);}
   skin.geometry.setIndex(ids);skin.geometry.clearGroups();skin.material=mat('#f3c5b0');
   const rows=24,cols=64;
-  for(let j=0;j<=rows;j++)for(let k=0;k<=cols;k++){if(k%8===0)yield;
+  for(let j=0;j<=rows;j++)for(let k=0;k<=cols;k++){if((j*(cols+1)+k)%128===0)yield;
    const a=k/cols*Math.PI*2,c=Math.cos(a),s=Math.sin(a),u=j/rows;
    const high=T.MathUtils.lerp(chest.y+.035,neck.y-.018,Math.pow(Math.abs(s),2));
    const y=T.MathUtils.lerp(hem,high,u),origin=V().set(c*.24,y,s*.24),ray=new T.Ray(origin,V().set(-c,0,-s));let best=null;
-   for(const t of tris){const hit=ray.intersectTriangle(t.triangle.a,t.triangle.b,t.triangle.c,false,V());if(hit&&(!best||origin.distanceToSquared(hit)<best.d))best={p:hit,d:origin.distanceToSquared(hit),...t};}
+   for(const t of getTriangleQuery(tris).rayCandidates(ray)){const hit=ray.intersectTriangle(t.triangle.a,t.triangle.b,t.triangle.c,false,V());if(hit&&(!best||origin.distanceToSquared(hit)<best.d))best={p:hit,d:origin.distanceToSquared(hit),...t};}
    if(!best)throw Error('Halter body surface missing');
    const bary=best.triangle.getBarycoord(best.p,V());best.p.add(V().set(c*.004,0,s*.004));positions.push(...best.p.toArray());samples.push({ids:best.ids,bary});
   }
@@ -183,14 +183,14 @@ export function* buildClothingStyles(variants,options){
   const tris=triangles(source),local=neck.clone().applyMatrix4(source.matrixWorld.clone().invert()),positions=[],samples=[],indices=[];
   function point(x,y,front){
    const ray=new T.Ray(V().set(x,y,front?1:-1),V().set(0,0,front?-1:1));let best=null;
-   for(const t of tris){const hit=ray.intersectTriangle(t.triangle.a,t.triangle.b,t.triangle.c,false,V());if(hit&&(!best||ray.origin.distanceToSquared(hit)<ray.origin.distanceToSquared(best.p)))best={p:hit,...t};}
-   if(!best){const target=V().set(x,y,local.z+(front?.045:-.045));for(const t of tris){const p=t.triangle.closestPointToPoint(target,V()),d=p.distanceToSquared(target);if(!best||d<best.d)best={p,d,...t};}}
+   for(const t of getTriangleQuery(tris).rayCandidates(ray)){const hit=ray.intersectTriangle(t.triangle.a,t.triangle.b,t.triangle.c,false,V());if(hit&&(!best||ray.origin.distanceToSquared(hit)<ray.origin.distanceToSquared(best.p)))best={p:hit,...t};}
+   if(!best){const target=V().set(x,y,local.z+(front?.045:-.045));best=nearest(tris,target);}
    const bary=best.triangle.getBarycoord(best.p,V());best.p.z+=front?.002:-.002;
    positions.push(...best.p.toArray());samples.push({ids:best.ids,bary});return samples.length-1;
   }
   // Broad filled panels conform to the front, shoulders and upper back.
   function* panel(corners,front){yield;const n=10,start=samples.length;
-   for(let y=0;y<=n;y++)for(let x=0;x<=n;x++){if(x===0)yield;const u=x/n,v=y/n,a=new T.Vector2(...corners[0]).lerp(new T.Vector2(...corners[1]),u),b=new T.Vector2(...corners[3]).lerp(new T.Vector2(...corners[2]),u);a.lerp(b,v);point(local.x+a.x,local.y+a.y,front);}
+   for(let y=0;y<=n;y++)for(let x=0;x<=n;x++){if((y*(n+1)+x)%128===0)yield;const u=x/n,v=y/n,a=new T.Vector2(...corners[0]).lerp(new T.Vector2(...corners[1]),u),b=new T.Vector2(...corners[3]).lerp(new T.Vector2(...corners[2]),u);a.lerp(b,v);point(local.x+a.x,local.y+a.y,front);}
    for(let y=0;y<n;y++)for(let x=0;x<n;x++){const a=start+y*(n+1)+x,b=a+1,c=a+n+1,d=c+1;indices.push(a,b,c,b,d,c);}
   }
   if(tie){yield* panel([[-.012,-.035],[.012,-.035],[.023,-.15],[-.023,-.15]],true);yield* panel([[-.023,-.15],[.023,-.15],[0,-.18],[0,-.18]],true);}
@@ -261,7 +261,7 @@ export function* buildClothingStyles(variants,options){
    const shoe=source[0],tris=triangles(shoe),inverse=shoe.matrixWorld.clone().invert();
    for(const[side,sign]of[['left',1],['right',-1]]){
     const target=position(side+'Foot').add(V().set(sign*.023,-.026,.025)).applyMatrix4(inverse);let best=null;
-    for(const t of tris){const p=t.triangle.closestPointToPoint(target,V()),d=p.distanceToSquared(target);if(!best||d<best.d)best={...t,p,d};}
+    best=nearest(tris,target);
     const sample={ids:best.ids,bary:best.triangle.getBarycoord(best.p,V())};
     const shape=new T.Shape();shape.moveTo(-sign*.005,-.004);shape.quadraticCurveTo(sign*.020,.007,sign*.035,.039);shape.quadraticCurveTo(sign*.007,.031,0,.012);shape.lineTo(-sign*.005,-.004);
     const wing=new T.ExtrudeGeometry(shape,{depth:.007,bevelEnabled:false,curveSegments:8});wing.translate(best.p.x,best.p.y,best.p.z-.0035);

@@ -1,3 +1,4 @@
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=0911.1844';
 import * as T from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // Independent additions: caller retains ownership of numeric wardrobe indices.
@@ -17,7 +18,7 @@ export function* buildHuntrixStyles(variants,options){
   for(const m of donor.parts.lower)if(/cream_undershorts/.test(m.name))m.userData.excludeHuntrix=true;
   const rec={id:opt.id,index,slot,meshes:[]},inv=body.matrixWorld.clone().invert(),pos=n=>donor.vrm.humanoid.getRawBoneNode(n).getWorldPosition(V()).applyMatrix4(inv);
   const hip=pos('hips'),neck=pos('neck'),knee=pos('leftLowerLeg'),foot=pos('leftFoot'),p=body.geometry.attributes.position,ix=body.geometry.index;
-  const tris=[];for(let i=0;i<ix.count;i+=3){const ids=[ix.getX(i),ix.getX(i+1),ix.getX(i+2)];tris.push({ids,t:new T.Triangle(...ids.map(id=>V().fromBufferAttribute(p,id)))});}
+  const tris=geometryTriangles(body.geometry);
   const white=material('#fff8ee'),gold=material('#e6b836',.65),black=material('#222333',.22),silver=material('#dbe7f5',.65),bright=material('#ffdb62');
   function register(g,m,source=body){
    g.computeVertexNormals();g.computeBoundingSphere();const mesh=new T.SkinnedMesh(g,m);mesh.name=rec.id+'_'+rec.meshes.length;
@@ -28,9 +29,9 @@ export function* buildHuntrixStyles(variants,options){
    g.setIndex(ids);g.clearGroups();const a=g.attributes.position;for(const id of new Set(ids)){const v=V().fromBufferAttribute(a,id);change(v);v.addScaledVector(V().fromBufferAttribute(body.geometry.attributes.normal,id),clearance);a.setXYZ(id,v.x,v.y,v.z);}return register(g,m);
   }
   function* surface(g,m,skinSource=body,anchor=null){
-   let skinTris=tris;if(skinSource!==body){skinTris=[];const p=skinSource.geometry.attributes.position,ix=skinSource.geometry.index;for(let i=0;i<ix.count;i+=3){const ids=[ix.getX(i),ix.getX(i+1),ix.getX(i+2)];skinTris.push({ids,t:new T.Triangle(...ids.map(id=>V().fromBufferAttribute(p,id)))});}}
-   const a=g.attributes.position,si=[],sw=[];for(let i=0;i<a.count;i++){if(i%8===0)yield;
-    const v=anchor||V().fromBufferAttribute(a,i);let best=null;for(const tr of skinTris){const q=tr.t.closestPointToPoint(v,V()),d=q.distanceToSquared(v);if(!best||d<best.d)best={...tr,q,d};}
+   const skinTris=skinSource===body?tris:geometryTriangles(skinSource.geometry),query=getTriangleQuery(skinTris);
+   const a=g.attributes.position,si=[],sw=[];for(let i=0;i<a.count;i++){if(i%128===0)yield;
+    const v=anchor||V().fromBufferAttribute(a,i);const hit=query.nearest(v),best={...hit.record,q:hit.point,d:hit.distanceSq};
     const bary=best.t.getBarycoord(best.q,V()),weights=new Map();best.ids.forEach((id,k)=>{for(let j=0;j<4;j++){const b=skinSource.geometry.attributes.skinIndex.getComponent(id,j),w=skinSource.geometry.attributes.skinWeight.getComponent(id,j)*bary.getComponent(k);weights.set(b,(weights.get(b)||0)+w);}});
     const list=[...weights].sort((a,b)=>b[1]-a[1]).slice(0,4),sum=list.reduce((s,x)=>s+x[1],0);for(let j=0;j<4;j++){si.push(list[j]?.[0]||0);sw.push((list[j]?.[1]||0)/sum);}
    }g.setAttribute('skinIndex',new T.Uint16BufferAttribute(si,4));g.setAttribute('skinWeight',new T.Float32BufferAttribute(sw,4));return register(g,m,skinSource);
@@ -46,10 +47,10 @@ export function* buildHuntrixStyles(variants,options){
    const blouse=donor.parts.top.find(m=>![].concat(m.material).some(x=>/Accessory_Tie/.test(x.name)));
    function radialSurface(source,y,c,s){
     const a=source.geometry.attributes.position,ix=source.geometry.index,origin=V().set(c*.35,y,hip.z+s*.35),ray=new T.Ray(origin,V().set(-c,0,-s));let best=null;
-    for(let i=0;i<ix.count;i+=3){const q=ray.intersectTriangle(V().fromBufferAttribute(a,ix.getX(i)),V().fromBufferAttribute(a,ix.getX(i+1)),V().fromBufferAttribute(a,ix.getX(i+2)),false,V());if(q&&(!best||q.distanceToSquared(origin)<best.distanceToSquared(origin)))best=q;}
+    for(const tr of getTriangleQuery(geometryTriangles(source.geometry)).rayCandidates(ray)){const q=ray.intersectTriangle(tr.t.a,tr.t.b,tr.t.c,false,V());if(q&&(!best||q.distanceToSquared(origin)<best.distanceToSquared(origin)))best=q;}
     return best?Math.max(.025,best.x*c+(best.z-hip.z)*s):null;
    }
-   const rings=[];for(let k=0;k<=cols;k++){if(k%4===0)yield;
+   const rings=[];for(let k=0;k<=cols;k++){if(k%32===0)yield;
     const a=k/cols*Math.PI*2,c=Math.cos(a),s=Math.sin(a);
     const bodyWaist=radialSurface(body,top,c,s)||.075,shirtWaist=radialSurface(blouse,top,c,s);
     const waist=Math.max(bodyWaist+.007,shirtWaist?shirtWaist*1.045+.003:0);
@@ -75,7 +76,7 @@ export function* buildHuntrixStyles(variants,options){
    for(const source of donor.parts.top){
     if([].concat(source.material).some(m=>/Accessory_Tie/.test(m.name)))continue;
     const g=source.geometry.clone(),a=g.attributes.position,ix=g.index,ids=[];
-    for(let i=0;i<ix.count;i+=3){if(i%192===0)yield;const tri=[ix.getX(i),ix.getX(i+1),ix.getX(i+2)];if(tri.every(k=>a.getY(k)>hem&&Math.abs(a.getX(k))<(song==='sounds'&&role==='right'||song==='how'&&role!=='left'?.125:Math.abs(pos('leftHand').x)-.018)))ids.push(...tri);}
+    for(let i=0;i<ix.count;i+=3){if(i%3072===0)yield;const tri=[ix.getX(i),ix.getX(i+1),ix.getX(i+2)];if(tri.every(k=>a.getY(k)>hem&&Math.abs(a.getX(k))<(song==='sounds'&&role==='right'||song==='how'&&role!=='left'?.125:Math.abs(pos('leftHand').x)-.018)))ids.push(...tri);}
     g.setIndex(ids);g.clearGroups();
     for(const id of new Set(ids)){a.setX(id,a.getX(id)*1.035);a.setZ(id,a.getZ(id)*1.06);}
     register(g,topColor,source);
@@ -88,7 +89,7 @@ export function* buildHuntrixStyles(variants,options){
      const jacket=rec.meshes[0],jp=jacket.geometry.attributes.position,ji=jacket.geometry.index;
      for(let j=0;j<3;j++){
       const ray=new T.Ray(V().set(sign*.038,hem+.037+j*.035,.5),V().set(0,0,-1));let hit=null;
-      for(let k=0;k<ji.count;k+=3){const q=ray.intersectTriangle(V().fromBufferAttribute(jp,ji.getX(k)),V().fromBufferAttribute(jp,ji.getX(k+1)),V().fromBufferAttribute(jp,ji.getX(k+2)),false,V());if(q&&(!hit||q.z>hit.z))hit=q;}
+      for(const tr of getTriangleQuery(geometryTriangles(jacket.geometry)).rayCandidates(ray)){const q=ray.intersectTriangle(tr.t.a,tr.t.b,tr.t.c,false,V());if(q&&(!hit||q.z>hit.z))hit=q;}
       if(!hit)throw Error('Golden button has no jacket anchor');
       const g=new T.SphereGeometry(.0045,8,6);g.scale(1,1,.45);g.translate(hit.x,hit.y,hit.z+.0015);yield* surface(g,gold,jacket,hit);
      }
