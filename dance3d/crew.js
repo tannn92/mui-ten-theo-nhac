@@ -1,6 +1,6 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=0911.1619';
-import {hideNativeCrewSafety} from './crew-styles.js?v=0911.1619';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=0911.1638';
+import {hideNativeCrewSafety} from './crew-styles.js?v=0911.1638';
 
 // Four background performers reuse the live A/B skeletons, geometry, materials
 // and morph arrays. Detached binding applies a crew transform AFTER skinning;
@@ -47,10 +47,11 @@ export function createCrew(scene,wardrobe){
    if(spec.outfit&&wardrobe.options.bottom[spec.outfit.bottom]?.style?.startsWith('huntrix-'))selected=selected.filter(m=>!m.userData.excludeHuntrix);if(spec.outfit){const bottomOption=wardrobe.options.bottom[spec.outfit.bottom];selected=selected.filter(m=>!hideNativeCrewSafety(m,bottomOption));}rig.setMeshes(selected);
    // Same as the shared crew: small background figures skip the MToon outline pass (half the draw calls).
    for(const m of rig.meshes)if(m.visible&&Array.isArray(m.material)&&m.material.length===2&&m.material[1].isOutline)m.material=m.material[0];
-   rig.setMotion(tracks[i],null,chart);if(spec.rootScale)rig.setRootScale(spec.rootScale);group.add(rig.root);
+   rig.setMotion(tracks[i],null,chart);if(spec.rootScale)rig.setRootScale(spec.rootScale);rig.setMirror(!!spec.mirror);group.add(rig.root);
    const sign=i%2===0?-1:1,anchor=spec.anchor||[sign*.59,.18,-.85],scale=spec.scale??.8;
    if(anchor.length!==3||!anchor.every(Number.isFinite)||!Number.isFinite(scale)||scale<=0)throw Error('Invalid crew placement');
-   rig.root.position.fromArray(anchor);rig.root.scale.setScalar(scale);independent.push({index:activeIndices[i],rig,spec,source,anchor});
+   const moves=[...(spec.moves||[])].sort((p,q)=>p.at-q.at);for(const m of moves){if(!Number.isFinite(m.at)||!(m.dur>0)||(m.to!=null&&!(m.to.length===3&&m.to.every(Number.isFinite)))||(m.yaw!=null&&!Number.isFinite(m.yaw))||(m.scale!=null&&!(m.scale>0)))throw Error('Invalid crew move');}
+   rig.root.position.fromArray(anchor);rig.root.scale.setScalar(scale);independent.push({index:activeIndices[i],rig,spec,source,anchor,scale,moves});
   }
  }
  function update(show,t,aspect){
@@ -61,9 +62,12 @@ export function createCrew(scene,wardrobe){
   for(const dancer of dancers){dancer.root.position.x=dancer.spec.x*spacing;dancer.root.visible=activeIndices.includes(dancer.index)&&!independent.some(a=>a.index===dancer.index);}
   const now=performance.now();
   const keep=reducedLevel===0?99:reducedLevel===1?4:2;if(visible&&t!=null&&independent.length>keep){if(lastWall!=null){const dt=now-lastWall;if(dt<250){emaMs+=(dt-emaMs)*.05;slowFor=emaMs>22?slowFor+dt:0;if(slowFor>3000){reducedLevel=Math.min(2,reducedLevel+(independent.length>4&&reducedLevel===0?1:2));reduced=true;slowFor=0;emaMs=16.7;}}}lastWall=now;}else if(t==null)lastWall=null;
-  for(const [k,actor]of independent.entries()){actor.rig.root.visible=visible&&k<(reducedLevel===0?99:reducedLevel===1?4:2);if(!actor.rig.root.visible)continue;actor.rig.root.position.x=actor.anchor[0]*spacing;actor.rig.update(t==null?t:t+(actor.spec.timeOffset||0),wardrobe.master.humanoid);}
+  for(const [k,actor]of independent.entries()){actor.rig.root.visible=visible&&k<(reducedLevel===0?99:reducedLevel===1?4:2);if(!actor.rig.root.visible)continue;place(actor,t,spacing);actor.rig.update(t==null?t:t+(actor.spec.timeOffset||0),wardrobe.master.humanoid);}
   group.updateMatrixWorld(true);
  }
+ // Formation changes over the song (e.g. the ring around the center): each move eases from the current spot to
+ // `to` (null = home) with yaw (deg, 0 = facing the camera) and scale, starting at song time `at` over `dur` s.
+ function place(actor,t,spacing){let [x,y,z]=actor.anchor,yaw=0,sc=actor.scale;if(t!=null)for(const m of actor.moves){if(t<m.at)break;const p=T.MathUtils.smootherstep(t,m.at,m.at+m.dur),to=m.to||actor.anchor,ty=(m.yaw??0)*Math.PI/180,ts=m.scale??actor.scale;x+=(to[0]-x)*p;y+=(to[1]-y)*p;z+=(to[2]-z)*p;yaw+=(ty-yaw)*p;sc+=(ts-sc)*p;}actor.rig.root.position.set(x*spacing,y,z);actor.rig.root.rotation.set(0,yaw,0);actor.rig.root.scale.setScalar(sc);}
  function diagnostics(){return{count:activeIndices.length,reduced,reducedLevel,frameEmaMs:+emaMs.toFixed(1),independent:independent.map(a=>({index:a.index,id:a.spec.id,position:a.rig.root.position.toArray(),scale:a.rig.root.scale.x,feetWorld:['left','right'].map(side=>a.rig.humanoid.getRawBoneNode(side+'Foot').getWorldPosition(new T.Vector3()).toArray()),...a.rig.diagnostics()})),visible,sharedSkinning:independent.length===0,outlinePass:false,time:lastTime,dancers:dancers.filter(d=>activeIndices.includes(d.index)&&!independent.some(a=>a.index===d.index)).map(d=>{
   d.source.vrm.humanoid.getRawBoneNode('leftHand').getWorldPosition(bonePoint);
   point.copy(bonePoint).applyMatrix4(d.root.matrixWorld);
