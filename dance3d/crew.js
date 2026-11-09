@@ -1,7 +1,7 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=0911.1750';
-import {hideNativeCrewSafety} from './crew-styles.js?v=0911.1750';
-import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=0911.1750';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=0911.1801';
+import {hideNativeCrewSafety} from './crew-styles.js?v=0911.1801';
+import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=0911.1801';
 
 // Four background performers reuse the live A/B skeletons, geometry, materials
 // and morph arrays. Detached binding applies a crew transform AFTER skinning;
@@ -65,12 +65,13 @@ export function createCrew(scene,wardrobe){
   for(const dancer of dancers){dancer.root.position.x=dancer.spec.x*spacing;dancer.root.visible=activeIndices.includes(dancer.index)&&!independent.some(a=>a.index===dancer.index);}
   const now=performance.now();
   const keep=CREW_LIMITS[reducedLevel];if(visible&&t!=null&&independent.length>keep&&reducedLevel<CREW_LIMITS.length-1){if(lastWall!=null){const dt=now-lastWall;if(dt<250){emaMs+=(dt-emaMs)*.05;slowFor=emaMs>22?slowFor+dt:0;if(slowFor>3000){do reducedLevel++;while(reducedLevel<CREW_LIMITS.length-1&&CREW_LIMITS[reducedLevel]>=independent.length);reduced=true;slowFor=0;emaMs=16.7;}}}lastWall=now;}else if(t==null)lastWall=null;
-  for(const [k,actor]of independent.entries()){actor.rig.root.visible=visible&&k<CREW_LIMITS[reducedLevel];if(!actor.rig.root.visible)continue;place(actor,t,spacing);actor.rig.update(t==null?t:t+(actor.spec.timeOffset||0),wardrobe.master.humanoid);}
+  for(const [k,actor]of independent.entries()){actor.rig.root.visible=visible&&k<CREW_LIMITS[reducedLevel];if(!actor.rig.root.visible)continue;place(actor,t,spacing);// off-stage (|x|>3, beyond every screen width): hidden and not animated
+   if(actor.offstage){actor.rig.root.visible=false;continue;}actor.rig.update(t==null?t:t+(actor.spec.timeOffset||0),wardrobe.master.humanoid);}
   group.updateMatrixWorld(true);
  }
  // Formation changes over the song (e.g. the ring around the center): each move eases from the current spot to
  // `to` (null = home) with yaw (deg, 0 = facing the camera) and scale, starting at song time `at` over `dur` s.
- function place(actor,t,spacing){let [x,y,z]=actor.anchor,yaw=0,sc=actor.scale;if(t!=null)for(const m of actor.moves){if(t<m.at)break;const p=T.MathUtils.smootherstep(t,m.at,m.at+m.dur),to=m.to||actor.anchor,ty=(m.yaw??0)*Math.PI/180,ts=m.scale??actor.scale;x+=(to[0]-x)*p;y+=(to[1]-y)*p;z+=(to[2]-z)*p;yaw+=(ty-yaw)*p;sc+=(ts-sc)*p;}actor.rig.root.position.set(x*spacing,y,z);actor.rig.root.rotation.set(0,yaw,0);actor.rig.root.scale.setScalar(sc);}
+ function place(actor,t,spacing){let [x,y,z]=actor.anchor,yaw=0,sc=actor.scale;if(t!=null)for(const m of actor.moves){if(t<m.at)break;const p=T.MathUtils.smootherstep(t,m.at,m.at+m.dur),to=m.to||actor.anchor,ty=(m.yaw??0)*Math.PI/180,ts=m.scale??actor.scale;x+=(to[0]-x)*p;y+=(to[1]-y)*p;z+=(to[2]-z)*p;yaw+=(ty-yaw)*p;sc+=(ts-sc)*p;}actor.offstage=Math.abs(x)>3;actor.rig.root.position.set(x*spacing,y,z);actor.rig.root.rotation.set(0,yaw,0);actor.rig.root.scale.setScalar(sc);}
  function diagnostics(){return{count:activeIndices.length,reduced,reducedLevel,frameEmaMs:+emaMs.toFixed(1),independent:independent.map(a=>({index:a.index,id:a.spec.id,position:a.rig.root.position.toArray(),scale:a.rig.root.scale.x,feetWorld:['left','right'].map(side=>a.rig.humanoid.getRawBoneNode(side+'Foot').getWorldPosition(new T.Vector3()).toArray()),...a.rig.diagnostics()})),visible,sharedSkinning:independent.length===0,outlinePass:false,time:lastTime,dancers:dancers.filter(d=>activeIndices.includes(d.index)&&!independent.some(a=>a.index===d.index)).map(d=>{
   d.source.vrm.humanoid.getRawBoneNode('leftHand').getWorldPosition(bonePoint);
   point.copy(bonePoint).applyMatrix4(d.root.matrixWorld);
