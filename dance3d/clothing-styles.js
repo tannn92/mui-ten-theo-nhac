@@ -1,4 +1,4 @@
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=0911.2040';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=0911.2053';
 import * as T from 'three';
 
 // Extra garments use the existing donor skeleton and its skin mask. All meshes
@@ -151,7 +151,20 @@ export function* buildClothingStyles(variants,options){
   const skin=clone(record,body,v=>{const n=v.clone();n.y=0;if(n.length()>0)v.addScaledVector(n.normalize(),.0008);});
   const ids=[],p=body.geometry.attributes.position,ix=body.geometry.index;
   for(let i=0;i<ix.count;i+=3){const a=[ix.getX(i),ix.getX(i+1),ix.getX(i+2)];if(a.every(j=>p.getY(j)>hip.y+.02&&p.getY(j)<neck.y-.006))ids.push(...a);}
-  skin.geometry.setIndex(ids);skin.geometry.clearGroups();skin.material=mat('#f3c5b0');
+  skin.geometry.setIndex(ids);skin.geometry.clearGroups();
+  // The donor atlas deliberately masks clothed torso texels. Reuse its actual
+  // authored hand skin and registered MToon shader for the restored bare skin;
+  // never mutate the shared atlas/material or expose transparent torso texels.
+  const hand=donor.vrm.humanoid.getRawBoneNode('leftMiddleProximal');
+  if(!hand)throw Error('Dolce skin requires donor hand skin anchor');
+  const handLocal=hand.getWorldPosition(V()).applyMatrix4(inv);
+  const hit=getTriangleQuery(geometryTriangles(body.geometry)).nearest(handLocal);
+  const bary=hit.record.t.getBarycoord(hit.point,V()),uv=body.geometry.attributes.uv,skinUV=new T.Vector2();
+  hit.record.ids.forEach((id,k)=>{skinUV.x+=uv.getX(id)*bary.getComponent(k);skinUV.y+=uv.getY(id)*bary.getComponent(k);});
+  for(const id of new Set(ids))skin.geometry.attributes.uv.setXY(id,skinUV.x,skinUV.y);
+  skin.geometry.attributes.uv.needsUpdate=true;
+  skin.material=[].concat(body.material)[0];
+  skin.userData.dolceSkin={source:body.name,anchor:'leftMiddleProximal',uv:skinUV.toArray()};
   const rows=24,cols=64;
   for(let j=0;j<=rows;j++)for(let k=0;k<=cols;k++){if((j*(cols+1)+k)%128===0)yield;
    const a=k/cols*Math.PI*2,c=Math.cos(a),s=Math.sin(a),u=j/rows;
