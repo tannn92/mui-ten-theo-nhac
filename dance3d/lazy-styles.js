@@ -1,7 +1,7 @@
-import {buildHatMuaCrewStyles} from './crew-styles.js?v=0911.1551';
-import {buildClothingStyles} from './clothing-styles.js?v=0911.1551';
-import {buildHuntrixStyles} from './huntrix-styles.js?v=0911.1551';
-import {buildHatMuaStyles} from './hat-mua-styles.js?v=0911.1551';
+import {buildHatMuaCrewStyles} from './crew-styles.js?v=0911.1612';
+import {buildClothingStyles} from './clothing-styles.js?v=0911.1612';
+import {buildHuntrixStyles} from './huntrix-styles.js?v=0911.1612';
+import {buildHatMuaStyles} from './hat-mua-styles.js?v=0911.1612';
 
 // Every cooperative step is a synchronous rest-pose transaction. The renderer
 // always sees the live pose, never a donor left at rest across an event-loop yield.
