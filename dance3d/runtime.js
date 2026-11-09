@@ -1,13 +1,13 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=0911.1643';
-import {createSongBackgrounds} from './song-backgrounds.js?v=0911.1643';
-import {loadWardrobe} from './wardrobe.js?v=0911.1643';
-import {createChoreography} from './choreography.js?v=0911.1643';
-import {createPoseBank} from './pose-bank.js?v=0911.1643';
-import {applyFaceExpression} from './face-expressions.js?v=0911.1643';
-import {createCrew} from './crew.js?v=0911.1643';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=0911.1643';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=0911.1643';
+import {createPerformanceLibrary} from './performance-library.js?v=0911.1652';
+import {createSongBackgrounds} from './song-backgrounds.js?v=0911.1652';
+import {loadWardrobe} from './wardrobe.js?v=0911.1652';
+import {createChoreography} from './choreography.js?v=0911.1652';
+import {createPoseBank} from './pose-bank.js?v=0911.1652';
+import {applyFaceExpression} from './face-expressions.js?v=0911.1652';
+import {createCrew} from './crew.js?v=0911.1652';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=0911.1652';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=0911.1652';
 export async function createRuntime(canvas,bundle){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
@@ -79,7 +79,9 @@ export async function createRuntime(canvas,bundle){
   function crewSelection(s){const out={hair:s.hair??1};for(const k of ['hair','top','bottom','shoes']){if(k==='hair'&&!s.selectionIds?.hair)continue;const i=wardrobe.options[k]?.findIndex(o=>o.id===s.selectionIds?.[k]);if(!(i>=0))return null;out[k]=i;}return out;}
  function themedCrew(entry,chart){const slug=chart?.slug||Object.keys(raw.performances||{}).find(k=>raw.performances[k]===entry);const pool=(config.crewOutfits?.[slug]||[]).map(s=>({s,sel:crewSelection(s)})).filter(x=>x.sel);if(!entry?.crew?.length||!pool.length)return entry;
   for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
-  return {...entry,crew:entry.crew.map((c,i)=>({...c,variant:pool[i%pool.length].s.variant??1,outfit:pool[i%pool.length].sel}))};}
+  // Boy slots get boy looks and girl slots girl looks (role, default girl); a role without looks borrows from the whole pool.
+  const byRole=new Map(),used=new Map();for(const x of pool){const r=x.s.role||'girl';if(!byRole.has(r))byRole.set(r,[]);byRole.get(r).push(x);}
+  return {...entry,crew:entry.crew.map(c=>{const list=byRole.get(c.role||'girl')||pool,n=used.get(list)||0;used.set(list,n+1);const x=list[n%list.length];return {...c,variant:x.s.variant??1,outfit:x.sel};})};}
  let bgPlaying=null;
  function draw(t){const started=performance.now();resize();const playing=t!=null&&Number.isFinite(t);if(playing!==bgPlaying){bgPlaying=playing;try{wardrobe.setBackgroundPaused?.(playing);}catch(e){}}const clock=playing?t:(performance.now()-idleStart)/1000;const delta=lastTime==null?0:clock-lastTime,seek=lastMode!==playing||delta<0||delta>.15,dt=seek?0:Math.min(.05,Math.max(0,delta));lastTime=clock;lastMode=playing;const menu=document.querySelector('#menu'),menuOpen=menu&&!menu.hidden&&!menu.classList.contains('hide')&&menu.style.display!=='none',crewVisible=playing&&!menuOpen,needed=new Set([0]);if(crewVisible)for(const i of crew.sharedVariants())needed.add(i);for(const slot of physicalSlots){const i=wardrobe.variantFor?wardrobe.variantFor(slot,wardrobe.outfit[slot]):wardrobe.outfit[slot];if(Number.isInteger(i))needed.add(i);}const activeVariants=wardrobe.variants.filter((_,i)=>needed.has(i));const sample=motion.sample(playing?clock:clock*.5),capture=playing?captured?.sample(captured.t0===0&&clock<0?0:clock):null,captureWeight=capture?.weight||0,fadePose=captureWeight>0&&captureWeight<1?fadePoseAt(clock):null,sourceRoot=poseBank.root(sample),authoredRootX=.3*Math.tanh(((sample.rootX||0)+sourceRoot[0]*.5)/.3),authoredRootZ=T.MathUtils.clamp((sample.rootZ||0)+sourceRoot[2]*.5,-.13,.13),rootX=T.MathUtils.lerp(authoredRootX,capture?.root[0]||0,captureWeight),rootZ=T.MathUtils.lerp(authoredRootZ,capture?.root[2]||0,captureWeight),rootYaw=(sample.yaw||0)*(1-captureWeight);
  for(const variant of wardrobe.variants){variant.vrm.scene.position.x=rootX;variant.vrm.scene.position.z=rootZ;variant.vrm.scene.rotation.y=rootYaw;}

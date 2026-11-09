@@ -1,6 +1,6 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=0911.1643';
-import {hideNativeCrewSafety} from './crew-styles.js?v=0911.1643';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=0911.1652';
+import {hideNativeCrewSafety} from './crew-styles.js?v=0911.1652';
 
 // Four background performers reuse the live A/B skeletons, geometry, materials
 // and morph arrays. Detached binding applies a crew transform AFTER skinning;
@@ -35,6 +35,8 @@ export function createCrew(scene,wardrobe){
  // Frame guard: if a slow device drops under ~45 fps for 3 s while 3+ own-motion backups dance, the outer
  // ones (crew entries 3 and 4) are hidden for the rest of the song; the inner pair keeps dancing.
  let lastWall=null,slowFor=0,emaMs=16.7,reduced=false,reducedLevel=0;
+ // Slow-device steps: all -> 8 -> 4 -> 2 backups (crew entries are listed in priority order: front row first).
+ const CREW_LIMITS=[99,8,4,2];
  function setSong(chart,performance=null,tracks=[]){
   for(const actor of independent)actor.rig.dispose();independent=[];lastWall=null;slowFor=0;emaMs=16.7;reduced=false;reducedLevel=0;
   const isTrio=/golden|what[- _]it[- _]sounds|takedown|how[- _]it.?s?[- _]done/i.test([chart?.slug,chart?.title].join(' '));
@@ -61,8 +63,8 @@ export function createCrew(scene,wardrobe){
   const spacing=Math.min(1,Math.max(.44,aspect/.95));
   for(const dancer of dancers){dancer.root.position.x=dancer.spec.x*spacing;dancer.root.visible=activeIndices.includes(dancer.index)&&!independent.some(a=>a.index===dancer.index);}
   const now=performance.now();
-  const keep=reducedLevel===0?99:reducedLevel===1?4:2;if(visible&&t!=null&&independent.length>keep){if(lastWall!=null){const dt=now-lastWall;if(dt<250){emaMs+=(dt-emaMs)*.05;slowFor=emaMs>22?slowFor+dt:0;if(slowFor>3000){reducedLevel=Math.min(2,reducedLevel+(independent.length>4&&reducedLevel===0?1:2));reduced=true;slowFor=0;emaMs=16.7;}}}lastWall=now;}else if(t==null)lastWall=null;
-  for(const [k,actor]of independent.entries()){actor.rig.root.visible=visible&&k<(reducedLevel===0?99:reducedLevel===1?4:2);if(!actor.rig.root.visible)continue;place(actor,t,spacing);actor.rig.update(t==null?t:t+(actor.spec.timeOffset||0),wardrobe.master.humanoid);}
+  const keep=CREW_LIMITS[reducedLevel];if(visible&&t!=null&&independent.length>keep&&reducedLevel<CREW_LIMITS.length-1){if(lastWall!=null){const dt=now-lastWall;if(dt<250){emaMs+=(dt-emaMs)*.05;slowFor=emaMs>22?slowFor+dt:0;if(slowFor>3000){do reducedLevel++;while(reducedLevel<CREW_LIMITS.length-1&&CREW_LIMITS[reducedLevel]>=independent.length);reduced=true;slowFor=0;emaMs=16.7;}}}lastWall=now;}else if(t==null)lastWall=null;
+  for(const [k,actor]of independent.entries()){actor.rig.root.visible=visible&&k<CREW_LIMITS[reducedLevel];if(!actor.rig.root.visible)continue;place(actor,t,spacing);actor.rig.update(t==null?t:t+(actor.spec.timeOffset||0),wardrobe.master.humanoid);}
   group.updateMatrixWorld(true);
  }
  // Formation changes over the song (e.g. the ring around the center): each move eases from the current spot to
