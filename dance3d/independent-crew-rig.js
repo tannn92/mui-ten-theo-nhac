@@ -1,7 +1,7 @@
 import * as T from 'three';
 import {VRMHumanoid,VRMSpringBoneManager,VRMSpringBoneJoint} from '@pixiv/three-vrm';
-import {limitSkirtSprings} from './skirt-safety.js?v=0911.1652';
-import {createCapturedMotion} from './captured-motion.js?v=0911.1652';
+import {limitSkirtSprings} from './skirt-safety.js?v=0911.1658';
+import {createCapturedMotion} from './captured-motion.js?v=0911.1658';
 
 // A private bone hierarchy for one performer. Geometry/materials stay shared;
 // never call VRMHumanoid.clone(), which keeps the source raw bone references.
@@ -14,7 +14,8 @@ export function createIndependentCrewRig(source){
  for(let i=0;i<originals.length;i++){
   const original=originals[i],copy=clones[i];if(!original.isMesh)continue;
   copy.visible=false;copy.frustumCulled=false;copy.updateMatrix();copy.matrixAutoUpdate=false;
-  if(original.morphTargetInfluences)copy.morphTargetInfluences=[...original.morphTargetInfluences];
+  // Neutral face (eyes open): never inherit the lead's live expression (a smile/blink caught at song start).
+  if(original.morphTargetInfluences)copy.morphTargetInfluences=original.morphTargetInfluences.map(()=>0);
   if(original.isSkinnedMesh){
    let skeleton=skeletons.get(original.skeleton);
    if(!skeleton){const bones=original.skeleton.bones.map(b=>mapping.get(b)||byName.get(b.name));if(bones.some(b=>!b))throw Error('Crew rig is missing a skin bone');skeleton=new T.Skeleton(bones,original.skeleton.boneInverses.map(m=>m.clone()));skeletons.set(original.skeleton,skeleton);}
