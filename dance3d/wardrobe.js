@@ -1,10 +1,10 @@
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {VRMLoaderPlugin} from '@pixiv/three-vrm';
-import {createAccessories} from './accessories.js?v=0911.1804';
-import {getWardrobeOptions,wardrobeDefaults} from './wardrobe-ui.js?v=0911.1804';
-import {addSkirtShorts,limitSkirtSprings} from './skirt-safety.js?v=0911.1804';
-import {createLazyStyles} from './lazy-styles.js?v=0911.1804';
+import {createAccessories} from './accessories.js?v=0911.1806';
+import {getWardrobeOptions,wardrobeDefaults} from './wardrobe-ui.js?v=0911.1806';
+import {addSkirtShorts,limitSkirtSprings} from './skirt-safety.js?v=0911.1806';
+import {createLazyStyles} from './lazy-styles.js?v=0911.1806';
 
 const physicalSlots=['hair','top','bottom','shoes'];
 const vector=new T.Vector3();
