@@ -1,6 +1,7 @@
 // Derived from approved natural-boy base SHA256 67328828cdd461c54cf863d06e672e941ec0b75d558521f477bc87434697d5b7.
+import {fitPoint,fitSection} from './body-fit.js?v=1011.0910';
 import * as T from 'three';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1011.0811';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1011.0910';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 const caches=new WeakMap();
 const V=()=>new T.Vector3();
@@ -12,7 +13,7 @@ function donorCache(donor){
  for(const id of new Set(ix.array)){let sum=0;for(let k=0;k<4;k++)if(torsoSet.has(g.attributes.skinIndex.getComponent(id,k)))sum+=g.attributes.skinWeight.getComponent(id,k);const y=p.getY(id);if((sum<.65&&y>hip.y+.025)||Math.abs(p.getX(id))>.14||y<hip.y-.04||y>neck.y-.035)continue;const j=T.MathUtils.clamp(Math.round((y-hip.y+.04)/(neck.y-hip.y+.005)*15),0,15);profiles[j].push([Math.abs(p.getX(id)),Math.abs(p.getZ(id)-hip.z)]);}
  const dims=profiles.map((a,j)=>{const percentile=k=>a.map(x=>x[k]).sort((x,y)=>x-y)[a.length-1];return a.length?[T.MathUtils.clamp(percentile(0),.045,.115),T.MathUtils.clamp(percentile(1),.035,.105)]:[j<5?.09:.075,.052];});
  for(let j=0;j<16;j++){const y=hip.y-.04+j/15*(neck.y-hip.y+.005);let front=0;for(const id of new Set(ix.array))if(Math.abs(p.getY(id)-y)<.035&&Math.abs(p.getX(id))<.09)front=Math.max(front,p.getZ(id)-hip.z);dims[j][1]=Math.max(dims[j][1],front+.003);}
- function section(y){const f=T.MathUtils.clamp((y-hip.y+.04)/(neck.y-hip.y+.005)*15,0,15),i=Math.floor(f),j=Math.min(15,i+1);return[dims[i][0]*(1-f+i)+dims[j][0]*(f-i),dims[i][1]*(1-f+i)+dims[j][1]*(f-i)];}
+ function section0(y){const f=T.MathUtils.clamp((y-hip.y+.04)/(neck.y-hip.y+.005)*15,0,15),i=Math.floor(f),j=Math.min(15,i+1);return[dims[i][0]*(1-f+i)+dims[j][0]*(f-i),dims[i][1]*(1-f+i)+dims[j][1]*(f-i)];}function section(y){return fitSection(body,boneIndex,hip,neck,y)||section0(y);}
  const shells=new Map();
  function shell(key,test,offset=0){if(shells.has(key))return shells.get(key);const ids=[],map=new Map(),attrs=Object.fromEntries(['position','normal','uv','skinIndex','skinWeight'].filter(k=>g.attributes[k]).map(k=>[k,[]])),out=[];
  for(let i=0;i<ix.count;i+=3){const tri=[ix.getX(i),ix.getX(i+1),ix.getX(i+2)];if(!tri.every(id=>test(p.getX(id),p.getY(id),p.getZ(id))))continue;for(const id of tri){if(!map.has(id)){map.set(id,map.size);ids.push(id);for(const[k,a]of Object.entries(attrs)){const src=g.attributes[k];for(let c=0;c<src.itemSize;c++)a.push(src.getComponent(id,c)+(k==='position'?g.attributes.normal.getComponent(id,c)*offset:0));}}out.push(map.get(id));}}

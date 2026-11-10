@@ -1,5 +1,6 @@
 import * as T from 'three';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1011.0811';
+import {fitPoint,fitSection} from './body-fit.js?v=1011.0910';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1011.0910';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 const caches=new WeakMap();
 const V=()=>new T.Vector3();
@@ -11,7 +12,7 @@ function donorCache(donor){
  for(const id of new Set(ix.array)){let sum=0;for(let k=0;k<4;k++)if(torsoSet.has(g.attributes.skinIndex.getComponent(id,k)))sum+=g.attributes.skinWeight.getComponent(id,k);const y=p.getY(id);if((sum<.65&&y>hip.y+.025)||Math.abs(p.getX(id))>.14||y<hip.y-.04||y>neck.y-.035)continue;const j=T.MathUtils.clamp(Math.round((y-hip.y+.04)/(neck.y-hip.y+.005)*15),0,15);profiles[j].push([Math.abs(p.getX(id)),Math.abs(p.getZ(id)-hip.z)]);}
  const dims=profiles.map((a,j)=>{const percentile=k=>a.map(x=>x[k]).sort((x,y)=>x-y)[a.length-1];return a.length?[T.MathUtils.clamp(percentile(0),.045,.115),T.MathUtils.clamp(percentile(1),.035,.105)]:[j<5?.09:.075,.052];});
  for(let j=0;j<16;j++){const y=hip.y-.04+j/15*(neck.y-hip.y+.005);let front=0;for(const id of new Set(ix.array))if(Math.abs(p.getY(id)-y)<.035&&Math.abs(p.getX(id))<.09)front=Math.max(front,p.getZ(id)-hip.z);dims[j][1]=Math.max(dims[j][1],front+.003);}
- function section(y){const f=T.MathUtils.clamp((y-hip.y+.04)/(neck.y-hip.y+.005)*15,0,15),i=Math.floor(f),j=Math.min(15,i+1);return[dims[i][0]*(1-f+i)+dims[j][0]*(f-i),dims[i][1]*(1-f+i)+dims[j][1]*(f-i)];}
+ function section0(y){const f=T.MathUtils.clamp((y-hip.y+.04)/(neck.y-hip.y+.005)*15,0,15),i=Math.floor(f),j=Math.min(15,i+1);return[dims[i][0]*(1-f+i)+dims[j][0]*(f-i),dims[i][1]*(1-f+i)+dims[j][1]*(f-i)];}function section(y){return fitSection(body,boneIndex,hip,neck,y)||section0(y);}
  const shells=new Map();
  function shell(key,test,offset=0){if(shells.has(key))return shells.get(key);const ids=[],map=new Map(),attrs=Object.fromEntries(['position','normal','uv','skinIndex','skinWeight'].filter(k=>g.attributes[k]).map(k=>[k,[]])),out=[];
  for(let i=0;i<ix.count;i+=3){const tri=[ix.getX(i),ix.getX(i+1),ix.getX(i+2)];if(!tri.every(id=>test(p.getX(id),p.getY(id),p.getZ(id))))continue;for(const id of tri){if(!map.has(id)){map.set(id,map.size);ids.push(id);for(const[k,a]of Object.entries(attrs)){const src=g.attributes[k];for(let c=0;c<src.itemSize;c++)a.push(src.getComponent(id,c)+(k==='position'?g.attributes.normal.getComponent(id,c)*offset:0));}}out.push(map.get(id));}}
@@ -35,7 +36,7 @@ const fur=new T.MeshStandardMaterial({color:'#fffefe',roughness:.95,side:T.Doubl
   function fluff(center,rx,rz,height,m,rigid,seed=0){for(let j=0;j<36;j++){const a=j*2.39996,y=Math.sin(j*1.731+seed)*height*.42,r=1+.09*Math.sin(j*2.13);sphere(center.clone().add(V().set(Math.cos(a)*rx*r,y,Math.sin(a)*rz*r)),[.010,.015,.010],m,rigid);}}
   function bow(center,m,rigid){for(const sign of [-1,1])sphere(center.clone().add(V().set(sign*.012,0,0)),[.015,.010,.004],m,rigid);sphere(center,[.005,.006,.005],m,rigid);}
   const waist=hip.y+.062;
-  function profile(y,a,e=0){const [rx,rz]=section(y);return V().set(Math.cos(a)*(rx+e),y,hip.z+Math.sign(Math.sin(a))*Math.pow(Math.abs(Math.sin(a)),.65)*(rz+e));}
+  function profile(y,a,e=0){const q=fitPoint(body,boneIndex,hip,neck,y,a,e);if(q)return V().set(q[0],y,q[1]);const [rx,rz]=section(y);return V().set(Math.cos(a)*(rx+e),y,hip.z+Math.sign(Math.sin(a))*Math.pow(Math.abs(Math.sin(a)),.65)*(rz+e));}
   function patch(rows,cols,fn,m,weights){const mesh=grid(rows,cols,fn,m);if(weights){const g=mesh.geometry,p=g.attributes.position;for(let i=0;i<p.count;i++){const [a,b,w]=weights(V().fromBufferAttribute(p,i));g.attributes.skinIndex.setXYZW(i,boneIndex(a),boneIndex(b),0,0);g.attributes.skinWeight.setXYZW(i,1-w,w,0,0);}}if(slot==='shoes'&&name!=='zoey'){const query=getTriangleQuery(geometryTriangles(body.geometry)),g=mesh.geometry,p=g.attributes.position,si=body.geometry.attributes.skinIndex,sw=body.geometry.attributes.skinWeight;for(let i=0;i<p.count;i++){const h=query.nearest(V().fromBufferAttribute(p,i));if(!h)continue;const bc=h.record.t.getBarycoord(h.point,V()),blend=[bc.x,bc.y,bc.z],all=new Map();for(let j=0;j<3;j++)for(let k=0;k<4;k++){const bi=si.getComponent(h.record.ids[j],k),w=sw.getComponent(h.record.ids[j],k)*blend[j];all.set(bi,(all.get(bi)||0)+w);}const best=[...all].sort((a,b)=>b[1]-a[1]).slice(0,4),sum=best.reduce((n,x)=>n+x[1],0);while(best.length<4)best.push([0,0]);g.attributes.skinIndex.setXYZW(i,...best.map(x=>x[0]));g.attributes.skinWeight.setXYZW(i,...best.map(x=>x[1]/sum));}}return mesh;}
   function shag(center,rx,rz,height,m,rigid,count=100){
    grid(6,24,(u,v)=>{const a=v*Math.PI*2,r=.72+.42*Math.sin(u*Math.PI*.88)+.035*Math.sin(a*7+u*3);return center.clone().add(V().set(Math.cos(a)*rx*r,(u-.5)*height+.004*Math.sin(a*11+u*4),Math.sin(a)*rz*r));},m,rigid);
@@ -55,7 +56,11 @@ const fur=new T.MeshStandardMaterial({color:'#fffefe',roughness:.95,side:T.Doubl
    register(shell('hxt-skin-upper',(x,y)=>y>hip.y-.025&&y<neck.y+.035,.002),skin,false);
    if(name==='rumi'){
     register(shell('hxt-yellow-shoulders',(x,y)=>Math.abs(x)>.065&&Math.abs(x)<.19&&y>pos('upperChest').y-.030&&y<neck.y+.005,.006),yellow,false);
-    grid(10,40,(u,v)=>profile(T.MathUtils.lerp(hem,high,u),v*Math.PI*2,.009),satin);
+    // Owner 2026-11-10 ("phần ngực của rumi nhìn cứ kỳ kỳ ko tự nhiên"): the white crop top was a box-section tube with a glowing
+    // satin, so it read as a flat white plate across the chest. Now it is a shell lifted off her own torso (follows the chest and
+    // ribs) in a softer satin that keeps its shading. A skin-tight shell showed too much of the bust, so: smooth oval tube.
+    {const croptop=satin.clone();croptop.color.set('#f6f3ee');croptop.emissiveIntensity=.07;croptop.sheen=.45;
+     grid(10,40,(u,v)=>profile(T.MathUtils.lerp(hem,high,u),v*Math.PI*2,.004),croptop);}
     grid(12,44,(u,v)=>profile(T.MathUtils.lerp(hem-.003,neck.y-.020,u),Math.PI-.95+v*(Math.PI+1.90),.021+.003*Math.sin(u*9)),yellow);
     for(const side of ['left','right'])sleeve(side,false);
     grid(2,44,(u,v)=>profile(hem-.004+u*.010,Math.PI-.95+v*(Math.PI+1.90),.022),black);

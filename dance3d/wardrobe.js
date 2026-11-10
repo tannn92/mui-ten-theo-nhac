@@ -1,15 +1,16 @@
-import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1011.0811';
-import {hideNativeWislSafety} from './wisl-styles.js?v=1011.0811';
-import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1011.0811';
-import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1011.0811';
-import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1011.0811';
+import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1011.0910';
+import {hideNativeWislSafety} from './wisl-styles.js?v=1011.0910';
+import {hideNativeSecretSafety} from './secret-styles.js?v=1011.0910';
+import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1011.0910';
+import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1011.0910';
+import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1011.0910';
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {VRMLoaderPlugin} from '@pixiv/three-vrm';
-import {createAccessories} from './accessories.js?v=1011.0811';
-import {getWardrobeOptions,wardrobeDefaults} from './wardrobe-ui.js?v=1011.0811';
-import {addSkirtShorts,limitSkirtSprings} from './skirt-safety.js?v=1011.0811';
-import {createLazyStyles} from './lazy-styles.js?v=1011.0811';
+import {createAccessories} from './accessories.js?v=1011.0910';
+import {getWardrobeOptions,wardrobeDefaults} from './wardrobe-ui.js?v=1011.0910';
+import {addSkirtShorts,limitSkirtSprings} from './skirt-safety.js?v=1011.0910';
+import {createLazyStyles} from './lazy-styles.js?v=1011.0910';
 
 const physicalSlots=['hair','top','bottom','shoes'];
 const vector=new T.Vector3();
@@ -116,7 +117,7 @@ export async function loadWardrobe(scene,config,onProgress=()=>{}){
  for(const key of Object.keys(variant.parts)){
  const slot=key==='upper'?'top':key==='lower'?'bottom':key==='feet'?'shoes':key;
  const show=key==='face'?i===0:i===variantFor(slot)&&(!physicalSlots.includes(key)||!styles.meshesFor(slot,outfit[slot]));
- variant.parts[key].forEach(mesh=>mesh.visible=show&&!(mesh.userData.excludeHatMua&&options.bottom[outfit.bottom].style?.startsWith('hat-mua-'))&&!(mesh.userData.excludeHuntrix&&options.bottom[outfit.bottom].style?.startsWith('huntrix-'))&&!hideNativeGirlXinhSafety(mesh,options.bottom[outfit.bottom])&&!hideNativeTaiSinhSafety(mesh,options.bottom[outfit.bottom])&&!hideNativeHuntrixTrioSafety(mesh,options.bottom[outfit.bottom])&&!hideNativeGoldenStageSafety(mesh,options.bottom[outfit.bottom])&&!hideNativeWislSafety(mesh,options.bottom[outfit.bottom])&&(!mesh.userData.requiredBottomStyle||options.bottom[outfit.bottom].style===mesh.userData.requiredBottomStyle));
+ variant.parts[key].forEach(mesh=>mesh.visible=show&&!(mesh.userData.excludeHatMua&&options.bottom[outfit.bottom].style?.startsWith('hat-mua-'))&&!(mesh.userData.excludeHuntrix&&options.bottom[outfit.bottom].style?.startsWith('huntrix-'))&&!hideNativeGirlXinhSafety(mesh,options.bottom[outfit.bottom])&&!hideNativeTaiSinhSafety(mesh,options.bottom[outfit.bottom])&&!hideNativeHuntrixTrioSafety(mesh,options.bottom[outfit.bottom])&&!hideNativeGoldenStageSafety(mesh,options.bottom[outfit.bottom])&&!hideNativeWislSafety(mesh,options.bottom[outfit.bottom])&&!hideNativeSecretSafety(mesh,options.bottom[outfit.bottom])&&(!mesh.userData.requiredBottomStyle||options.bottom[outfit.bottom].style===mesh.userData.requiredBottomStyle));
  }
  });
  for(const slot of [...physicalSlots,'accessory'])styles.meshesFor(slot,outfit[slot])?.forEach(mesh=>mesh.visible=true);
