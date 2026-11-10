@@ -1,13 +1,14 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=1011.0706';
-import {createSongBackgrounds} from './song-backgrounds.js?v=1011.0706';
-import {loadWardrobe} from './wardrobe.js?v=1011.0706';
-import {createChoreography} from './choreography.js?v=1011.0706';
-import {createPoseBank} from './pose-bank.js?v=1011.0706';
-import {applyFaceExpression} from './face-expressions.js?v=1011.0706';
-import {createCrew} from './crew.js?v=1011.0706';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1011.0706';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1011.0706';
+import {createPerformanceLibrary} from './performance-library.js?v=1011.0720';
+import {createSongBackgrounds} from './song-backgrounds.js?v=1011.0720';
+import {loadWardrobe} from './wardrobe.js?v=1011.0720';
+import {createChoreography} from './choreography.js?v=1011.0720';
+import {createPoseBank} from './pose-bank.js?v=1011.0720';
+import {applyFaceExpression} from './face-expressions.js?v=1011.0720';
+import {createCrew} from './crew.js?v=1011.0720';
+import {applyHeadScale} from './head-scale.js?v=1011.0720';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1011.0720';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1011.0720';
 export async function createRuntime(canvas,bundle){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
@@ -22,7 +23,11 @@ export async function createRuntime(canvas,bundle){
  scene.add(new T.HemisphereLight(0xffffff,0x997c94,1.35));const light=new T.DirectionalLight(0xfff5ef,1.1);light.position.set(-2,4,5);scene.add(light);
  const disc=new T.Mesh(new T.CylinderGeometry(.9,.95,.04,48),new T.MeshStandardMaterial({color:0xe0c3d5,roughness:1}));disc.position.y=-.03;scene.add(disc);
  const ring=new T.Mesh(new T.TorusGeometry(.92,.006,6,64),new T.MeshBasicMaterial({color:0xfffbfe}));ring.rotation.x=Math.PI/2;ring.position.y=-.005;scene.add(ring);
- const wardrobe=await loadWardrobe(scene,config),motion=createChoreography(data);let songMoves=null,lastTime=null,lastMode=null,idleStart=performance.now(),refresh=()=>{},lastSnapshot={},width=0,height=0;
+ const wardrobe=await loadWardrobe(scene,config),motion=createChoreography(data);
+ // Smaller head (owner 2026-11-10 "tỉ lệ cái đầu đang hơi to"; Codex chose 0.85): uniform raw-head scale on every donor, once,
+ // AFTER the lazy styles captured the unscaled rest pose (their build steps restore it) and BEFORE any crew rig is cloned
+ // (clones inherit the scale, the canonical baseline and the scaled head colliders/hair hit radii).
+ {const hs=Number.isFinite(raw.headScale)?raw.headScale:1;if(hs!==1)for(const v of wardrobe.variants)applyHeadScale(v.vrm,hs);}let songMoves=null,lastTime=null,lastMode=null,idleStart=performance.now(),refresh=()=>{},lastSnapshot={},width=0,height=0;
  const v=new T.Vector3();
  for(const variant of wardrobe.variants)variant.vrm.scene.position.y=variant.restOffset||0;
  const crew=createCrew(scene,wardrobe);

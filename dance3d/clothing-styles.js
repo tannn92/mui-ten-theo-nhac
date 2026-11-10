@@ -1,4 +1,4 @@
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1011.0706';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1011.0720';
 import * as T from 'three';
 
 // Extra garments use the existing donor skeleton and its skin mask. All meshes
