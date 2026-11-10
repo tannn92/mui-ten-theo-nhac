@@ -1,6 +1,6 @@
 import * as T from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1011.1128';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1011.1141';
 // The four Secret singers (owner 2026-11-10: poster "Secret · phiên bản Tinh Hà Say Hi" + the stage photo; "Outfit vẫn k giống
 // trong ảnh tôi mô tả, làm kĩ lại đi", "làm cả giày giống nhé"). Crew-only looks secret-crew-m1..m4-{top,bottom,shoes}.
 //  m1 caramel suede biker jacket (zipped low, wide notched lapels) over a white shirt + beige tie, shirt tail out; light flares;

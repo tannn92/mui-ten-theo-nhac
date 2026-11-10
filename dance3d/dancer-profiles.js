@@ -1,10 +1,13 @@
-import {createFaceIdentities} from './dancer-face-shapes.js?v=1011.1128';
-import {applyHeadScale} from './head-scale.js?v=1011.1128';
+import {createFaceIdentities} from './dancer-face-shapes.js?v=1011.1141';
+import {applyHeadScale} from './head-scale.js?v=1011.1141';
 export const dancerProfiles=Object.freeze([
  Object.freeze({id:'original',label:'Gương mặt gốc',headScale:.85}),
  Object.freeze({id:'rumi',label:'Rumi · cân đối',headScale:.85}),
  Object.freeze({id:'mira',label:'Mira · thon dài',headScale:.85}),
- Object.freeze({id:'zoey',label:'Zoey · tròn đáng yêu',headScale:.92})
+ Object.freeze({id:'zoey',label:'Zoey · tròn đáng yêu',headScale:.92}),
+ // Secret singers (crew only): male faces, smaller heads (older, taller look)
+ Object.freeze({id:'boy1',label:'Secret · m1',headScale:.80}),Object.freeze({id:'boy2',label:'Secret · m2',headScale:.79}),
+ Object.freeze({id:'boy3',label:'Secret · m3',headScale:.80}),Object.freeze({id:'boy4',label:'Secret · m4',headScale:.80})
 ]);
 const known=id=>dancerProfiles.some(p=>p.id===id);
 const fromId=id=>typeof id==='string'?/^(?:huntrix|golden|wisl)-(rumi|mira|zoey)(?:-|$)/.exec(id)?.[1]:undefined;
