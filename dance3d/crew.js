@@ -1,16 +1,16 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=1011.0944';
-import {createDancerProfiles} from './dancer-profiles.js?v=1011.0944';
-import {hideNativeCrewSafety} from './crew-styles.js?v=1011.0944';
-import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=1011.0944';
-import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1011.0944';
-import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=1011.0944';
-import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1011.0944';
-import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=1011.0944';
-import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1011.0944';
-import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1011.0944';
-import {hideNativeWislSafety} from './wisl-styles.js?v=1011.0944';
-import {hideNativeSecretSafety} from './secret-styles.js?v=1011.0944';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=1011.1042';
+import {createDancerProfiles} from './dancer-profiles.js?v=1011.1042';
+import {hideNativeCrewSafety} from './crew-styles.js?v=1011.1042';
+import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=1011.1042';
+import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1011.1042';
+import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=1011.1042';
+import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1011.1042';
+import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=1011.1042';
+import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1011.1042';
+import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1011.1042';
+import {hideNativeWislSafety} from './wisl-styles.js?v=1011.1042';
+import {hideNativeSecretSafety} from './secret-styles.js?v=1011.1042';
 
 // Four background performers reuse the live A/B skeletons, geometry, materials
 // and morph arrays. Detached binding applies a crew transform AFTER skinning;

@@ -1,6 +1,6 @@
 import * as T from 'three';
-import {fitPoint,fitSection,armShell,armRadius} from './body-fit.js?v=1011.0944';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1011.0944';
+import {fitPoint,fitSection,armShell,armRadius} from './body-fit.js?v=1011.1042';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1011.1042';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 const caches=new WeakMap();
 const V=()=>new T.Vector3();
@@ -30,13 +30,18 @@ export const secretSpecs=[
 {id:'b1',role:'boy',top:'leather',color:'#6c3d27',bottomColor:'#8faec6'},
 {id:'b2',role:'boy',top:'open',color:'#94754d',bottomColor:'#7495ad'},
 {id:'b3',role:'boy',top:'overshirt',color:'#49352b',bottomColor:'#677d8c'},
-{id:'b4',role:'boy',top:'knit',color:'#29231f',bottomColor:'#3f505e'}];
+{id:'b4',role:'boy',top:'knit',color:'#29231f',bottomColor:'#3f505e'},
+// the four main singers (owner 2026-11-10 poster "Secret · phiên bản Tinh Hà Say Hi"; the child is one of the four):
+{id:'m1',role:'boy',top:'leather',color:'#9a5127',bottomColor:'#9ab6cc'},
+{id:'m2',role:'boy',top:'leather',color:'#5b2723',bottomColor:'#8eadc6',collar:'white'},
+{id:'m3',role:'boy',top:'open',color:'#b78b5d',bottomColor:'#7f9db7',scarf:'#8f2c22'},
+{id:'m4',role:'boy',top:'leather',color:'#3a251b',bottomColor:'#89a7c0',shirt:'#6f90b4'}];
 export const hideNativeSecretSafety=(m,o)=>/^secret-/.test(o?.style||'')&&(m.userData.excludeHatMua||m.userData.excludeHuntrix||/cream_undershorts/.test(m.name));
 const textures=new Map();
 function fabric(kind){if(textures.has(kind))return textures.get(kind);const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,128,128);x.strokeStyle='rgba(70,55,40,.045)';x.lineWidth=1;for(let i=0;i<128;i+=4){x.beginPath();x.moveTo(i,0);x.lineTo(i,128);x.stroke();x.beginPath();x.moveTo(0,i);x.lineTo(128,i);x.stroke();}if(kind==='denim'){x.fillStyle='#fff';x.fillRect(0,0,128,128);for(let j=0;j<6000;j++){x.fillStyle='rgba(50,70,90,'+(.025+rand(j)*.06)+')';x.fillRect(rand(j+6001)*128,rand(j+12001)*128,1,2);}}if(kind==='rib'){x.fillStyle='#fff';x.fillRect(0,0,128,128);x.fillStyle='rgba(100,110,120,.06)';for(let j=0;j<128;j+=8)x.fillRect(j,0,2,128);}if(kind==='plaid'){for(let i=0;i<128;i+=32){x.fillStyle='rgba(230,235,240,.55)';x.fillRect(i,0,5,128);x.fillRect(0,i,128,5);x.fillStyle='rgba(15,20,30,.35)';x.fillRect(i+9,0,8,128);x.fillRect(0,i+9,128,8);}}if(kind==='dots'){x.fillStyle='#735742';x.fillRect(0,0,128,128);x.fillStyle='#fff0cb';for(let y=8;y<128;y+=20)for(let a=8;a<128;a+=20){x.beginPath();x.arc(a,y,2,0,7);x.fill();}}if(kind==='argyle'){for(let y=0;y<160;y+=40)for(let a=0;a<160;a+=40){x.fillStyle=((a+y)/40)%2?'#c5d8dc':'#ecf0e7';x.beginPath();x.moveTo(a,y-18);x.lineTo(a+18,y);x.lineTo(a,y+18);x.lineTo(a-18,y);x.fill();}}const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(2,2);textures.set(kind,t);return t;}
 export function* buildSecretStyles(variants,options){const records=new Map(),parts=[],timings=[];
 for(const slot of ['top','bottom','shoes','accessory'])for(const[index,opt]of(options[slot]||[]).entries()){
- const match=/^secret-(?:crew-)?(1|[gb][1-6])-(top|bottom|shoes|accessory)$/.exec(opt.style||'');if(!match)continue;const spec=secretSpecs.find(s=>s.id===match[1]);if(!spec)continue;const boy=spec.role==='boy',start=performance.now(),donor=variants[opt.variant],c=donorCache(donor),{body,hip,neck,pos,boneIndex,section,shell,floor}=c,rec={id:opt.id,index,slot,meshes:[]};
+ const match=/^secret-(?:crew-)?(1|[gb][1-6]|m[1-4])-(top|bottom|shoes|accessory)$/.exec(opt.style||'');if(!match)continue;const spec=secretSpecs.find(s=>s.id===match[1]);if(!spec)continue;const boy=spec.role==='boy',start=performance.now(),donor=variants[opt.variant],c=donorCache(donor),{body,hip,neck,pos,boneIndex,section,shell,floor}=c,rec={id:opt.id,index,slot,meshes:[]};
 const mat=(color,roughness=.65)=>new T.MeshPhysicalMaterial({color,roughness,clearcoat:.08,sheen:.3,side:T.DoubleSide}),white=mat('#fff5e5'),cloth=mat(spec.color,spec.top==='leather'?.28:.65),bottom=mat(spec.bottomColor,.62),black=mat('#211d1a',.3),brown=mat('#65432f'),metal=mat('#c5ac79',.28),red=mat('#742e37'),skin=new T.MeshToonMaterial({color:'#fff1df',emissive:'#bca98f',emissiveIntensity:.18,side:T.DoubleSide});
 if(spec.top==='pinafore'){cloth.color.set('#c5a57f');bottom.color.set('#c5a57f');}cloth.map=fabric(spec.top==='argyle'?'argyle':spec.top==='pinafore'?'dots':'weave');bottom.map=fabric(boy?'denim':spec.bottom==='plaid'?'plaid':spec.bottom==='dress'?'dots':'weave');white.map=fabric('weave');if(spec.top==='leather'){cloth.clearcoat=.65;cloth.clearcoatRoughness=.25;cloth.sheen=0;cloth.map=null;}white.emissive.set('#fff5e8');white.emissiveIntensity=.20;cloth.emissive.copy(cloth.color);cloth.emissiveIntensity=.08;bottom.emissive.copy(bottom.color);bottom.emissiveIntensity=.10;
   function register(geo,m,owned=true){const mesh=new T.SkinnedMesh(geo,m);mesh.name=rec.id+'_'+rec.meshes.length;mesh.position.copy(body.position);mesh.quaternion.copy(body.quaternion);mesh.scale.copy(body.scale);mesh.bind(body.skeleton,body.bindMatrix);mesh.visible=false;mesh.frustumCulled=false;mesh.userData.sharedCrewGeometry=!owned;body.parent.add(mesh);rec.meshes.push(mesh);return mesh;}
@@ -67,10 +72,15 @@ if(spec.top==='pinafore'){cloth.color.set('#c5a57f');bottom.color.set('#c5a57f')
    register(shell('secret-skin-upper',(x,y)=>y>hip.y-.025&&y<neck.y+.035,.0015),skin,false);
    const high=neck.y-.018,low=waist-.012;
    if(boy){const shirt=(y,a,e=0)=>{const t=T.MathUtils.smoothstep(y,high-.055,high),rx=T.MathUtils.lerp(.092,.038,t)+e,z=Math.sin(a),depth=T.MathUtils.lerp(z>=0?.088:.056,z>=0?.043:.036,t)+e;return V().set(Math.cos(a)*rx,y,hip.z+Math.sign(z)*Math.pow(Math.abs(z),.65)*depth);};
-    grid(12,36,(u,v)=>shirt(T.MathUtils.lerp(waist-.012,high,u),v*Math.PI*2),white);
+    const inner=spec.shirt?mat(spec.shirt,.6):white;if(spec.shirt){inner.map=fabric('denim');inner.emissive.copy(inner.color);inner.emissiveIntensity=.08;}
+    grid(12,36,(u,v)=>shirt(T.MathUtils.lerp(waist-.012,high,u),v*Math.PI*2),inner);
     grid(12,36,(u,v)=>shirt(T.MathUtils.lerp(hip.y+.020,high-.004,u),Math.PI/2+(spec.top==='leather'?.065:spec.top==='knit'?.18+.40*u:.42)+v*(Math.PI*2-2*(spec.top==='leather'?.065:spec.top==='knit'?.18+.40*u:.42)),.007),cloth);
     register(shell('secret-boy-shoulder-cover',(x,y)=>Math.abs(x)<.165&&y>neck.y-.085&&y<neck.y+.015,.010),cloth,false);
-    for(const side of ['left','right'])sleeves(side,cloth,false,false);collar(spec.top==='leather'?cloth:white);
+    for(const side of ['left','right'])sleeves(side,cloth,false,false);collar(spec.collar==='white'?white:spec.shirt?inner:spec.top==='leather'?cloth:white);
+    if(spec.collar==='white')for(const sign of [-1,1])grid(8,6,(u,v)=>{const y=neck.y-.010-u*.052,x=sign*(.014+u*.030+(v-.5)*(.040*(1-u)+.004)),q=shirt(y,Math.acos(T.MathUtils.clamp(x/(.092+.012),-1,1)),.016);q.z+=.004*Math.sin(u*Math.PI);return q;},white);
+    if(spec.scarf){const red=mat(spec.scarf,.55);red.emissive.copy(red.color);red.emissiveIntensity=.08;const yN=neck.y-.010,ring=[];for(let j=0;j<=24;j++){const a=j/24*Math.PI*2+Math.PI/2;ring.push(shirt(yN,a,.016));}curve(ring,.008,red);
+     grid(6,6,(u,v)=>{const q=shirt(yN-.006-u*.042,Math.PI/2,.020);q.x+=(v-.5)*.040*(1-u);q.z+=.004*u;return q;},red);
+     for(const sign of [-1,1])curve([shirt(yN-.004,Math.PI/2+sign*.18,.022),shirt(yN-.020,Math.PI/2+sign*.30,.024),shirt(yN-.034,Math.PI/2+sign*.36,.024)],.005,red);}
     for(const sign of [-1,1])curve(Array.from({length:8},(_,j)=>shirt(T.MathUtils.lerp(hip.y+.023,high-.01,j/7),Math.PI/2+sign*(spec.top==='leather'?.065:spec.top==='knit'?.18+.40*j/7:.42),.010)),.0012,spec.top==='leather'?metal:cloth);
     if(spec.top==='leather'){white.map=fabric('weave').clone();white.map.repeat.set(8,8);}if(spec.top==='overshirt'){buttonRow(metal,waist+.008,high-.035,.045);for(const sign of [-1,1]){grid(4,5,(u,v)=>shirt(high-.06-u*.040,Math.PI/2+sign*(.55+(v-.5)*.35),.010),cloth);grid(3,5,(u,v)=>shirt(high-.06-u*.012,Math.PI/2+sign*(.55+(v-.5)*.35),.013),cloth);}}if(spec.top==='leather')for(const sign of [-1,1])curve(Array.from({length:7},(_,j)=>shirt(T.MathUtils.lerp(hip.y+.028,high-.06,j/6),Math.PI/2+sign*.65,.009)),.0008,brown);
     for(const mesh of rec.meshes){if(mesh.userData.sharedCrewGeometry)continue;const p=mesh.geometry.attributes.position,si=mesh.geometry.attributes.skinIndex,sw=mesh.geometry.attributes.skinWeight;for(let i=0;i<p.count;i++){const keep=T.MathUtils.smoothstep(p.getY(i),hip.y+.113,hip.y+.185);if(keep>=1)continue;const all=new Map([[boneIndex('hips'),1-keep]]);for(let k=0;k<4;k++)all.set(si.getComponent(i,k),(all.get(si.getComponent(i,k))||0)+sw.getComponent(i,k)*keep);const a=[...all].sort((x,y)=>y[1]-x[1]).slice(0,4),sum=a.reduce((n,x)=>n+x[1],0);for(let k=0;k<4;k++){si.setComponent(i,k,a[k]?.[0]||0);sw.setComponent(i,k,(a[k]?.[1]||0)/sum);}}}

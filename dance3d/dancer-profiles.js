@@ -1,5 +1,5 @@
-import {createFaceIdentities} from './dancer-face-shapes.js?v=1011.0944';
-import {applyHeadScale} from './head-scale.js?v=1011.0944';
+import {createFaceIdentities} from './dancer-face-shapes.js?v=1011.1042';
+import {applyHeadScale} from './head-scale.js?v=1011.1042';
 export const dancerProfiles=Object.freeze([
  Object.freeze({id:'original',label:'Gương mặt gốc',headScale:.85}),
  Object.freeze({id:'rumi',label:'Rumi · cân đối',headScale:.85}),

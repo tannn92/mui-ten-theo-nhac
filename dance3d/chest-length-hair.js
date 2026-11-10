@@ -1,5 +1,5 @@
 import * as T from 'three';
-import {getTriangleQuery} from './triangle-query.js?v=1011.0944';
+import {getTriangleQuery} from './triangle-query.js?v=1011.1042';
 const derivedGeometry=new WeakMap();
 // Creates a separate geometry/material choice. Original donor hair stays intact.
 export function* buildChestLengthHair(donor,{preserveColor=false}={}){
