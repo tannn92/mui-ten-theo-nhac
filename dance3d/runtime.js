@@ -1,14 +1,15 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=1011.0745';
-import {createSongBackgrounds} from './song-backgrounds.js?v=1011.0745';
-import {loadWardrobe} from './wardrobe.js?v=1011.0745';
-import {createChoreography} from './choreography.js?v=1011.0745';
-import {createPoseBank} from './pose-bank.js?v=1011.0745';
-import {applyFaceExpression} from './face-expressions.js?v=1011.0745';
-import {createCrew} from './crew.js?v=1011.0745';
-import {applyHeadScale} from './head-scale.js?v=1011.0745';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1011.0745';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1011.0745';
+import {createPerformanceLibrary} from './performance-library.js?v=1011.0811';
+import {createSongBackgrounds} from './song-backgrounds.js?v=1011.0811';
+import {loadWardrobe} from './wardrobe.js?v=1011.0811';
+import {createChoreography} from './choreography.js?v=1011.0811';
+import {createPoseBank} from './pose-bank.js?v=1011.0811';
+import {applyFaceExpression} from './face-expressions.js?v=1011.0811';
+import {createCrew} from './crew.js?v=1011.0811';
+import {applyHeadScale} from './head-scale.js?v=1011.0811';
+import {createDancerProfiles,resolveDancerProfile} from './dancer-profiles.js?v=1011.0811';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1011.0811';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1011.0811';
 export async function createRuntime(canvas,bundle){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
@@ -27,7 +28,13 @@ export async function createRuntime(canvas,bundle){
  // Smaller head (owner 2026-11-10 "tỉ lệ cái đầu đang hơi to"; Codex chose 0.85): uniform raw-head scale on every donor, once,
  // AFTER the lazy styles captured the unscaled rest pose (their build steps restore it) and BEFORE any crew rig is cloned
  // (clones inherit the scale, the canonical baseline and the scaled head colliders/hair hit radii).
- {const hs=Number.isFinite(raw.headScale)?raw.headScale:1;if(hs!==1)for(const v of wardrobe.variants)applyHeadScale(v.vrm,hs);}let leadHeight=1,songMoves=null,lastTime=null,lastMode=null,idleStart=performance.now(),refresh=()=>{},lastSnapshot={},width=0,height=0;
+ {const hs=Number.isFinite(raw.headScale)?raw.headScale:1;if(hs!==1)for(const v of wardrobe.variants)applyHeadScale(v.vrm,hs);}
+ // HUNTR/X faces (owner 2026-11-10 "mặt gốc vẫn giữ, mà với set huntrix thì thay cả mặt"): wearing a full Rumi/Mira/Zoey set
+ // (top+bottom+shoes of a huntrix-/golden-/wisl- set) gives the child that character's face and head shape; anything else keeps the
+ // original face (Codex dancer-profiles.js; absolute head scales, original .85). Built on demand, outside the draw loop.
+ const faceOf=()=>resolveDancerProfile({selection:wardrobe.outfit,options:wardrobe.options,sets:config.sets});
+ let leadFace=null;try{leadFace=createDancerProfiles({faceMeshes:wardrobe.variants[0].parts.face,rigs:wardrobe.variants.map(v=>v.vrm),initial:faceOf()});if(!leadFace.supported){console.warn('lead face',leadFace.reason);leadFace=null;}}catch(e){console.warn('lead face',e);leadFace=null;}
+ let faceQueued=false;const queueFace=()=>{if(!leadFace||faceQueued)return;faceQueued=true;queueMicrotask(()=>{faceQueued=false;try{const id=faceOf();if(id!==leadFace.selected)leadFace.apply(id);}catch(e){console.warn('lead face',e);}});};let leadHeight=1,songMoves=null,lastTime=null,lastMode=null,idleStart=performance.now(),refresh=()=>{},lastSnapshot={},width=0,height=0;
  const v=new T.Vector3();
  for(const variant of wardrobe.variants)variant.vrm.scene.position.y=variant.restOffset||0;
  const crew=createCrew(scene,wardrobe);
@@ -65,7 +72,7 @@ export async function createRuntime(canvas,bundle){
  }
  function fadePoseAt(t){const fade=capturedFades.find(f=>t>=f.start&&t<=f.end);if(!fade)return null;const f=T.MathUtils.clamp((t-fade.start)*fade.fps,0,fade.rows.length-1),i=Math.floor(f),a=fade.rows[i],b=fade.rows[Math.min(i+1,fade.rows.length-1)],u=f-i,q=[];for(const e of wardrobe.variants[0].entries){fadeQ.fromArray(a.q,e.index*4).slerp(fadeR.fromArray(b.q,e.index*4),u).toArray(q,e.index*4);}return{q,bob:T.MathUtils.lerp(a.bob,b.bob,u)};}
  const physicalSlots=['hair','top','bottom','shoes'],presets=config.variants.map((v,i)=>({id:v.id,name:v.name||v.label||(i===0?'Bạc hà':i===1?'Nơ hồng':`Bộ ${i+1}`)}));
- function equip(slot,index){wardrobe.equip(slot,index);saveWardrobe(wardrobe.outfit);refresh();}
+ function equip(slot,index){wardrobe.equip(slot,index);saveWardrobe(wardrobe.outfit);refresh();queueFace();}
  // Wardrobe taps: a garment that was never worn is sewn on first use (up to ~2 s of CPU). Show "Đang may đồ…" first and
  // let it paint, then build. The API equip above stays synchronous for tools and tests.
  let sewingEl=null,sewingCount=0;
@@ -88,7 +95,7 @@ export async function createRuntime(canvas,bundle){
   {const spec=config.crewOutfits?.[slug];if(spec&&!Array.isArray(spec)&&spec.mode==='complement'&&entry?.crew?.length){const sets=(spec.sets||[]).map(id=>(config.sets||[]).find(x=>x.id===id)).filter(Boolean),cur=wardrobe.outfit||{},wearing=sets.find(x=>['top','bottom'].every(k=>x.selection?.[k]===cur[k])),rest=sets.filter(x=>x!==(wearing||sets[0]));// Character heights (owner 2026-11-10 "chiều cao các nhân vật chưa cân xứng": Mira ~170 cm, Rumi ~165, Zoey ~153):
    // spec.heights = {rumi:1, mira:1.036, zoey:.93} by name in the set id; the child takes the height of the set she wears.
    const hOf=x=>{for(const [k,v] of Object.entries(spec.heights||{}))if(x?.id?.includes(k))return v;return 1;};
-   if(rest.length)return {...entry,leadHeight:wearing?hOf(wearing):1,crew:entry.crew.map((c,i)=>{const set=rest[i%rest.length],k=hOf(set);return {...c,variant:1,outfit:{...set.selection},scale:(c.scale??1)*k,moves:c.moves?.map(m=>m.scale!=null?{...m,scale:m.scale*k}:m)};})};}}const pool=(Array.isArray(config.crewOutfits?.[slug])?config.crewOutfits[slug]:[]).map(s=>({s,sel:crewSelection(s)})).filter(x=>x.sel);if(!entry?.crew?.length||!pool.length)return entry;
+   if(rest.length)return {...entry,leadHeight:wearing?hOf(wearing):1,crew:entry.crew.map((c,i)=>{const set=rest[i%rest.length],k=hOf(set);return {...c,variant:1,outfit:{...set.selection},face:(/^(?:huntrix|golden|wisl)-(rumi|mira|zoey)/.exec(set.id)||[])[1]||'original',scale:(c.scale??1)*k,moves:c.moves?.map(m=>m.scale!=null?{...m,scale:m.scale*k}:m)};})};}}const pool=(Array.isArray(config.crewOutfits?.[slug])?config.crewOutfits[slug]:[]).map(s=>({s,sel:crewSelection(s)})).filter(x=>x.sel);if(!entry?.crew?.length||!pool.length)return entry;
   for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
   // Boy slots get boy looks and girl slots girl looks (role, default girl); a role without looks borrows from the whole pool.
   const byRole=new Map(),used=new Map();for(const x of pool){const r=x.s.role||'girl';if(!byRole.has(r))byRole.set(r,[]);byRole.get(r).push(x);}
@@ -124,7 +131,7 @@ export async function createRuntime(canvas,bundle){
  for(const c of crewEntry?.crew||[])if(c.outfit)await wardrobe.prepareOutfit(c.outfit);if(request!==songRequest)return false;
  captured=loaded?.lead?createCapturedMotion(loaded.lead):defaultCaptured;captureAsset=loaded?.lead?entry.lead:defaultCaptureAsset;
  capturedIndex=new Map(captured?.boneNames.map((n,i)=>[n,i])||[]);captureReferenceOffset=wardrobe.variants.find(v=>v.spec.id===captured?.referenceVariant)?.restOffset||0;
- songMoves=moves;backdrop.setSong(chart);{const tint=backdrop.tint?.();if(tint){disc.material.color.set(tint.disc);ring.material.color.set(tint.ring);}}motion.setSong(moves,chart);const matched=captured?.setSong(moves,chart);if(loaded?.lead&&!matched)throw Error('Lead track song identity mismatch');crew.setSong(chart,crewEntry,loaded?.crewData);leadHeight=crewEntry?.leadHeight||1;bakeCapturedFades();lastTime=null;idleStart=performance.now();return true;},outfits:presets,get outfit(){const i=presets.findIndex((_,i)=>physicalSlots.every(s=>wardrobe.variantFor(s,wardrobe.outfit[s])===i&&!wardrobe.options[s][wardrobe.outfit[s]].style));return i>=0&&!(wardrobe.outfit.accessory>0)?presets[i].id:'mixed';},setOutfit(id){const i=presets.findIndex(p=>p.id===id);if(i>=0){physicalSlots.forEach(s=>{const choice=wardrobe.options?.[s]?.findIndex(o=>o.variant===i)??i;if(choice>=0)equip(s,choice);});if(wardrobe.slots.includes('accessory'))equip('accessory',0);}},mountWardrobe(container){refresh=mountWardrobe(container,config,equipFromUI,()=>wardrobe.outfit,name=>bundle.files['wardrobe/icons/'+name+'.webp']||null);},test:{wardrobe,camera,scene,renderer,motion,poseBank,crew,captured}};
+ songMoves=moves;backdrop.setSong(chart);{const tint=backdrop.tint?.();if(tint){disc.material.color.set(tint.disc);ring.material.color.set(tint.ring);}}motion.setSong(moves,chart);const matched=captured?.setSong(moves,chart);if(loaded?.lead&&!matched)throw Error('Lead track song identity mismatch');{const keep=leadFace?.selected;if(keep&&keep!=='original')leadFace.apply('original');crew.setSong(chart,crewEntry,loaded?.crewData);if(keep&&keep!=='original')leadFace.apply(keep);}leadHeight=crewEntry?.leadHeight||1;bakeCapturedFades();lastTime=null;idleStart=performance.now();return true;},outfits:presets,get outfit(){const i=presets.findIndex((_,i)=>physicalSlots.every(s=>wardrobe.variantFor(s,wardrobe.outfit[s])===i&&!wardrobe.options[s][wardrobe.outfit[s]].style));return i>=0&&!(wardrobe.outfit.accessory>0)?presets[i].id:'mixed';},setOutfit(id){const i=presets.findIndex(p=>p.id===id);if(i>=0){physicalSlots.forEach(s=>{const choice=wardrobe.options?.[s]?.findIndex(o=>o.variant===i)??i;if(choice>=0)equip(s,choice);});if(wardrobe.slots.includes('accessory'))equip('accessory',0);}},mountWardrobe(container){refresh=mountWardrobe(container,config,equipFromUI,()=>wardrobe.outfit,name=>bundle.files['wardrobe/icons/'+name+'.webp']||null);},test:{wardrobe,camera,scene,renderer,motion,poseBank,crew,captured}};
  // Warm both crew costumes while the loading state is still visible. Otherwise
  // their first shader compilation can stall the first audible dance beat.
  // Owner 2026-11-09: trying clothes on must not wait. Sew the shop (set items first) while the loading screen is up, for

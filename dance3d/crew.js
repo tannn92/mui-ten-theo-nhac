@@ -1,14 +1,15 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=1011.0745';
-import {hideNativeCrewSafety} from './crew-styles.js?v=1011.0745';
-import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=1011.0745';
-import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1011.0745';
-import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=1011.0745';
-import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1011.0745';
-import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=1011.0745';
-import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1011.0745';
-import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1011.0745';
-import {hideNativeWislSafety} from './wisl-styles.js?v=1011.0745';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=1011.0811';
+import {createDancerProfiles} from './dancer-profiles.js?v=1011.0811';
+import {hideNativeCrewSafety} from './crew-styles.js?v=1011.0811';
+import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=1011.0811';
+import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1011.0811';
+import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=1011.0811';
+import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1011.0811';
+import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=1011.0811';
+import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1011.0811';
+import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1011.0811';
+import {hideNativeWislSafety} from './wisl-styles.js?v=1011.0811';
 
 // Four background performers reuse the live A/B skeletons, geometry, materials
 // and morph arrays. Detached binding applies a crew transform AFTER skinning;
@@ -46,7 +47,7 @@ export function createCrew(scene,wardrobe){
  // Slow-device steps: all -> 8 -> 4 -> 2 backups (crew entries are listed in priority order: front row first).
  const CREW_LIMITS=[99,8,4,2];
  function setSong(chart,performance=null,tracks=[]){
-  for(const actor of independent)actor.rig.dispose();independent=[];lastWall=null;slowFor=0;emaMs=16.7;reduced=false;reducedLevel=0;
+  for(const actor of independent){actor.rig.dispose();actor.face?.dispose();}independent=[];lastWall=null;slowFor=0;emaMs=16.7;reduced=false;reducedLevel=0;
   const isTrio=/golden|what[- _]it[- _]sounds|takedown|how[- _]it.?s?[- _]done/i.test([chart?.slug,chart?.title].join(' '));
   const count=performance?.crewCount??(isTrio?2:4);activeIndices=count===0?[]:count===2?[1,2]:Array.from({length:Math.max(4,count)},(_,i)=>i);
   for(const [i,spec]of (performance?.crew||[]).entries()){
@@ -61,7 +62,9 @@ export function createCrew(scene,wardrobe){
    const sign=i%2===0?-1:1,anchor=spec.anchor||[sign*.59,.18,-.85],scale=spec.scale??.8;
    if(anchor.length!==3||!anchor.every(Number.isFinite)||!Number.isFinite(scale)||scale<=0)throw Error('Invalid crew placement');
    const moves=[...(spec.moves||[])].sort((p,q)=>p.at-q.at);for(const r of spec.ready||[])if(!(Array.isArray(r)&&r.length===2&&r.every(Number.isFinite)&&r[0]<r[1]))throw Error('Invalid crew ready interval');for(const m of moves){if(!Number.isFinite(m.at)||!(m.dur>0)||(m.to!=null&&!(m.to.length===3&&m.to.every(Number.isFinite)))||(m.yaw!=null&&!Number.isFinite(m.yaw))||(m.scale!=null&&!(m.scale>0)))throw Error('Invalid crew move');}
-   rig.root.position.fromArray(anchor);rig.root.scale.setScalar(scale);independent.push({index:activeIndices[i],rig,spec,source,anchor,scale,moves});
+   rig.root.position.fromArray(anchor);rig.root.scale.setScalar(scale);// HUNTR/X character sets (owner 2026-11-10): the backup takes that character's face and head shape (Codex profiles).
+    let face=null;if(spec.face&&spec.face!=='original'){try{const fm=source.parts.face.map(m=>rig.mapping.get(m)).filter(Boolean);face=createDancerProfiles({faceMeshes:fm,rigs:[{humanoid:rig.humanoid,scene:rig.model,springBoneManager:rig.springs}],initial:spec.face});if(!face.supported){console.warn('crew face',face.reason);face=null;}}catch(e){console.warn('crew face',e);face=null;}}
+    independent.push({index:activeIndices[i],rig,spec,source,anchor,scale,moves,face});
   }
  }
  function update(show,t,aspect,leadRoot=null){

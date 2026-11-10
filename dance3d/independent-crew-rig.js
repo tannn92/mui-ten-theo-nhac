@@ -1,7 +1,7 @@
 import * as T from 'three';
 import {VRMHumanoid,VRMSpringBoneManager,VRMSpringBoneJoint} from '@pixiv/three-vrm';
-import {limitSkirtSprings} from './skirt-safety.js?v=1011.0745';
-import {createCapturedMotion} from './captured-motion.js?v=1011.0745';
+import {limitSkirtSprings} from './skirt-safety.js?v=1011.0811';
+import {createCapturedMotion} from './captured-motion.js?v=1011.0811';
 
 // A private bone hierarchy for one performer. Geometry/materials stay shared;
 // never call VRMHumanoid.clone(), which keeps the source raw bone references.
@@ -72,5 +72,5 @@ export function createIndependentCrewRig(source){
   ovE.set(x,y,z,'XYZ');return q.setFromEuler(ovE);}
  function setMirror(v){mirror=!!v;}
  function setRootScale(v){rootScale=Array.isArray(v)&&v.length===3&&v.every(Number.isFinite)?v:[1,1,1];}
- return{root,model,humanoid,meshes,mapping,setMeshes,setMotion,setRootScale,setMirror,update,diagnostics(){const hw=humanoid.getRawBoneNode('hips')?.getWorldPosition(new T.Vector3());return{independentBones:true,mirror,hipsWorld:hw?hw.toArray():null,springJoints:springs.joints.size,springHz:30,weight:lastWeight,matched:capture?.matched||false,meshCount:meshes.filter(m=>m.visible).length,sharedGeometry:meshes.every(m=>originals.some(o=>o.isMesh&&o.geometry===m.geometry))};},dispose(){for(const s of skeletons.values())s.dispose();root.removeFromParent();}};
+ return{root,model,humanoid,meshes,mapping,springs,setMeshes,setMotion,setRootScale,setMirror,update,diagnostics(){const hw=humanoid.getRawBoneNode('hips')?.getWorldPosition(new T.Vector3());return{independentBones:true,mirror,hipsWorld:hw?hw.toArray():null,springJoints:springs.joints.size,springHz:30,weight:lastWeight,matched:capture?.matched||false,meshCount:meshes.filter(m=>m.visible).length,sharedGeometry:meshes.every(m=>originals.some(o=>o.isMesh&&o.geometry===m.geometry))};},dispose(){for(const s of skeletons.values())s.dispose();root.removeFromParent();}};
 }
