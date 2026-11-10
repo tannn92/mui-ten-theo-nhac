@@ -1,22 +1,24 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=1011.1042';
-import {createDancerProfiles} from './dancer-profiles.js?v=1011.1042';
-import {hideNativeCrewSafety} from './crew-styles.js?v=1011.1042';
-import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=1011.1042';
-import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1011.1042';
-import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=1011.1042';
-import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1011.1042';
-import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=1011.1042';
-import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1011.1042';
-import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1011.1042';
-import {hideNativeWislSafety} from './wisl-styles.js?v=1011.1042';
-import {hideNativeSecretSafety} from './secret-styles.js?v=1011.1042';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=1011.1128';
+import {createDancerProfiles} from './dancer-profiles.js?v=1011.1128';
+import {hideNativeCrewSafety} from './crew-styles.js?v=1011.1128';
+import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=1011.1128';
+import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1011.1128';
+import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=1011.1128';
+import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1011.1128';
+import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=1011.1128';
+import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1011.1128';
+import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1011.1128';
+import {hideNativeWislSafety} from './wisl-styles.js?v=1011.1128';
+import {hideNativeSecretSafety} from './secret-styles.js?v=1011.1128';
+import {newspaperProps} from './newspaper-prop.js?v=1011.1128';
 
 // Four background performers reuse the live A/B skeletons, geometry, materials
 // and morph arrays. Detached binding applies a crew transform AFTER skinning;
 // cloning attached meshes would cancel their offsets and stack them on the lead.
 export function createCrew(scene,wardrobe){
  const group=new T.Group();group.name='backup-dancers';scene.add(group);
+ const news=newspaperProps(scene);// hand-held newspapers (runtime hides them each frame and sets news.slug)
  const layout=[{x:-1.21,y:.64,scale:.56,variant:0},{x:-.76,y:.50,scale:.60,variant:1},
   {x:.76,y:.50,scale:.60,variant:0},{x:1.21,y:.64,scale:.56,variant:1}];
  const dancers=layout.map((spec,index)=>{
@@ -77,7 +79,7 @@ export function createCrew(scene,wardrobe){
   const now=performance.now();
   const keep=CREW_LIMITS[reducedLevel];if(visible&&t!=null&&independent.length>keep&&reducedLevel<CREW_LIMITS.length-1){if(lastWall!=null){const dt=now-lastWall;if(dt<250){emaMs+=(dt-emaMs)*.05;slowFor=emaMs>22?slowFor+dt:0;if(slowFor>3000){do reducedLevel++;while(reducedLevel<CREW_LIMITS.length-1&&CREW_LIMITS[reducedLevel]>=independent.length);reduced=true;slowFor=0;emaMs=16.7;}}}lastWall=now;}else if(t==null)lastWall=null;
   for(const [k,actor]of independent.entries()){actor.rig.root.visible=visible&&k<CREW_LIMITS[reducedLevel];if(!actor.rig.root.visible)continue;place(actor,t,spacing);// off-stage (|x|>3, beyond every screen width): hidden and not animated
-   if(actor.offstage){actor.rig.root.visible=false;continue;}actor.rig.update(t==null?t:t+(actor.spec.timeOffset||0),wardrobe.master.humanoid,actor.ovr,leadRoot);}
+   if(actor.offstage){actor.rig.root.visible=false;continue;}actor.rig.update(t==null?t:t+(actor.spec.timeOffset||0),wardrobe.master.humanoid,actor.ovr,leadRoot);if(visible)news.update(actor.spec.id,actor.rig.humanoid,news.slug,t);}
   group.updateMatrixWorld(true);
  }
  // Formation changes over the song (e.g. the ring around the center): each move eases from the current spot to

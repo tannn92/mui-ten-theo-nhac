@@ -1,24 +1,25 @@
-import {buildGoldenStageStyles} from './golden-stage-styles.js?v=1011.1042';
-import {buildSecretStyles} from './secret-styles.js?v=1011.1042';
-import {buildSecretHair} from './secret-hair.js?v=1011.1042';
-import {buildBoyHair} from './boy-hair.js?v=1011.1042';
-import {buildWislStyles} from './wisl-styles.js?v=1011.1042';
-import {buildGoldenHair} from './golden-hair.js?v=1011.1042';
-import {buildHuntrixHair} from './huntrix-hair.js?v=1011.1042';
-import {buildHuntrixTrioStyles} from './huntrix-trio-styles.js?v=1011.1042';
-import {buildTaiSinhCrewStyles} from './tai-sinh-crew-styles.js?v=1011.1042';
-import {buildTaiSinhHair} from './tai-sinh-hair.js?v=1011.1042';
-import {buildTaiSinhStyles} from './tai-sinh-styles.js?v=1011.1042';
-import {buildGirlXinhBoyStyles} from './girl-xinh-boys-styles.js?v=1011.1042';
-import {buildGirlXinhHair} from './girl-xinh-hair.js?v=1011.1042';
-import {buildGirlXinhLeadStyles} from './girl-xinh-lead.js?v=1011.1042';
-import {buildDolceCrewHair} from './dolce-hair.js?v=1011.1042';
-import {buildDolceCrewStyles} from './dolce-crew-styles.js?v=1011.1042';
-import {buildHatMuaCrewHair} from './crew-hair.js?v=1011.1042';
-import {buildHatMuaCrewStyles} from './crew-styles.js?v=1011.1042';
-import {buildClothingStyles} from './clothing-styles.js?v=1011.1042';
-import {buildHuntrixStyles} from './huntrix-styles.js?v=1011.1042';
-import {buildHatMuaStyles} from './hat-mua-styles.js?v=1011.1042';
+import {buildGoldenStageStyles} from './golden-stage-styles.js?v=1011.1128';
+import {buildSecretStyles} from './secret-styles.js?v=1011.1128';
+import {buildSecretStars} from './secret-stars.js?v=1011.1128';
+import {buildSecretHair} from './secret-hair.js?v=1011.1128';
+import {buildBoyHair} from './boy-hair.js?v=1011.1128';
+import {buildWislStyles} from './wisl-styles.js?v=1011.1128';
+import {buildGoldenHair} from './golden-hair.js?v=1011.1128';
+import {buildHuntrixHair} from './huntrix-hair.js?v=1011.1128';
+import {buildHuntrixTrioStyles} from './huntrix-trio-styles.js?v=1011.1128';
+import {buildTaiSinhCrewStyles} from './tai-sinh-crew-styles.js?v=1011.1128';
+import {buildTaiSinhHair} from './tai-sinh-hair.js?v=1011.1128';
+import {buildTaiSinhStyles} from './tai-sinh-styles.js?v=1011.1128';
+import {buildGirlXinhBoyStyles} from './girl-xinh-boys-styles.js?v=1011.1128';
+import {buildGirlXinhHair} from './girl-xinh-hair.js?v=1011.1128';
+import {buildGirlXinhLeadStyles} from './girl-xinh-lead.js?v=1011.1128';
+import {buildDolceCrewHair} from './dolce-hair.js?v=1011.1128';
+import {buildDolceCrewStyles} from './dolce-crew-styles.js?v=1011.1128';
+import {buildHatMuaCrewHair} from './crew-hair.js?v=1011.1128';
+import {buildHatMuaCrewStyles} from './crew-styles.js?v=1011.1128';
+import {buildClothingStyles} from './clothing-styles.js?v=1011.1128';
+import {buildHuntrixStyles} from './huntrix-styles.js?v=1011.1128';
+import {buildHatMuaStyles} from './hat-mua-styles.js?v=1011.1128';
 
 // Every cooperative step is a synchronous rest-pose transaction. The renderer
 // always sees the live pose, never a donor left at rest across an event-loop yield.
@@ -42,7 +43,7 @@ export function createLazyStyles(variants,options){
   const option=validate(slot,index),key=keyFor(slot,index);let task=pending.get(key);
   if(task){task.priority=Math.max(task.priority,priority);return task;}
   const selected=Object.fromEntries(Object.entries(options).map(([s,items])=>[s,items.map((o,i)=>s===slot&&i===index?o:{...o,style:null})]));
-  const factory=option.style.startsWith('boy-hair-')?buildBoyHair:option.style.startsWith('secret-hair-')||option.style==='secret-1-hair'?buildSecretHair:option.style.startsWith('secret-')?buildSecretStyles:option.style==='golden-zoey-hair'?buildGoldenHair:/^wisl-(rumi|mira|zoey)-(top|bottom|shoes)$/.test(option.style)?buildWislStyles:/^golden-(rumi|mira|zoey)-(top|bottom|shoes)$/.test(option.style)?buildGoldenStageStyles:/^huntrix-(rumi|mira|zoey)-hair/.test(option.style)?buildHuntrixHair:/^huntrix-(rumi|mira|zoey)-/.test(option.style)?buildHuntrixTrioStyles:option.style.startsWith('tai-sinh-crew-')?buildTaiSinhCrewStyles:option.style.startsWith('tai-sinh-hair-')||option.style==='tai-sinh-1-hair'?buildTaiSinhHair:option.style.startsWith('tai-sinh-1-')?buildTaiSinhStyles:option.style.startsWith('girl-xinh-hair-')||option.style==='girl-xinh-1-hair'?buildGirlXinhHair:option.style.startsWith('girl-xinh-1-')?buildGirlXinhLeadStyles:option.style.startsWith('girl-xinh-crew-b')?buildGirlXinhBoyStyles:option.style.startsWith('dolce-crew-hair-')?buildDolceCrewHair:option.style.startsWith('dolce-crew-')?buildDolceCrewStyles:option.style.startsWith('hat-mua-crew-hair-')?buildHatMuaCrewHair:option.style.startsWith('hat-mua-crew-')?buildHatMuaCrewStyles:option.style.startsWith('hat-mua-')?buildHatMuaStyles:option.style.startsWith('huntrix-')?buildHuntrixStyles:buildClothingStyles;
+  const factory=option.style.startsWith('boy-hair-')?buildBoyHair:option.style.startsWith('secret-hair-')||option.style==='secret-1-hair'?buildSecretHair:/^secret-crew-m[1-4]-(top|bottom|shoes)$/.test(option.style)?buildSecretStars:option.style.startsWith('secret-')?buildSecretStyles:option.style==='golden-zoey-hair'?buildGoldenHair:/^wisl-(rumi|mira|zoey)-(top|bottom|shoes)$/.test(option.style)?buildWislStyles:/^golden-(rumi|mira|zoey)-(top|bottom|shoes)$/.test(option.style)?buildGoldenStageStyles:/^huntrix-(rumi|mira|zoey)-hair/.test(option.style)?buildHuntrixHair:/^huntrix-(rumi|mira|zoey)-/.test(option.style)?buildHuntrixTrioStyles:option.style.startsWith('tai-sinh-crew-')?buildTaiSinhCrewStyles:option.style.startsWith('tai-sinh-hair-')||option.style==='tai-sinh-1-hair'?buildTaiSinhHair:option.style.startsWith('tai-sinh-1-')?buildTaiSinhStyles:option.style.startsWith('girl-xinh-hair-')||option.style==='girl-xinh-1-hair'?buildGirlXinhHair:option.style.startsWith('girl-xinh-1-')?buildGirlXinhLeadStyles:option.style.startsWith('girl-xinh-crew-b')?buildGirlXinhBoyStyles:option.style.startsWith('dolce-crew-hair-')?buildDolceCrewHair:option.style.startsWith('dolce-crew-')?buildDolceCrewStyles:option.style.startsWith('hat-mua-crew-hair-')?buildHatMuaCrewHair:option.style.startsWith('hat-mua-crew-')?buildHatMuaCrewStyles:option.style.startsWith('hat-mua-')?buildHatMuaStyles:option.style.startsWith('huntrix-')?buildHuntrixStyles:buildClothingStyles;
   let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});
   // Sync fallback callers may have no async consumer; still propagate via throw.
   promise.catch(()=>{});
