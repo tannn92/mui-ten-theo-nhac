@@ -1,7 +1,7 @@
 import * as T from 'three';
 import {VRMHumanoid,VRMSpringBoneManager,VRMSpringBoneJoint} from '@pixiv/three-vrm';
-import {limitSkirtSprings} from './skirt-safety.js?v=1011.1141';
-import {createCapturedMotion} from './captured-motion.js?v=1011.1141';
+import {limitSkirtSprings} from './skirt-safety.js?v=1011.1547';
+import {createCapturedMotion} from './captured-motion.js?v=1011.1547';
 
 // A private bone hierarchy for one performer. Geometry/materials stay shared;
 // never call VRMHumanoid.clone(), which keeps the source raw bone references.
@@ -46,7 +46,8 @@ export function createIndependentCrewRig(source){
   // Fallback uses the lead's normalized local pose, never its raw skeleton.
   for(const name of names){const target=humanoid.getNormalizedBoneNode(name),base=fallback?.getNormalizedBoneNode(name);if(base)target.quaternion.copy(base.quaternion);else target.quaternion.identity();const i=index.get(name);if(weight&&i!==undefined)target.quaternion.slerp(rotation.fromArray(pose.q,i*4),weight);}
   if(mirror){for(const name of names){const n=humanoid.getNormalizedBoneNode(name);if(n)mirrorTmp.get(name).copy(n.quaternion);}for(const name of names){const n=humanoid.getNormalizedBoneNode(name),q=mirrorTmp.get(mirrorPartner.get(name));if(n)n.quaternion.set(q.x,-q.y,-q.z,q.w);}}
-  const ow=ovr?.o||0,om=ovr?.m||0;if(ow>0){for(const name of OV_BONES){const n=humanoid.getNormalizedBoneNode(name);if(!n)continue;ovPose(name,false,0,ovS);if(om>0){ovPose(name,true,ovr.phase||0,ovW);ovS.slerp(ovW,om);}n.quaternion.slerp(ovS,ow);}}
+  const ow=ovr?.o||0,om=ovr?.m||0;if(ow>0){for(const name of OV_BONES){if(ovr.keepArms&&ARM_BONES.has(name))continue;const n=humanoid.getNormalizedBoneNode(name);if(!n)continue;ovPose(name,false,0,ovS);if(om>0){ovPose(name,true,ovr.phase||0,ovW);ovS.slerp(ovW,om);}n.quaternion.slerp(ovS,ow);}}
+  if(ovr?.face>0)for(const [name,q] of Object.entries(FACE_ARMS)){const n=humanoid.getNormalizedBoneNode(name);if(n)n.quaternion.slerp(faceQ.fromArray(q),ovr.face);}
   const hips=humanoid.getNormalizedBoneNode('hips');hips.position.copy(baseHips);humanoid.update();
   model.position.copy(source.vrm.scene.position);model.quaternion.copy(source.vrm.scene.quaternion);
   // Root: the own track where it covers, else the lead's root (so hip sway, bounce and squats follow the copied pose).
@@ -61,6 +62,11 @@ export function createIndependentCrewRig(source){
  // Backups keep their formation spot: scale the captured sideways/forward travel (bounce and kneel height stay).
  // Walking / standing-ready poses (normalized local rotations) that replace the dance while a backup walks on/off stage
  // or waits for its cue. Euler XYZ: the arm first hangs (z), then swings (x) in the parent frame.
+ // Paper up in front of the face (Secret 43.9-48.4, back row): normalized local arm rotations from make_groove_fallback.py
+ // (2-bone IK on the VRM rest skeleton, wrists 0.12 m either side of the head, 0.24 m in front of it).
+ const FACE_ARMS={leftShoulder:[0,0,0,1],rightShoulder:[0,0,0,1],leftUpperArm:[0,-.39366,-.026,.91889],leftLowerArm:[-.00005,-.48919,.41727,.76589],leftHand:[0,-.08716,0,.99619],
+  rightUpperArm:[0,.39366,.026,.91889],rightLowerArm:[-.00005,.48919,-.41727,.76589],rightHand:[0,.08716,0,.99619]},faceQ=new T.Quaternion();
+ const ARM_BONES=new Set(['leftShoulder','rightShoulder','leftUpperArm','rightUpperArm','leftLowerArm','rightLowerArm','leftHand','rightHand']);
  const OV_BONES=['hips','spine','chest','upperChest','neck','head','leftShoulder','rightShoulder','leftUpperArm','rightUpperArm','leftLowerArm','rightLowerArm','leftHand','rightHand','leftUpperLeg','rightUpperLeg','leftLowerLeg','rightLowerLeg','leftFoot','rightFoot','leftToes','rightToes'].filter(n=>raw[n]);
  const ovE=new T.Euler(),ovS=new T.Quaternion(),ovW=new T.Quaternion(),DEG=Math.PI/180;
  function ovPose(name,walk,ph,q){let x=0,y=0,z=0;

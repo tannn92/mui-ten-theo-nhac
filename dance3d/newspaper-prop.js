@@ -10,9 +10,23 @@ import * as T from 'three';
 // Secret evidence (clip, song time ~ video - 0.04 s): open papers from the first dance beat (15.2 s, dance start in game)
 // until the throw at ~29.5 s. The 38-50 s papers in the clip are held by kneeling backups, but the game crew stand
 // arms-down there (no kneel), so no paper is shown then.
+// [from, to] or [from, to, {face, arms}] (song s). face: the sheet stays in front of the face (no "roof" over the head);
+// arms: the crew rig forces the arms up to hold it there (independent-crew-rig.js FACE_ARMS).
+// Secret (owner 2026-11-10 "Ít ra phải cầm tờ báo nhún nhẩy, các bạn nam đi vào cũng nên cầm sẵn tờ báo"): the child holds the
+// paper from the start and the boys from their walk-on at 7.0 (the lead's grooving fallback holds it like reading, then lifts
+// it in front of the face 12.2-14.2); 43.9-48.4 the back-row boys hold it up in front of their faces like the kneeling
+// girls in the clip (the singer in front, Quang Hùng S2L, does not).
 export const NEWSPAPER_WINDOWS={
- secret:{lead:[[15.2,29.5]],S1L:[[15.2,29.5]],S1R:[[15.2,29.5]],S2L:[[15.2,29.5]],S2R:[[15.2,29.5]]},
+ secret:{lead:[[-1,29.5],[11.9,14.5,{face:true}]],S1L:[[7.0,29.5],[11.9,14.5,{face:true}],[44.4,48.4,{face:true,arms:true}]],
+  S1R:[[7.0,29.5],[11.9,14.5,{face:true}],[43.9,48.4,{face:true,arms:true}]],S2L:[[7.0,29.5],[11.9,14.5,{face:true}]],
+  S2R:[[7.0,29.5],[11.9,14.5,{face:true}],[44.4,48.4,{face:true,arms:true}]]},
 };
+const ARMS_FADE=.45;
+// {w: paper visible weight, face: no-roof weight, arms: arm-override weight}
+export function paperState(slug,key,t){const list=NEWSPAPER_WINDOWS[slug]?.[key];let w=0,face=0,arms=0;if(!list||t==null)return{w,face,arms};
+ for(const [a,b,o]of list){if(t<a-ARMS_FADE||t>b+ARMS_FADE)continue;const k=Math.max(0,Math.min(1,(t-a)/FADE,(b-t)/FADE));w=Math.max(w,k);
+  if(o?.face)face=Math.max(face,k);if(o?.arms){const u=Math.max(0,Math.min(1,(t-a+ARMS_FADE)/ARMS_FADE,(b+ARMS_FADE-t)/ARMS_FADE));arms=Math.max(arms,u*u*(3-2*u));}}
+ return{w,face,arms};}
 
 const W=.42,H=.29,NX=16,NY=4,TOP=H/3,BASE_THETA=.22,MAX_THETA=2.5,FADE=.15,BACK=.0015;
 // one shared texture + material
@@ -74,7 +88,7 @@ export function newspaperProps(scene){
   lat=new T.Vector3(),fwd=new T.Vector3(),sup=new T.Vector3(),xa=new T.Vector3(),ya=new T.Vector3(),za=new T.Vector3(),up=new T.Vector3(0,1,0),
   p2=new T.Vector3(),p1=new T.Vector3(),q2=new T.Quaternion(),q1=new T.Quaternion(),basis=new T.Matrix4(),ws=new T.Vector3(),qt=new T.Quaternion(),ax=new T.Vector3(1,0,0);
  function paper(key){let p=papers.get(key);if(!p){const geo=paperGeometry();bend(geo,BASE_THETA);const mesh=new T.Mesh(geo,material());mesh.name='newspaper-'+key;mesh.visible=false;mesh.frustumCulled=false;mesh.matrixAutoUpdate=true;group.add(mesh);p={mesh,theta:BASE_THETA,one:0,oneTarget:0,hand:-1,lastT:null};papers.set(key,p);}return p;}
- function windowWeight(slug,key,t){const list=NEWSPAPER_WINDOWS[slug]?.[key];if(!list||t==null)return 0;for(const [a,b]of list)if(t>=a&&t<=b)return Math.min(1,(t-a)/FADE,(b-t)/FADE);return 0;}
+ function windowWeight(slug,key,t){return paperState(slug,key,t).w;}
  function grip(humanoid,side,out){
   const hand=humanoid.getRawBoneNode(side+'Hand');if(!hand)return false;hand.getWorldPosition(out);
   const mid=humanoid.getRawBoneNode(side+'MiddleProximal');
@@ -85,7 +99,7 @@ export function newspaperProps(scene){
  function hide(key){const p=papers.get(key);if(p)p.mesh.visible=false;}
  function hideAll(){for(const p of papers.values())p.mesh.visible=false;}
  function update(key,humanoid,slug,t){
-  const e=windowWeight(slug,key,t);if(e<=0||!humanoid){hide(key);return;}
+  const st=paperState(slug,key,t),e=st.w;if(e<=0||!humanoid){hide(key);return;}
   const p=paper(key),mesh=p.mesh;
   if(!grip(humanoid,'left',gL)||!grip(humanoid,'right',gR)){mesh.visible=false;return;}
   const hipsBone=humanoid.getRawBoneNode('hips'),uaL=humanoid.getRawBoneNode('leftUpperArm'),uaR=humanoid.getRawBoneNode('rightUpperArm'),nk=humanoid.getRawBoneNode('neck')||humanoid.getRawBoneNode('head');
@@ -117,7 +131,7 @@ export function newspaperProps(scene){
    theta+=(BASE_THETA-theta)*p.one;
   }
   // hands up at the head: hold the sheet by its lower edge and tip it back over the head like a roof (clip 18-20 s) instead of over the face
-  const hb=humanoid.getRawBoneNode('head');if(hb){hb.getWorldPosition(tmp);const gy=(gL.y+gR.y)/2,sy=(shL.y+shR.y)/2,lift=T.MathUtils.smoothstep(gy,sy+.45*(tmp.y-sy),tmp.y)*(1-p.one);
+  const hb=humanoid.getRawBoneNode('head');if(hb){hb.getWorldPosition(tmp);const gy=(gL.y+gR.y)/2,sy=(shL.y+shR.y)/2,lift=T.MathUtils.smoothstep(gy,sy+.45*(tmp.y-sy),tmp.y)*(1-p.one)*(1-st.face);
    if(lift>0){qt.setFromAxisAngle(ax,-.55*lift);q2.multiply(qt);ya.set(0,1,0).applyQuaternion(q2);p2.addScaledVector(ya,lift*(H-TOP)*s);}}
   if(Math.abs(theta-p.theta)>.002){p.theta=theta;bend(mesh.geometry,theta);}
   mesh.position.copy(p2);mesh.quaternion.copy(q2);const k=e<1?e*e*(3-2*e):1;mesh.scale.setScalar(s*Math.max(.001,k));mesh.visible=true;

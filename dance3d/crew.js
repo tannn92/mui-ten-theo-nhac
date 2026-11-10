@@ -1,17 +1,17 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=1011.1141';
-import {createDancerProfiles} from './dancer-profiles.js?v=1011.1141';
-import {hideNativeCrewSafety} from './crew-styles.js?v=1011.1141';
-import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=1011.1141';
-import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1011.1141';
-import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=1011.1141';
-import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1011.1141';
-import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=1011.1141';
-import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1011.1141';
-import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1011.1141';
-import {hideNativeWislSafety} from './wisl-styles.js?v=1011.1141';
-import {hideNativeSecretSafety} from './secret-styles.js?v=1011.1141';
-import {newspaperProps} from './newspaper-prop.js?v=1011.1141';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=1011.1547';
+import {createDancerProfiles} from './dancer-profiles.js?v=1011.1547';
+import {hideNativeCrewSafety} from './crew-styles.js?v=1011.1547';
+import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=1011.1547';
+import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1011.1547';
+import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=1011.1547';
+import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1011.1547';
+import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=1011.1547';
+import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1011.1547';
+import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1011.1547';
+import {hideNativeWislSafety} from './wisl-styles.js?v=1011.1547';
+import {hideNativeSecretSafety} from './secret-styles.js?v=1011.1547';
+import {newspaperProps,paperState} from './newspaper-prop.js?v=1011.1547';
 
 // Four background performers reuse the live A/B skeletons, geometry, materials
 // and morph arrays. Detached binding applies a crew transform AFTER skinning;
@@ -67,9 +67,15 @@ export function createCrew(scene,wardrobe){
    const moves=[...(spec.moves||[])].sort((p,q)=>p.at-q.at);for(const r of spec.ready||[])if(!(Array.isArray(r)&&r.length===2&&r.every(Number.isFinite)&&r[0]<r[1]))throw Error('Invalid crew ready interval');for(const m of moves){if(!Number.isFinite(m.at)||!(m.dur>0)||(m.to!=null&&!(m.to.length===3&&m.to.every(Number.isFinite)))||(m.yaw!=null&&!Number.isFinite(m.yaw))||(m.scale!=null&&!(m.scale>0)))throw Error('Invalid crew move');}
    rig.root.position.fromArray(anchor);rig.root.scale.setScalar(scale);// HUNTR/X character sets (owner 2026-11-10): the backup takes that character's face and head shape (Codex profiles).
     let face=null;if(spec.face&&spec.face!=='original'){try{const fm=source.parts.face.map(m=>rig.mapping.get(m)).filter(Boolean);face=createDancerProfiles({faceMeshes:fm,rigs:[{humanoid:rig.humanoid,scene:rig.model,springBoneManager:rig.springs}],initial:spec.face});if(!face.supported){console.warn('crew face',face.reason);face=null;}}catch(e){console.warn('crew face',e);face=null;}}
-    independent.push({index:activeIndices[i],rig,spec,source,anchor,scale,moves,face});
+    // Secret singers: a fixed expression from the look (e.g. Wren's open grin, Cody's smirk) and their own blink.
+    const expr=spec.expr&&typeof spec.expr==='object'?Object.entries(spec.expr).filter(([,w])=>Number.isFinite(w)&&w>0):null,faceMorph=expr?.length?source.parts.face.map(m=>rig.mapping.get(m)).filter(m=>m?.morphTargetDictionary&&m.morphTargetInfluences):null;
+    independent.push({index:activeIndices[i],rig,spec,source,anchor,scale,moves,face,expr:faceMorph?.length?expr:null,faceMorph,blink:1.3+i*.83});
   }
  }
+ // Eye-closing shapes in the expression scale the blink down so the lids never pass through each other; a resting
+ // Fcl_EYE_Close (hooded lids) stays under the blink.
+ function expression(actor,t){const tt=t??performance.now()/1000,b=Math.pow(Math.max(0,Math.sin(tt*1.8+actor.blink)),40);
+  for(const m of actor.faceMorph){const d=m.morphTargetDictionary,inf=m.morphTargetInfluences;let shut=0,lid=0;for(const [n,w] of actor.expr){const k=d[n];if(k==null)continue;inf[k]=w;if(n==='Fcl_EYE_Close')lid=w;else if(/^Fcl_EYE_(Joy|Fun)/.test(n))shut+=w;}const c=d.Fcl_EYE_Close;if(c!=null)inf[c]=Math.min(1,lid+b*Math.max(0,1-shut-lid));}}
  function update(show,t,aspect,leadRoot=null){
   visible=!!show;group.visible=visible;lastTime=t;
   // Landscape iPad keeps the authored spacing. Narrow windows pull the row
@@ -79,7 +85,7 @@ export function createCrew(scene,wardrobe){
   const now=performance.now();
   const keep=CREW_LIMITS[reducedLevel];if(visible&&t!=null&&independent.length>keep&&reducedLevel<CREW_LIMITS.length-1){if(lastWall!=null){const dt=now-lastWall;if(dt<250){emaMs+=(dt-emaMs)*.05;slowFor=emaMs>22?slowFor+dt:0;if(slowFor>3000){do reducedLevel++;while(reducedLevel<CREW_LIMITS.length-1&&CREW_LIMITS[reducedLevel]>=independent.length);reduced=true;slowFor=0;emaMs=16.7;}}}lastWall=now;}else if(t==null)lastWall=null;
   for(const [k,actor]of independent.entries()){actor.rig.root.visible=visible&&k<CREW_LIMITS[reducedLevel];if(!actor.rig.root.visible)continue;place(actor,t,spacing);// off-stage (|x|>3, beyond every screen width): hidden and not animated
-   if(actor.offstage){actor.rig.root.visible=false;continue;}actor.rig.update(t==null?t:t+(actor.spec.timeOffset||0),wardrobe.master.humanoid,actor.ovr,leadRoot);if(visible)news.update(actor.spec.id,actor.rig.humanoid,news.slug,t);}
+   if(actor.offstage){actor.rig.root.visible=false;continue;}actor.rig.update(t==null?t:t+(actor.spec.timeOffset||0),wardrobe.master.humanoid,actor.ovr,leadRoot);if(actor.expr)expression(actor,t);if(visible)news.update(actor.spec.id,actor.rig.humanoid,news.slug,t);}
   group.updateMatrixWorld(true);
  }
  // Formation changes over the song (e.g. the ring around the center): each move eases from the current spot to
@@ -94,7 +100,8 @@ export function createCrew(scene,wardrobe){
    if(tau<m.dur+.3){ww=Math.max(ww,tau<m.dur?1:1-T.MathUtils.smoothstep(tau,m.dur,m.dur+.3));phase=2*Math.PI*L*u/(.62*sc);}}
   else{const p=T.MathUtils.smootherstep(t,m.at,m.at+m.dur);x+=(to[0]-x)*p;y+=(to[1]-y)*p;z+=(to[2]-z)*p;yaw+=(ty-yaw)*p;sc+=(ts-sc)*p;}}
   let wr=0;if(t!=null)for(const [a,b] of actor.spec.ready||[])if(t>a-.3&&t<b+.3)wr=Math.max(wr,T.MathUtils.smoothstep(t,a-.3,a)*(1-T.MathUtils.smoothstep(t,b,b+.3)));
-  const o=Math.min(1,ww+wr);actor.ovr=o>0?{o,m:ww/((ww+wr)||1),phase}:null;
+  const o=Math.min(1,ww+wr),ps=t!=null?paperState(news.slug,actor.spec.id,t):null,keepArms=!!(ps&&ps.w>0),face=ps?.arms||0;// holding the paper: the arms stay on the paper (base pose), face windows lift it in front of the face
+  actor.ovr=o>0||face>0?{o,m:ww/((ww+wr)||1),phase,keepArms,face}:null;
   actor.offstage=Math.abs(x)>2.25;actor.rig.root.position.set(x*spacing,y,z);actor.rig.root.rotation.set(0,yaw,0);actor.rig.root.scale.setScalar(sc);}
  function diagnostics(){return{count:activeIndices.length,reduced,reducedLevel,frameEmaMs:+emaMs.toFixed(1),independent:independent.map(a=>({index:a.index,id:a.spec.id,position:a.rig.root.position.toArray(),scale:a.rig.root.scale.x,feetWorld:['left','right'].map(side=>a.rig.humanoid.getRawBoneNode(side+'Foot').getWorldPosition(new T.Vector3()).toArray()),...a.rig.diagnostics()})),visible,sharedSkinning:independent.length===0,outlinePass:false,time:lastTime,dancers:dancers.filter(d=>activeIndices.includes(d.index)&&!independent.some(a=>a.index===d.index)).map(d=>{
   d.source.vrm.humanoid.getRawBoneNode('leftHand').getWorldPosition(bonePoint);

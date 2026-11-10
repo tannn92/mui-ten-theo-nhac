@@ -1,13 +1,13 @@
-import {createFaceIdentities} from './dancer-face-shapes.js?v=1011.1141';
-import {applyHeadScale} from './head-scale.js?v=1011.1141';
+import {createFaceIdentities} from './dancer-face-shapes.js?v=1011.1547';
+import {applyHeadScale} from './head-scale.js?v=1011.1547';
 export const dancerProfiles=Object.freeze([
  Object.freeze({id:'original',label:'Gương mặt gốc',headScale:.85}),
  Object.freeze({id:'rumi',label:'Rumi · cân đối',headScale:.85}),
  Object.freeze({id:'mira',label:'Mira · thon dài',headScale:.85}),
  Object.freeze({id:'zoey',label:'Zoey · tròn đáng yêu',headScale:.92}),
  // Secret singers (crew only): male faces, smaller heads (older, taller look)
- Object.freeze({id:'boy1',label:'Secret · m1',headScale:.80}),Object.freeze({id:'boy2',label:'Secret · m2',headScale:.79}),
- Object.freeze({id:'boy3',label:'Secret · m3',headScale:.80}),Object.freeze({id:'boy4',label:'Secret · m4',headScale:.80})
+ Object.freeze({id:'boy1',label:'Secret · CongB',headScale:.75}),Object.freeze({id:'boy2',label:'Secret · Cody Nam Võ',headScale:.75}),
+ Object.freeze({id:'boy3',label:'Secret · Quang Hùng MasterD',headScale:.76,headAspect:Object.freeze([.87,1.075,.94])}),Object.freeze({id:'boy4',label:'Secret · Wren Evans',headScale:.75})
 ]);
 const known=id=>dancerProfiles.some(p=>p.id===id);
 const fromId=id=>typeof id==='string'?/^(?:huntrix|golden|wisl)-(rumi|mira|zoey)(?:-|$)/.exec(id)?.[1]:undefined;
@@ -27,7 +27,7 @@ export function createDancerProfiles({faceMeshes,rigs=[],initial='original'}={})
  const prior=rigs.map(v=>{const h=v.humanoid.getRawBoneNode('head'),base=h?.userData.previewHeadScaleBase?.scale;return base?h.scale.x/base[0]:1;});
  let current=null;
  function prepare(id='original'){if(!known(id))throw Error('Unknown dancer profile: '+id);return id==='original'?true:face.build(id);}
- function apply(id='original'){if(!known(id))throw Error('Unknown dancer profile: '+id);face.set(id);const p=dancerProfiles.find(p=>p.id===id);for(const rig of rigs)applyHeadScale(rig,p.headScale);current=id;return true;}
+ function apply(id='original'){if(!known(id))throw Error('Unknown dancer profile: '+id);face.set(id);const p=dancerProfiles.find(p=>p.id===id);for(const rig of rigs)applyHeadScale(rig,p.headScale,p.headAspect);current=id;return true;}
  // Initialize before actor visibility. Baseline exists only for resource cleanup.
  apply(initial);
  return{supported:true,apply,prepare,get selected(){return current;},get timings(){return face.timings;},dispose(){face.dispose();rigs.forEach((r,i)=>applyHeadScale(r,prior[i]));current=null;}};

@@ -39,10 +39,10 @@
     };
   })();
 </script>
-<script src="sfx.js?v=1011.1141"></script>
-<link rel="stylesheet" href="dance3d/wardrobe.css?v=1011.1141">
+<script src="sfx.js?v=1011.1547"></script>
+<link rel="stylesheet" href="dance3d/wardrobe.css?v=1011.1547">
 <script type="importmap">{"imports":{"three":"./lib/three.module.js","three/addons/":"./lib/jsm/","@pixiv/three-vrm":"./lib/three-vrm.module.js"}}</script>
-<script src="dance.js?v=1011.1141"></script>
+<script src="dance.js?v=1011.1547"></script>
 <style>
   /* ===== Look: "kẹo ngọt long lanh". One palette: plum text, pink action, gold stars, mint/yellow/pink for the 3 levels. ===== */
   :root{
@@ -508,7 +508,7 @@
 <div id="gateHint" aria-hidden="true">Bố mẹ: giữ ⚙️ 1 giây để mở</div>
 
 <div id="menu">
-  <div id="verTag" aria-label="Phiên bản">Bản 1011.1141</div>
+  <div id="verTag" aria-label="Phiên bản">Bản 1011.1547</div>
   <div class="panel" id="mainPanel">
     <svg class="logo" viewBox="0 0 480 96" role="img" aria-label="Mũi Tên Theo Nhạc">
       <g transform="translate(48 50)">
@@ -581,7 +581,7 @@
 </div>
 
 <script>
-const V = '1011.1141';  // stamped by the deploy build
+const V = '1011.1547';  // stamped by the deploy build
 // Two rows, low on the screen where hands hold an iPad: 560 and 710. A touch above 635 is the upper row.
 const SPLIT_Y = 635,
   
@@ -1082,7 +1082,10 @@ async function startRun(s, level) {
   }
   twoLane = isTwoLane(level); setStage();
   notes = recording ? [] : levelNotes(chart, level).filter(n => !DEMO || (n.t >= demoFrom && n.t <= demoTo)).map(n => ({ ...n, el: null, done: n.t < startFrom }));  // arrows before the start are gone
-  playEnd = DEMO ? demoTo : Infinity;
+  // a chart may end before its audio file (`end`, e.g. Secret: the clip turns into behind-the-scenes at 4:50); `duration`
+  // stays the audio length (the dance tracks check it), the song ends at `end` with a short fade and the result screen
+  const songEnd = !DEMO && Number.isFinite(chart.end) && chart.end > startFrom && chart.end < buffer.duration ? chart.end : null;
+  playEnd = DEMO ? demoTo : (songEnd ?? Infinity);
   playable = notes.filter(n => !n.done).length; qual = 0;   // only the arrows that really come in this run
   doneTimers.forEach(clearTimeout); doneTimers = []; FX.clear(); $('doneBtns').classList.remove('ready');
   score = hits = 0;
@@ -1095,7 +1098,7 @@ async function startRun(s, level) {
   $('bar').setAttribute('width', '0'); $('knob').setAttribute('transform', `translate(${BAR_X} 0)`);
   $('result').textContent = '';
   shownSec = -1;
-  $('clock').textContent = `0:00 / ${mmss(chart.duration)}`;
+  $('clock').textContent = `0:00 / ${mmss(songLength())}`;
   if (!recording && !DEMO) { try { localStorage.setItem('spike-last', JSON.stringify({ slug: s.slug, level })); } catch (e) {} }
   if (source) { try { source.onended = null; source.stop(); } catch (e) {} try { source.disconnect(); } catch (e) {} }
   source = ctx.createBufferSource();
@@ -1103,7 +1106,10 @@ async function startRun(s, level) {
   source.connect(musicGain);
   const at = ctx.currentTime + 0.3;
   startAt = at - startFrom;  // the clock reads song time, so starting at 4:00 shows 4:00
-  if (DEMO) source.start(at, startFrom, playEnd - startFrom); else source.start(at, startFrom);
+  if (DEMO || songEnd) source.start(at, startFrom, playEnd - startFrom); else source.start(at, startFrom);
+  musicGain.gain.cancelScheduledValues(0); musicGain.gain.setValueAtTime(0.75, ctx.currentTime);
+  if (songEnd) { const endAt = at + playEnd - startFrom, FADE = 1.2;   // fade out over the last 1.2 s
+    musicGain.gain.setValueAtTime(0.75, Math.max(at, endAt - FADE)); musicGain.gain.linearRampToValueAtTime(0.0001, endAt); }
   source.onended = () => { if (playing) finish(); };
   playing = true;
   document.body.classList.add('playing');
@@ -1117,11 +1123,13 @@ function showTaps() {
   $('tapsBox').classList.remove('hide');
   localStorage.setItem('spike-taps', $('taps').value);
 }
+function songLength() { return Number.isFinite(chart?.end) && chart.end < chart.duration ? chart.end : chart.duration; }
 function finish(early) {
   const at = early ? `Dừng ở ${mmss(heardClock())} · ` : '';
   playing = false;
   document.body.classList.remove('playing');
   try { source.onended = null; source.stop(); } catch (e) {}
+  try { musicGain.gain.cancelScheduledValues(0); musicGain.gain.setValueAtTime(0.75, ctx.currentTime); } catch (e) {}
   $('notes').textContent = '';
   clearTimeout(comboTimer); comboVis(0);
   // the text line stays for the parents ("Dừng ở m:ss" lets them name the moment); the child sees the result screen below
@@ -1239,7 +1247,7 @@ function frame() {
   const next = b[lo + 1] ?? b[lo] + 0.5;
   const phase = Math.min(Math.max((now - b[lo]) / (next - b[lo]), 0), 1);
   Dance.draw(now);
-  const prog = Math.min(Math.max(now, 0) / chart.duration, 1);
+  const prog = Math.min(Math.max(now, 0) / songLength(), 1);
   barEl.setAttribute('width', String(BAR_W * prog));
   knobEl.setAttribute('transform', `translate(${BAR_X + BAR_W * prog} 0)`);
   // the rings and soft buttons swell a little on every beat (feel the music), and a ring glows as its arrow arrives
@@ -1251,7 +1259,7 @@ function frame() {
     st.halo.setAttribute('opacity', a === undefined ? '0' : (Math.max(0, 1 - a / 0.5) * 0.95).toFixed(2));
   }
   const sec = Math.floor(Math.max(now, 0));
-  if (sec !== shownSec) { shownSec = sec; $('clock').textContent = `${mmss(sec)} / ${mmss(chart.duration)}`; }
+  if (sec !== shownSec) { shownSec = sec; $('clock').textContent = `${mmss(sec)} / ${mmss(songLength())}`; }
   requestAnimationFrame(frame);
 }
 
