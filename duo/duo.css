@@ -1,0 +1,85 @@
+/* Two-iPad play (duo): room screens. Same "kẹo ngọt" look as index.html (plum text, pink action, rounded candy buttons);
+   the guest's colour is blue. Buttons are big for small fingers. */
+#duoPanel{text-align:center;padding-top:16px}
+.duo-title{margin:6px 0 4px;font-size:30px;font-weight:900;color:var(--plum,#3b1d52)}
+.duo-sub{margin:4px 0 14px;font-size:17px;font-weight:700;color:var(--plum2,#6b4880)}
+.duo-two{display:flex;gap:14px;margin:10px 0}
+.duo-two .duo-big{flex:1}
+.duo-big{min-height:96px;font-size:26px}
+.big.blue{color:#fff;background:linear-gradient(180deg,#8ab8ff,#4f7dff);box-shadow:0 6px 0 #2f5fd0,0 10px 18px rgba(47,95,208,.3),inset 0 2px 0 rgba(255,255,255,.5)}
+.duo-link{margin:14px auto 4px;display:block;padding:10px 22px;border:0;border-radius:18px;background:#fff0f6;color:var(--plum,#3b1d52);font:800 18px var(--font,system-ui)}
+.duo-msg{min-height:24px;margin:8px 0;font-size:17px;font-weight:800;color:#c9275f}
+.duo-wait{font-size:18px;font-weight:800;color:var(--plum2,#6b4880);animation:duoPulse 1.4s ease-in-out infinite}
+@keyframes duoPulse{50%{opacity:.45}}
+.duo-code{margin:6px auto;font-size:84px;font-weight:900;letter-spacing:.12em;color:#c9275f;text-shadow:0 4px 0 #ffc2dc}
+.duo-digits{display:flex;justify-content:center;gap:12px;margin:8px 0 14px}
+.duo-digits span{width:62px;height:76px;border-radius:18px;border:4px solid #ffc2dc;background:#fff;font-size:48px;font-weight:900;line-height:68px;color:var(--plum,#3b1d52)}
+.duo-digits span.on{border-color:#ff4f8b}
+.duo-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:330px;margin:0 auto}
+.duo-key{min-height:74px;border:0;border-radius:22px;background:#fff;color:var(--plum,#3b1d52);font:900 34px var(--font,system-ui);box-shadow:0 5px 0 #ffc2dc,inset 0 0 0 3px #ffe3ef}
+.duo-key:active{transform:translateY(4px);box-shadow:0 1px 0 #ffc2dc,inset 0 0 0 3px #ffe3ef}
+.duo-key.del{font-size:20px}
+.duo-key:disabled{opacity:.5}
+.duo-cards{display:flex;gap:12px;margin:6px 0 12px}
+.duo-card{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border-radius:22px;background:#fff}
+.duo-card i{width:22px;height:22px;border-radius:50%}
+.duo-card b{font-size:20px;color:var(--plum,#3b1d52)}
+.duo-card.host{box-shadow:inset 0 0 0 4px #ff9fcb}.duo-card.host i{background:#ff4f8b}
+.duo-card.guest{box-shadow:inset 0 0 0 4px #9fc4ff}.duo-card.guest i{background:#3d8bff}
+.duo-status{font-size:16px;font-weight:800;color:var(--plum2,#6b4880)}
+.duo-actions{display:flex;gap:12px;margin:4px 0}
+.duo-actions .big{flex:1;min-height:80px;font-size:26px}
+.duo-actions .big:disabled{opacity:.45;filter:saturate(.4)}
+#duoReady.on{background:linear-gradient(180deg,#9be7c4,#2bb37a);box-shadow:0 6px 0 #1d8a5b,inset 0 2px 0 rgba(255,255,255,.5)}
+.duo-sec{margin:14px 0 8px;font-size:20px;font-weight:900;color:var(--plum,#3b1d52);text-align:left}
+.duo-songs{display:flex;flex-direction:column;gap:8px}
+.duo-song{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:18px;background:#fff}
+.duo-st{flex:1;text-align:left;font-size:16px;font-weight:800;color:var(--plum,#3b1d52)}
+.duo-lvl{min-width:62px;min-height:46px;border:0;border-radius:14px;font:900 17px var(--font,system-ui);color:var(--plum,#3b1d52);background:#f3eef7}
+.duo-lvl.lvl-de.on{background:#5fe3b0}.duo-lvl.lvl-vua.on{background:#ffd23f}.duo-lvl.lvl-kho.on{background:#ff6fa8;color:#fff}
+.duo-lvl.on{box-shadow:0 0 0 3px #3b1d52}
+.duo-songs.ro .duo-lvl:not(.on){opacity:.45}
+.duo-outfits{margin-top:10px}
+.duo-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px}
+.duo-toggle{padding:10px 16px;border:0;border-radius:16px;background:#f3eef7;color:var(--plum,#3b1d52);font:800 16px var(--font,system-ui)}
+.duo-toggle.on{background:#3b1d52;color:#fff}
+.duo-toggle.on::before{content:"✓ "}
+.duo-foot .duo-link{margin:0}
+@media (prefers-reduced-motion: reduce){.duo-wait{animation:none}}
+/* in the song */
+.duo-hud{position:fixed;top:102px;left:50%;transform:translateX(-50%);z-index:35;display:flex;align-items:center;gap:12px;pointer-events:none}
+body:not(.playing) .duo-hud{display:none}
+.duo-pill{position:relative;display:flex;align-items:center;gap:8px;min-width:150px;padding:6px 16px 6px 10px;border-radius:26px;background:#fff;font:900 28px var(--font,system-ui);color:var(--plum,#3b1d52)}
+.duo-pill i{width:22px;height:22px;border-radius:50%}
+.duo-pill.host{box-shadow:inset 0 0 0 4px #ff9fcb}.duo-pill.host i{background:#ff4f8b}
+.duo-pill.guest{box-shadow:inset 0 0 0 4px #9fc4ff;flex-direction:row-reverse;padding:6px 10px 6px 16px}.duo-pill.guest i{background:#3d8bff}
+.duo-pst{position:absolute;top:100%;left:0;right:0;margin-top:4px;font-size:14px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(40,10,60,.7);text-align:center}
+.duo-leanbar{position:relative;width:220px;height:14px;border-radius:7px;background:linear-gradient(90deg,#ff4f8b,#ffd6e7 49%,#d6e6ff 51%,#3d8bff)}
+.duo-leanbar span{position:absolute;top:50%;left:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:#ffd23f;border:3px solid #fff;box-shadow:0 2px 6px rgba(40,10,60,.35);transition:left .25s}
+.duo-mark{position:fixed;z-index:35;width:30px;height:26px;transform:translate(-50%,-100%);pointer-events:none;filter:drop-shadow(0 2px 2px rgba(40,10,60,.35))}
+.duo-mark svg{display:block;width:100%;height:100%}
+.duo-mark.host{--duo-c:#ff4f8b}.duo-mark.guest{--duo-c:#3d8bff}
+.duo-mark.me{width:42px;height:36px;animation:duoBob .5s ease-in-out infinite alternate}
+@keyframes duoBob{to{transform:translate(-50%,calc(-100% - 7px))}}
+.duo-say{position:fixed;z-index:36;transform:translate(-50%,-100%);pointer-events:none;font:900 26px var(--font,system-ui);white-space:nowrap;-webkit-text-stroke:5px #fff;paint-order:stroke fill}
+.duo-say.pop{animation:duoSay .7s ease-out}
+@keyframes duoSay{0%{opacity:0;transform:translate(-50%,-80%) scale(.6)}20%{opacity:1;transform:translate(-50%,-100%) scale(1.1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-130%)}}
+.duo-count{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);z-index:36;pointer-events:none;font:900 150px var(--font,system-ui);color:#ff4f8b;-webkit-text-stroke:8px #fff;paint-order:stroke fill;text-shadow:0 8px 24px rgba(40,10,60,.35)}
+.duo-solo{display:block;margin:12px auto 0}
+.duo-solo[hidden]{display:none}
+@media (prefers-reduced-motion: reduce){.duo-mark.me,.duo-say.pop{animation:none}}
+/* the end */
+#duoDone{text-align:center;padding-top:16px}
+.duo-cols{display:flex;gap:12px;margin:8px 0 14px}
+.duo-cols .col{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:30px 8px 14px;border-radius:24px;background:#fff}
+.duo-cols .col.host{box-shadow:inset 0 0 0 4px #ff9fcb}.duo-cols .col.guest{box-shadow:inset 0 0 0 4px #9fc4ff}
+.duo-cols .col i{width:22px;height:22px;border-radius:50%}.duo-cols .col.host i{background:#ff4f8b}.duo-cols .col.guest i{background:#3d8bff}
+.duo-cols .col b{font-size:20px;color:var(--plum,#3b1d52)}
+.duo-crown{position:absolute;top:-22px;font-size:46px;animation:duoCrown 1s ease-in-out infinite alternate}
+@keyframes duoCrown{to{transform:translateY(-4px) rotate(-6deg)}}
+.duo-stars{font-size:30px;letter-spacing:2px;color:#e8dff0}.duo-stars .on{color:#ffd23f;text-shadow:0 2px 0 #d98400}
+.duo-score{font-size:40px;font-weight:900;color:var(--plum,#3b1d52)}
+.duo-hits,.duo-combo{font-size:16px;font-weight:800;color:var(--plum2,#6b4880)}
+.duo-word{margin-top:6px;font-size:20px;font-weight:900;color:#c9275f}
+.duo-cols .col.guest .duo-word{color:#2f5fd0}
+@media (prefers-reduced-motion: reduce){.duo-crown{animation:none}}

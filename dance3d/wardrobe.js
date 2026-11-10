@@ -1,16 +1,16 @@
-import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1011.1547';
-import {hideNativeWislSafety} from './wisl-styles.js?v=1011.1547';
-import {hideNativeSecretSafety} from './secret-styles.js?v=1011.1547';
-import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1011.1547';
-import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1011.1547';
-import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1011.1547';
+import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1011.2112';
+import {hideNativeWislSafety} from './wisl-styles.js?v=1011.2112';
+import {hideNativeSecretSafety} from './secret-styles.js?v=1011.2112';
+import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1011.2112';
+import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1011.2112';
+import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1011.2112';
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {VRMLoaderPlugin} from '@pixiv/three-vrm';
-import {createAccessories} from './accessories.js?v=1011.1547';
-import {getWardrobeOptions,wardrobeDefaults} from './wardrobe-ui.js?v=1011.1547';
-import {addSkirtShorts,limitSkirtSprings} from './skirt-safety.js?v=1011.1547';
-import {createLazyStyles} from './lazy-styles.js?v=1011.1547';
+import {createAccessories} from './accessories.js?v=1011.2112';
+import {getWardrobeOptions,wardrobeDefaults} from './wardrobe-ui.js?v=1011.2112';
+import {addSkirtShorts,limitSkirtSprings} from './skirt-safety.js?v=1011.2112';
+import {createLazyStyles} from './lazy-styles.js?v=1011.2112';
 
 const physicalSlots=['hair','top','bottom','shoes'];
 const vector=new T.Vector3();
@@ -111,18 +111,28 @@ export async function loadWardrobe(scene,config,onProgress=()=>{}){
  styles.ensureOutfit(outfit);
  const variantFor=(slot,choice=outfit[slot])=>options[slot]?.[choice]?.variant;
  const meshesFor=(slot,choice=outfit[slot])=>slot==='face'?master.parts.face:styles.meshesFor(slot,choice)||variants[variantFor(slot,choice)]?.parts[slot]||[];
- function updateVisibility(){
- styles.hide();
+ // The meshes the child shows for a selection, per donor model: Map<variant index, meshes>. The face comes from the master
+ // (variant 0); each slot shows its donor's part, or its sewn style, plus that donor's matching skin (top->upper,
+ // bottom->lower, shoes->feet). Two-iPad play builds the partner dancer from the same list, so she looks exactly the same.
+ function visibleParts(sel){
+ const out=new Map(),put=(i,m)=>{if(!out.has(i))out.set(i,[]);out.get(i).push(m);},bottom=options.bottom[sel.bottom];
  variants.forEach((variant,i)=>{
  for(const key of Object.keys(variant.parts)){
  const slot=key==='upper'?'top':key==='lower'?'bottom':key==='feet'?'shoes':key;
- const show=key==='face'?i===0:i===variantFor(slot)&&(!physicalSlots.includes(key)||!styles.meshesFor(slot,outfit[slot]));
- variant.parts[key].forEach(mesh=>mesh.visible=show&&!(mesh.userData.excludeHatMua&&options.bottom[outfit.bottom].style?.startsWith('hat-mua-'))&&!(mesh.userData.excludeHuntrix&&options.bottom[outfit.bottom].style?.startsWith('huntrix-'))&&!hideNativeGirlXinhSafety(mesh,options.bottom[outfit.bottom])&&!hideNativeTaiSinhSafety(mesh,options.bottom[outfit.bottom])&&!hideNativeHuntrixTrioSafety(mesh,options.bottom[outfit.bottom])&&!hideNativeGoldenStageSafety(mesh,options.bottom[outfit.bottom])&&!hideNativeWislSafety(mesh,options.bottom[outfit.bottom])&&!hideNativeSecretSafety(mesh,options.bottom[outfit.bottom])&&(!mesh.userData.requiredBottomStyle||options.bottom[outfit.bottom].style===mesh.userData.requiredBottomStyle));
+ const show=key==='face'?i===0:i===variantFor(slot,sel[slot])&&(!physicalSlots.includes(key)||!styles.meshesFor(slot,sel[slot]));
+ if(show)for(const mesh of variant.parts[key])if(!(mesh.userData.excludeHatMua&&bottom.style?.startsWith('hat-mua-'))&&!(mesh.userData.excludeHuntrix&&bottom.style?.startsWith('huntrix-'))&&!hideNativeGirlXinhSafety(mesh,bottom)&&!hideNativeTaiSinhSafety(mesh,bottom)&&!hideNativeHuntrixTrioSafety(mesh,bottom)&&!hideNativeGoldenStageSafety(mesh,bottom)&&!hideNativeWislSafety(mesh,bottom)&&!hideNativeSecretSafety(mesh,bottom)&&(!mesh.userData.requiredBottomStyle||bottom.style===mesh.userData.requiredBottomStyle))put(i,mesh);
  }
  });
+ for(const slot of [...physicalSlots,'accessory']){const ms=styles.meshesFor(slot,sel[slot]);if(ms)for(const m of ms)put(options[slot][sel[slot]].variant??1,m);}
+ return out;
+ }
+ function updateVisibility(){
+ styles.hide();
+ const on=new Set([...visibleParts(outfit).values()].flat());
+ for(const variant of variants)for(const key of Object.keys(variant.parts))for(const mesh of variant.parts[key])mesh.visible=on.has(mesh);
  for(const slot of [...physicalSlots,'accessory'])styles.meshesFor(slot,outfit[slot])?.forEach(mesh=>mesh.visible=true);
  }
  function equip(slot,index){if(!slots.includes(slot)||!Number.isInteger(index)||index<0||index>=counts[slot])throw Error('Món đồ không tồn tại');styles.ensureStyle(slot,index);outfit[slot]=index;updateVisibility();accessories.equip(outfit.accessory,outfit.hair);}
  updateVisibility();accessories.equip(outfit.accessory,outfit.hair);
- return {isStyleReady:styles.isStyleReady,isOutfitReady:styles.isOutfitReady,prewarmOutfits:styles.prewarmOutfits,setBackgroundPaused:styles.setBackgroundPaused,ensureStyle:styles.ensureStyle,ensureOutfit:styles.ensureOutfit,prepareOutfit:styles.prepareOutfit,options,counts,defaults:wardrobeDefaults(config),variantFor,meshesFor,styles,styleParts:styles.parts,accessories,accessoryParts:accessories.parts,variants,master:master.vrm,outfit,audit,footRestY,equip,slots,snapshot(){return{outfit:{...outfit},face:master.parts.face.map(m=>m.uuid),active:Object.fromEntries(slots.map(k=>[k,k==='accessory'?(styles.meshesFor(k,outfit[k])||accessories.choices[outfit.accessory].meshes).map(m=>m.uuid):meshesFor(k).map(m=>m.uuid)])),body:Object.fromEntries(['upper','lower','feet'].map(k=>[k,variants.flatMap(v=>v.parts[k].filter(m=>m.visible).map(m=>m.uuid))])),audit};}};
+ return {visibleParts,isStyleReady:styles.isStyleReady,isOutfitReady:styles.isOutfitReady,prewarmOutfits:styles.prewarmOutfits,setBackgroundPaused:styles.setBackgroundPaused,ensureStyle:styles.ensureStyle,ensureOutfit:styles.ensureOutfit,prepareOutfit:styles.prepareOutfit,options,counts,defaults:wardrobeDefaults(config),variantFor,meshesFor,styles,styleParts:styles.parts,accessories,accessoryParts:accessories.parts,variants,master:master.vrm,outfit,audit,footRestY,equip,slots,snapshot(){return{outfit:{...outfit},face:master.parts.face.map(m=>m.uuid),active:Object.fromEntries(slots.map(k=>[k,k==='accessory'?(styles.meshesFor(k,outfit[k])||accessories.choices[outfit.accessory].meshes).map(m=>m.uuid):meshesFor(k).map(m=>m.uuid)])),body:Object.fromEntries(['upper','lower','feet'].map(k=>[k,variants.flatMap(v=>v.parts[k].filter(m=>m.visible).map(m=>m.uuid))])),audit};}};
 }

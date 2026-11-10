@@ -1,17 +1,17 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=1011.1547';
-import {createDancerProfiles} from './dancer-profiles.js?v=1011.1547';
-import {hideNativeCrewSafety} from './crew-styles.js?v=1011.1547';
-import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=1011.1547';
-import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1011.1547';
-import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=1011.1547';
-import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1011.1547';
-import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=1011.1547';
-import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1011.1547';
-import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1011.1547';
-import {hideNativeWislSafety} from './wisl-styles.js?v=1011.1547';
-import {hideNativeSecretSafety} from './secret-styles.js?v=1011.1547';
-import {newspaperProps,paperState} from './newspaper-prop.js?v=1011.1547';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=1011.2112';
+import {createDancerProfiles} from './dancer-profiles.js?v=1011.2112';
+import {hideNativeCrewSafety} from './crew-styles.js?v=1011.2112';
+import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=1011.2112';
+import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1011.2112';
+import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=1011.2112';
+import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1011.2112';
+import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=1011.2112';
+import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1011.2112';
+import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1011.2112';
+import {hideNativeWislSafety} from './wisl-styles.js?v=1011.2112';
+import {hideNativeSecretSafety} from './secret-styles.js?v=1011.2112';
+import {newspaperProps,paperState} from './newspaper-prop.js?v=1011.2112';
 
 // Four background performers reuse the live A/B skeletons, geometry, materials
 // and morph arrays. Detached binding applies a crew transform AFTER skinning;
@@ -52,7 +52,7 @@ export function createCrew(scene,wardrobe){
  function setSong(chart,performance=null,tracks=[]){
   for(const actor of independent){actor.rig.dispose();actor.face?.dispose();}independent=[];lastWall=null;slowFor=0;emaMs=16.7;reduced=false;reducedLevel=0;
   const isTrio=/golden|what[- _]it[- _]sounds|takedown|how[- _]it.?s?[- _]done/i.test([chart?.slug,chart?.title].join(' '));
-  const count=performance?.crewCount??(isTrio?2:4);activeIndices=count===0?[]:count===2?[1,2]:Array.from({length:Math.max(4,count)},(_,i)=>i);
+  const count=performance?.crewCount??(isTrio?2:4);activeIndices=count===0?[]:count===1?[1]:count===2?[1,2]:Array.from({length:Math.max(4,count)},(_,i)=>i);// 1: a HUNTR/X trio with two players (only one backup left)
   for(const [i,spec]of (performance?.crew||[]).entries()){
    if(i>=activeIndices.length)break;
    const source=wardrobe.variants[spec.variant??1];if(!source)throw Error('Crew donor is missing');
@@ -103,7 +103,7 @@ export function createCrew(scene,wardrobe){
   const o=Math.min(1,ww+wr),ps=t!=null?paperState(news.slug,actor.spec.id,t):null,keepArms=!!(ps&&ps.w>0),face=ps?.arms||0;// holding the paper: the arms stay on the paper (base pose), face windows lift it in front of the face
   actor.ovr=o>0||face>0?{o,m:ww/((ww+wr)||1),phase,keepArms,face}:null;
   actor.offstage=Math.abs(x)>2.25;actor.rig.root.position.set(x*spacing,y,z);actor.rig.root.rotation.set(0,yaw,0);actor.rig.root.scale.setScalar(sc);}
- function diagnostics(){return{count:activeIndices.length,reduced,reducedLevel,frameEmaMs:+emaMs.toFixed(1),independent:independent.map(a=>({index:a.index,id:a.spec.id,position:a.rig.root.position.toArray(),scale:a.rig.root.scale.x,feetWorld:['left','right'].map(side=>a.rig.humanoid.getRawBoneNode(side+'Foot').getWorldPosition(new T.Vector3()).toArray()),...a.rig.diagnostics()})),visible,sharedSkinning:independent.length===0,outlinePass:false,time:lastTime,dancers:dancers.filter(d=>activeIndices.includes(d.index)&&!independent.some(a=>a.index===d.index)).map(d=>{
+ function diagnostics(){return{count:activeIndices.length,reduced,reducedLevel,frameEmaMs:+emaMs.toFixed(1),independent:independent.map(a=>({index:a.index,id:a.spec.id,face:a.spec.face||'original',position:a.rig.root.position.toArray(),scale:a.rig.root.scale.x,feetWorld:['left','right'].map(side=>a.rig.humanoid.getRawBoneNode(side+'Foot').getWorldPosition(new T.Vector3()).toArray()),...a.rig.diagnostics()})),visible,sharedSkinning:independent.length===0,outlinePass:false,time:lastTime,dancers:dancers.filter(d=>activeIndices.includes(d.index)&&!independent.some(a=>a.index===d.index)).map(d=>{
   d.source.vrm.humanoid.getRawBoneNode('leftHand').getWorldPosition(bonePoint);
   point.copy(bonePoint).applyMatrix4(d.root.matrixWorld);
   return{index:d.index,variant:d.spec.variant,scale:d.spec.scale,position:d.root.position.toArray(),handWorld:point.toArray(),feetWorld:['left','right'].map(side=>d.source.vrm.humanoid.getRawBoneNode(side+'Foot').getWorldPosition(new T.Vector3()).applyMatrix4(d.root.matrixWorld).toArray()),meshes:d.meshes.length,

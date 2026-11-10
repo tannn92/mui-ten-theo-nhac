@@ -1,13 +1,13 @@
 import * as T from 'three';
-import {getTriangleQuery} from './triangle-query.js?v=1011.1547';
+import {getTriangleQuery} from './triangle-query.js?v=1011.2112';
 const derivedGeometry=new WeakMap();
 // Creates a separate geometry/material choice. Original donor hair stays intact.
-export function* buildChestLengthHair(donor,{preserveColor=false}={}){
- // preserveColor is the legacy selector for the separate dark option; use an explicit palette.
- const palette=preserveColor?[48,32,29]:[158,120,78];
+export function* buildChestLengthHair(donor,{preserveColor=false,palette:paletteOverride=null,shade=null}={}){
+ // preserveColor is the legacy selector for the separate dark option; an explicit palette (+ shade colour) overrides it.
+ const palette=paletteOverride||(preserveColor?[48,32,29]:[158,120,78]),shadeColor=shade||(preserveColor?'#59403c':'#c0a37e');
  const records=[],textureCache=new Map(),materialCache=new Map(),V=()=>new T.Vector3();
  function* honeyTexture(old){if(!old)return old;if(textureCache.has(old))return textureCache.get(old);const image=old.image,c=document.createElement('canvas');c.width=image.width;c.height=image.height;const ctx=c.getContext('2d');ctx.drawImage(image,0,0);for(let row=0;row<c.height;row+=32){if(row%128===0)yield;const height=Math.min(32,c.height-row),im=ctx.getImageData(0,row,c.width,height),d=im.data;for(let i=0;i<d.length;i+=4){const l=(.2126*d[i]+.7152*d[i+1]+.0722*d[i+2])/255,light=.48+1.00*Math.sqrt(l);d[i]=Math.min(255,palette[0]*light);d[i+1]=Math.min(255,palette[1]*light);d[i+2]=Math.min(255,palette[2]*light);}ctx.putImageData(im,0,row);}const tex=old.clone();tex.source=new T.Source(c);tex.needsUpdate=true;textureCache.set(old,tex);return tex;}
- function* material(old){if(materialCache.has(old))return materialCache.get(old);const m=old.clone();m.map=yield* honeyTexture(old.map);if(old.shadeMultiplyTexture)m.shadeMultiplyTexture=yield* honeyTexture(old.shadeMultiplyTexture);if(m.color)m.color.set('#ffffff');if(m.shadeColorFactor)m.shadeColorFactor.set(preserveColor?'#59403c':'#c0a37e');m.needsUpdate=true;materialCache.set(old,m);return m;}
+ function* material(old){if(materialCache.has(old))return materialCache.get(old);const m=old.clone();m.map=yield* honeyTexture(old.map);if(old.shadeMultiplyTexture)m.shadeMultiplyTexture=yield* honeyTexture(old.shadeMultiplyTexture);if(m.color)m.color.set('#ffffff');if(m.shadeColorFactor)m.shadeColorFactor.set(shadeColor);m.needsUpdate=true;materialCache.set(old,m);return m;}
  const stats={meshes:0,movedVertices:0,reboundVertices:0,invalidWeights:0,minY:Infinity};
  for(const source of donor.parts.hair){
   const g=source.geometry.clone(),inv=source.matrixWorld.clone().invert();let p=g.attributes.position,ix=g.index,si=g.attributes.skinIndex,sw=g.attributes.skinWeight;

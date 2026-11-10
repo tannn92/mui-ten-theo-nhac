@@ -1,5 +1,5 @@
 import * as T from 'three';
-import {fitPoint,fitSection} from './body-fit.js?v=1011.1547';
+import {fitPoint,fitSection} from './body-fit.js?v=1011.2112';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 const caches=new WeakMap();
 const V=()=>new T.Vector3();
@@ -23,7 +23,7 @@ export const girlXinhSets=[{id:'girl-xinh-1',label:'Girl Xinh trắng',selection
 export const hideNativeGirlXinhSafety=(m,opt)=>!!opt?.style?.startsWith('girl-xinh-1-')&&(m.userData.excludeHatMua||/cream_undershorts/.test(m.name));
 export function* buildGirlXinhLeadStyles(variants,options){const records=new Map(),parts=[],timings=[];
 for(const slot of ['top','bottom','shoes','accessory'])for(const[index,opt]of(options[slot]||[]).entries()){
-if(opt.style!=='girl-xinh-1-'+slot)continue;const start=performance.now(),donor=variants[opt.variant],c=donorCache(donor),{body,hip,neck,pos,boneIndex,section,shell,floor}=c,rec={id:opt.id,index,slot,meshes:[]};
+if(opt.style!=='girl-xinh-1-'+slot&&!(slot==='accessory'&&opt.style==='girl-xinh-1-accessory-2ben'))continue;const start=performance.now(),donor=variants[opt.variant],c=donorCache(donor),{body,hip,neck,pos,boneIndex,section,shell,floor}=c,rec={id:opt.id,index,slot,meshes:[]};
 const satin=new T.MeshPhysicalMaterial({color:'#fffdfb',roughness:.43,metalness:.01,sheen:.7,sheenColor:'#ffffff',clearcoat:.15,side:T.DoubleSide,emissive:'#ffffff',emissiveIntensity:.24}),organza=satin.clone();organza.roughness=.48;organza.metalness=0;organza.clearcoat=0;organza.transparent=true;organza.opacity=.88;organza.depthWrite=false;
 const fur=new T.MeshStandardMaterial({color:'#fffefe',roughness:.95,side:T.DoubleSide,emissive:'#ffffff',emissiveIntensity:.14}),skin=new T.MeshToonMaterial({color:'#fff1df',emissive:'#bca98f',emissiveIntensity:.18,side:T.DoubleSide});
   function register(geo,m,owned=true){const mesh=new T.SkinnedMesh(geo,m);mesh.name=rec.id+'_'+rec.meshes.length;mesh.position.copy(body.position);mesh.quaternion.copy(body.quaternion);mesh.scale.copy(body.scale);mesh.bind(body.skeleton,body.bindMatrix);mesh.visible=false;mesh.frustumCulled=false;mesh.userData.sharedCrewGeometry=!owned;body.parent.add(mesh);rec.meshes.push(mesh);return mesh;}
@@ -65,7 +65,7 @@ const fur=new T.MeshStandardMaterial({color:'#fffefe',roughness:.95,side:T.Doubl
    for(const side of ['left','right']){const f=pos(side+'Foot'),k=pos(side+'LowerLeg'),center=f.clone().lerp(k,.43);shag(center,.055,.071,(k.y-f.y)*.61,fur,side+'LowerLeg',600);sphere(V().set(f.x,floor+.031,f.z+.027),[.040,.032,.072],satin,side+'Foot');sphere(V().set(f.x,floor+.009,f.z+.027),[.043,.012,.076],satin,side+'Foot');}
   }
   if(slot==='accessory'){
-   const head=pos('head'),center=head.clone().add(V().set(-.102,.235,.095));for(const sign of [-1,1]){const g=new T.SphereGeometry(1,10,6);g.scale(.033,.020,.009);g.rotateZ(sign*.25);g.translate(center.x+sign*.024,center.y,center.z);weighted(g,satin,'head');}sphere(center,[.008,.010,.011],satin,'head');for(const sign of [-1,1])grid(6,2,(u,v)=>center.clone().add(V().set(sign*(.007+.012*u)+(v-.5)*.016,-.005-u*.062,.003+.007*Math.sin(u*5))),organza,'head');
+   const head=pos('head'),one=head.clone().add(V().set(-.102,.235,.095)),centers=opt.style==='girl-xinh-1-accessory-2ben'?[one,V().set(2*head.x-one.x,one.y,one.z)]:[one];for(const center of centers){for(const sign of [-1,1]){const g=new T.SphereGeometry(1,10,6);g.scale(.033,.020,.009);g.rotateZ(sign*.25);g.translate(center.x+sign*.024,center.y,center.z);weighted(g,satin,'head');}sphere(center,[.008,.010,.011],satin,'head');for(const sign of [-1,1])grid(6,2,(u,v)=>center.clone().add(V().set(sign*(.007+.012*u)+(v-.5)*.016,-.005-u*.062,.003+.007*Math.sin(u*5))),organza,'head');}
   }
   const groups=new Map();for(const m of rec.meshes){if(m.userData.sharedCrewGeometry)continue;const g=m.geometry,key=m.material.uuid+'|'+Object.entries(g.attributes).map(([k,a])=>k+a.itemSize+a.array.constructor.name).sort().join(',')+'|'+g.index?.array.constructor.name;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(m);}for(const ms of groups.values())if(ms.length>1){const g=mergeGeometries(ms.map(m=>m.geometry),false);if(!g)throw Error('GX geometry schema mismatch');ms[0].geometry.dispose();ms[0].geometry=g;for(const m of ms.slice(1)){m.removeFromParent();m.geometry.dispose();rec.meshes.splice(rec.meshes.indexOf(m),1);}}
   rec.buildMs=performance.now()-start;records.set(slot+':'+index,rec);for(const mesh of rec.meshes)parts.push({slot,variant:index,donor:opt.variant,mesh});timings.push({slot,ms:rec.buildMs,meshes:rec.meshes.length});yield;

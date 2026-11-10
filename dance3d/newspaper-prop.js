@@ -98,8 +98,9 @@ export function newspaperProps(scene){
  function frameQuat(x,y,z,q){basis.makeBasis(x,y,z);q.setFromRotationMatrix(basis);}
  function hide(key){const p=papers.get(key);if(p)p.mesh.visible=false;}
  function hideAll(){for(const p of papers.values())p.mesh.visible=false;}
- function update(key,humanoid,slug,t){
-  const st=paperState(slug,key,t),e=st.w;if(e<=0||!humanoid){hide(key);return;}
+ // windowKey: whose paper windows to follow (two-iPad play: the partner dancer holds a paper exactly when the child does)
+ function update(key,humanoid,slug,t,windowKey=key){
+  const st=paperState(slug,windowKey,t),e=st.w;if(e<=0||!humanoid){hide(key);return;}
   const p=paper(key),mesh=p.mesh;
   if(!grip(humanoid,'left',gL)||!grip(humanoid,'right',gR)){mesh.visible=false;return;}
   const hipsBone=humanoid.getRawBoneNode('hips'),uaL=humanoid.getRawBoneNode('leftUpperArm'),uaR=humanoid.getRawBoneNode('rightUpperArm'),nk=humanoid.getRawBoneNode('neck')||humanoid.getRawBoneNode('head');

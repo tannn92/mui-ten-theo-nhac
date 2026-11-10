@@ -1,15 +1,16 @@
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1011.1547';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1011.2112';
 const torsoCache=new WeakMap();
 import * as T from 'three';
-import {buildChestLengthHair} from './chest-length-hair.js?v=1011.1547';
+import {buildChestLengthHair} from './chest-length-hair.js?v=1011.2112';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 export function hatMuaOptions(){return Object.fromEntries(['top','bottom','shoes','accessory'].map(slot=>[slot,[1,2,3].map(set=>({id:'hat-mua-'+set+'-'+slot,style:'hat-mua-'+set+'-'+slot,variant:1,label:'Hạt Mưa '+set+' · '+slot}))]));}
 export const hatMuaSets=[1,2,3].map(set=>({id:'hat-mua-'+set,label:'Hạt Mưa · Bộ '+set,selectionIds:Object.fromEntries(['top','bottom','shoes','accessory'].map(slot=>[slot,'hat-mua-'+set+'-'+slot]))}));
 export function* buildHatMuaStyles(variants,options){
  const records=new Map(),parts=[],V=()=>new T.Vector3(),toon=c=>new T.MeshToonMaterial({color:c,side:T.DoubleSide});
  let sliceStart=performance.now();const sliceDue=()=>performance.now()-sliceStart>=2;
- for(const [index,opt] of (options.hair||[]).entries())if(['hat-mua-chest-hair','hat-mua-chest-hair-dark'].includes(opt.style)){
-  const made=yield* buildChestLengthHair(variants[opt.variant],{preserveColor:opt.style.endsWith('-dark')});
+ for(const [index,opt] of (options.hair||[]).entries())if(['hat-mua-chest-hair','hat-mua-chest-hair-dark','hat-mua-chest-hair-red'].includes(opt.style)){
+  // -red: the dark option's cut with a warm auburn/chestnut palette (owner swatch 2026-11-10)
+  const made=yield* buildChestLengthHair(variants[opt.variant],opt.style.endsWith('-red')?{palette:[66,35,30],shade:'#624440'}:{preserveColor:opt.style.endsWith('-dark')});
   records.set('hair:'+index,{id:opt.id,index,slot:'hair',meshes:made.meshes});
   made.meshes.forEach(mesh=>parts.push({slot:'hair',variant:index,donor:opt.variant,mesh}));
  }
