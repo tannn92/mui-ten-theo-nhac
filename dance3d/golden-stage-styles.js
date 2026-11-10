@@ -1,6 +1,6 @@
 import * as T from 'three';
-import {fitPoint,fitSection} from './body-fit.js?v=1011.0910';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1011.0910';
+import {fitPoint,fitSection,armShell,armRadius} from './body-fit.js?v=1011.0931';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1011.0931';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 const caches=new WeakMap();
 const V=()=>new T.Vector3();
@@ -72,7 +72,7 @@ const fur=new T.MeshStandardMaterial({color:'#fffefe',roughness:.95,side:T.Doubl
   function shoulderWeight(mesh,side){const p=mesh.geometry.attributes.position;for(let i=0;i<p.count;i++){const w=T.MathUtils.clamp((Math.abs(p.getX(i))-.035)/.13,0,.18);mesh.geometry.attributes.skinIndex.setXYZW(i,boneIndex('upperChest'),boneIndex(side+'UpperArm'),0,0);mesh.geometry.attributes.skinWeight.setXYZW(i,1-w,w,0,0);}return mesh;}
   function curve(points,r,material,side=null,rigid=null){const g=new T.TubeGeometry(new T.CatmullRomCurve3(points),Math.max(12,points.length*4),r,5,false),m=weighted(g,material,rigid);if(side)shoulderWeight(m,side);return m;}
   function sleeve(side){const a=pos(side+'UpperArm').lerp(pos('neck'),.25),el=pos(side+'LowerArm'),hand=pos(side+'Hand');function tube(from,to,r0,r1,bone){const axis=to.clone().sub(from).normalize(),basis=V().crossVectors(axis,V().set(0,0,1)).normalize(),other=V().crossVectors(axis,basis).normalize();const fn=(u,v)=>{const ang=v*Math.PI*2,r=T.MathUtils.lerp(r0,r1,u)*(1+.022*Math.sin(u*17+ang*4));return from.clone().lerp(to,u).addScaledVector(basis,Math.cos(ang)*r).addScaledVector(other,Math.sin(ang)*r);},mesh=grid(9,24,fn,jacket,bone);if(bone===side+'UpperArm'){for(let j=0;j<=9;j++)for(let k=0;k<=24;k++){const n=j*25+k,w=T.MathUtils.smoothstep(j/9,0,.3);mesh.geometry.attributes.skinIndex.setXYZW(n,boneIndex('upperChest'),boneIndex(bone),0,0);mesh.geometry.attributes.skinWeight.setXYZW(n,1-w,w,0,0);}}return fn;}
-   tube(a,el.clone().addScaledVector(el.clone().sub(a).normalize(),.006),.030,.026,side+'UpperArm');const lower=tube(el.clone().addScaledVector(a.clone().sub(el).normalize(),.006),hand,.026,.022,side+'LowerArm');grid(2,24,(u,v)=>lower(.93+u*.07,v).add(V().set(0,0,.0002)),gold,side+'LowerArm');}
+   register(armShell(body,boneIndex,side,{lower:true}),jacket,false);const d_=hand.clone().sub(el).normalize(),b_=V().crossVectors(d_,V().set(0,0,1)).normalize(),o_=V().crossVectors(d_,b_).normalize(),rc_=armRadius(body,boneIndex,side,el,hand,.88,'lower')+.007;grid(2,24,(u,v)=>el.clone().lerp(hand,.93+u*.07).addScaledVector(b_,Math.cos(v*Math.PI*2)*rc_).addScaledVector(o_,Math.sin(v*Math.PI*2)*rc_),gold,side+'LowerArm');}
   function skirt(u,a){const y=waist-u*.166,[rx,rz]=section(Math.max(y,hip.y-.025)),fold=.002*Math.cos(a*12)*u;return V().set(Math.cos(a)*(rx+.008+.013*u+fold),y,hip.z+Math.sin(a)*(rz+.022+.017*u+fold));}
   function skirtBelt(u0,height){grid(3,48,(u,v)=>{const a=v*Math.PI*2,q=skirt(u0+u*height/.166,a);return q.add(V().set(Math.cos(a)*.001,0,Math.sin(a)*.001));},gold,'hips');}
   if(slot==='top'){

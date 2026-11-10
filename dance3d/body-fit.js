@@ -1,3 +1,4 @@
+import * as T from 'three';
 // Body-hugging torso outline for the procedural clothing modules.
 // Owner 2026-11-10: tops stood off the chest ("áo như kiểu ko dính vào thân… có khoảng không giữa áo và người") because every
 // row of a top was an ellipse sized to the torso's widest/deepest point. Here a row at height y is the CONVEX HULL of the donor's
@@ -44,4 +45,38 @@ export function fitSection(body,boneIndex,hip,neck,y){
  if(!inRange(hip,neck,y))return null;const r=ring(state(body,boneIndex),y);if(!r)return null;
  let w=0;for(const q of r.h)w=Math.max(w,Math.abs(q[0]));const t=ray(r,0,1);if(!Number.isFinite(t))return null;
  return [w+CLEAR,r.c[1]+t+CLEAR-hip.z];
+}
+
+// Sleeves from her own arm (owner 2026-11-10, side view: the tube sleeves began inside the shoulder with a horizontal ring that
+// stuck out in front of and behind the shoulder like a shelf once the arm hung down). The arm's own skin triangles (upper arm +
+// shoulder cap, + forearm for long sleeves) lifted by `offset` along the normals, skinned exactly like the arm: no caps, no shelf.
+// a/b = shoulder and elbow joint positions (body-local) for cutting short sleeves at upperFrac of the upper arm.
+const arms=new WeakMap();
+function armWeights(body,boneIndex,side){
+ let m=arms.get(body);if(!m){m=new Map();arms.set(body,m);}if(m.has(side))return m.get(side);
+ const g=body.geometry,si=g.attributes.skinIndex,sw=g.attributes.skinWeight,ix=(n=>{try{return boneIndex(n);}catch(e){return -1;}});
+ const up=new Set([ix(side+'UpperArm'),ix(side+'Shoulder')]),low=ix(side+'LowerArm'),n=g.attributes.position.count,wu=new Float32Array(n),wl=new Float32Array(n);
+ for(let i=0;i<n;i++)for(let k=0;k<4;k++){const b=si.getComponent(i,k),w=sw.getComponent(i,k);if(up.has(b))wu[i]+=w;else if(b===low)wl[i]+=w;}
+ const d={wu,wl,shells:new Map()};m.set(side,d);return d;
+}
+export function armShell(body,boneIndex,side,{lower=true,offset=.006,a=null,b=null,upperFrac=1,puff=0}={}){
+ const d=armWeights(body,boneIndex,side),key=[lower,offset,upperFrac,puff].join('|');if(d.shells.has(key))return d.shells.get(key);
+ const g=body.geometry,p=g.attributes.position,nrm=g.attributes.normal,ix=g.index,len=a&&b?Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z):0;
+ const ok=id=>{const w=d.wu[id]+(lower?d.wl[id]:0);if(w<.5)return false;if(upperFrac<1&&len){const t=((p.getX(id)-a.x)*(b.x-a.x)+(p.getY(id)-a.y)*(b.y-a.y)+(p.getZ(id)-a.z)*(b.z-a.z))/(len*len);if(t>upperFrac)return false;}return true;};
+ const attrs=Object.fromEntries(['position','normal','uv','skinIndex','skinWeight'].filter(k=>g.attributes[k]).map(k=>[k,[]])),map=new Map(),out=[];
+ for(let i=0;i<ix.count;i+=3){const tri=[ix.getX(i),ix.getX(i+1),ix.getX(i+2)];if(!tri.every(ok))continue;
+  for(const id of tri){if(!map.has(id)){map.set(id,map.size);
+   // puff sleeves: extra lift along the upper arm, 0 at the shoulder seam and at the hem, fullest in between
+   let off=offset;if(puff&&len){const t=((p.getX(id)-a.x)*(b.x-a.x)+(p.getY(id)-a.y)*(b.y-a.y)+(p.getZ(id)-a.z)*(b.z-a.z))/(len*len),f=Math.min(1,Math.max(0,t/upperFrac));off+=puff*Math.pow(Math.sin(Math.PI*f),.7);}
+   for(const [k,arr] of Object.entries(attrs)){const src=g.attributes[k];for(let c=0;c<src.itemSize;c++)arr.push(src.getComponent(id,c)+(k==='position'?nrm.getComponent(id,c)*off:0));}}out.push(map.get(id));}}
+ const geo=new T.BufferGeometry();for(const [k,arr] of Object.entries(attrs)){const src=g.attributes[k];geo.setAttribute(k,k==='skinIndex'?new T.Uint16BufferAttribute(arr,4):new T.Float32BufferAttribute(arr,src.itemSize));}
+ geo.setIndex(out);geo.computeBoundingSphere();d.shells.set(key,geo);return geo;
+}
+// radius of her arm around the segment p0->p1 at fraction u (for cuffs and trims placed on a shell sleeve): 80th percentile of
+// the forearm (seg 'lower') or upper-arm (seg 'upper') skin distances from the axis in a 2 cm slab, so the thumb root never counts
+export function armRadius(body,boneIndex,side,p0,p1,u,seg='lower'){
+ const d=armWeights(body,boneIndex,side),p=body.geometry.attributes.position,L=Math.hypot(p1.x-p0.x,p1.y-p0.y,p1.z-p0.z)||1,ax=[(p1.x-p0.x)/L,(p1.y-p0.y)/L,(p1.z-p0.z)/L],rs=[];
+ for(let i=0;i<p.count;i++){if((seg==='lower'?d.wl[i]:d.wu[i])<.5)continue;const vx=p.getX(i)-p0.x,vy=p.getY(i)-p0.y,vz=p.getZ(i)-p0.z,t=vx*ax[0]+vy*ax[1]+vz*ax[2];if(Math.abs(t-u*L)>.01)continue;
+  const ox=vx-ax[0]*t,oy=vy-ax[1]*t,oz=vz-ax[2]*t,r=Math.hypot(ox,oy,oz);if(r<.07)rs.push(r);}
+ if(rs.length<4)return .024;rs.sort((x,y)=>x-y);return rs[Math.floor(rs.length*.8)];
 }
