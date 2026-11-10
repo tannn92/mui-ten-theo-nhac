@@ -1,14 +1,14 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=1011.0720';
-import {createSongBackgrounds} from './song-backgrounds.js?v=1011.0720';
-import {loadWardrobe} from './wardrobe.js?v=1011.0720';
-import {createChoreography} from './choreography.js?v=1011.0720';
-import {createPoseBank} from './pose-bank.js?v=1011.0720';
-import {applyFaceExpression} from './face-expressions.js?v=1011.0720';
-import {createCrew} from './crew.js?v=1011.0720';
-import {applyHeadScale} from './head-scale.js?v=1011.0720';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1011.0720';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1011.0720';
+import {createPerformanceLibrary} from './performance-library.js?v=1011.0728';
+import {createSongBackgrounds} from './song-backgrounds.js?v=1011.0728';
+import {loadWardrobe} from './wardrobe.js?v=1011.0728';
+import {createChoreography} from './choreography.js?v=1011.0728';
+import {createPoseBank} from './pose-bank.js?v=1011.0728';
+import {applyFaceExpression} from './face-expressions.js?v=1011.0728';
+import {createCrew} from './crew.js?v=1011.0728';
+import {applyHeadScale} from './head-scale.js?v=1011.0728';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1011.0728';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1011.0728';
 export async function createRuntime(canvas,bundle){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
