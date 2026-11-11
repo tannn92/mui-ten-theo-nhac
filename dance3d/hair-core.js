@@ -35,7 +35,9 @@ export function* buildHair(variants,opts,which='all'){
    grid(24,40,(u,q)=>{const x=(q-.5)*.23*(.08+.92*Math.sin(u*Math.PI/2));return[x,1.229-.116*u-.014*(x/.115)**2*(1-u),-.005+.146*Math.sin(u*Math.PI/2)-.029*(x/.115)**2];});
    for(let k=0;k<19;k++){const x=(k-9)*.011;lock([[x*.15,1.228,.005],[x*.70,1.19,.102],[x,1.145,.139-.015*(x/.1)**2],[x,1.111+.002*Math.sin(k),.143-.018*(x/.1)**2]],.006,.002,true,.45);}
    for(const s of[-1,1]){
-    lock([[s*.055,1.213,.066],[s*.127,1.145,.135],[s*.144,1.045,.113],[s*.143,.922,.092],[s*.123,.887,.067]],.012,.006,true,.05);
+    // Owner 2026-11-11 ("quá xa đầu"): the locks fall from under the fringe corners and hang close beside the cheeks,
+    // in front of the ears, instead of floating ~4 cm out and ~7 cm in front of the face.
+    lock([[s*.057,1.210,.064],[s*.113,1.153,.075],[s*.126,1.094,.056],[s*.125,1.034,.040],[s*.120,.958,.040],[s*.113,.898,.045]],.012,.006,true,.05);
     bun(s*.098,1.012,-.119,.047,.041,.039);
    }
   }

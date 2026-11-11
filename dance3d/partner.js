@@ -1,6 +1,7 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=1011.2112';
-import {createDancerProfiles,resolveDancerProfile} from './dancer-profiles.js?v=1011.2112';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=1111.0832';
+import {createDancerProfiles,resolveDancerProfile,dancerProfiles} from './dancer-profiles.js?v=1111.0832';
+import {applyHeadScale} from './head-scale.js?v=1111.0832';
 // Two-iPad play: the other player's dancer (owner 2026-11-10 "vũ công thứ 2 cũng y hệt thế, đa phần phân biệt nhau qua
 // quần áo và mũi tên chỉ trên đầu"). The same child model in the other player's outfit, at the other front-row spot, with
 // the child's exact pose, eyelids and mouth every frame. Built like the child herself (wardrobe.visibleParts): one
@@ -24,12 +25,16 @@ export function createPartner(scene,wardrobe,config){
   clear();sel=s;
   for(const [i,meshes] of wardrobe.visibleParts(s)){const rig=createIndependentCrewRig(wardrobe.variants[i]);rig.setMeshes(meshes);rig.setMotion(null,null,null);group.add(rig.root);rigs.push({i,rig});}
   rigs.sort((a,b)=>a.i-b.i);
+  // The clones carry the child's head as it is right now (Mira's or Zoey's when she wears that set): every donor rig
+  // starts from the plain head, then a character set gives ALL of them its head (face and hair stay the same size).
+  const heads=rigs.map(r=>({humanoid:r.rig.humanoid,scene:r.rig.model,springBoneManager:r.rig.springs})),plain=dancerProfiles.find(q=>q.id==='original');
+  for(const h of heads)applyHeadScale(h,plain.headScale,plain.headAspect);
   const faceRig=rigs.find(r=>r.i===0);faceId='original';
   if(!faceRig)return;
   const copies=wardrobe.variants[0].parts.face.map(m=>[m,faceRig.rig.mapping.get(m)]).filter(([,c])=>c);
   faceMap=copies.filter(([m,c])=>m.morphTargetInfluences&&c.morphTargetInfluences);
   faceId=resolveDancerProfile({selection:s,options:wardrobe.options,sets:config.sets})||'original';
-  if(faceId!=='original'){try{face=createDancerProfiles({faceMeshes:copies.map(([,c])=>c),rigs:[{humanoid:faceRig.rig.humanoid,scene:faceRig.rig.model,springBoneManager:faceRig.rig.springs}],initial:faceId});if(!face.supported){console.warn('partner face',face.reason);face=null;}}catch(e){console.warn('partner face',e);face=null;}}
+  if(faceId!=='original'){try{face=createDancerProfiles({faceMeshes:copies.map(([,c])=>c),rigs:heads,initial:faceId});if(!face.supported){console.warn('partner face',face.reason);face=null;}}catch(e){console.warn('partner face',e);face=null;}}
   // accessories that are not sewn styles (headphones, bracelets, hat…) hang on the child's bones: copy them onto the partner's
   const acc=wardrobe.options.accessory?.[s.accessory];
   if(acc&&!acc.style)for(const root of wardrobe.accessories?.choices?.[s.accessory]?.roots||[]){

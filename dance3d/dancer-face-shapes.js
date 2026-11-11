@@ -8,7 +8,7 @@ const specs={rumi:{eyeY:.83,eyeX:1.08,tilt:.10,brow:.004,nose:.88,lip:1.22,lipX:
  // upturned eyes + angled brows + V jaw, m3 Quang Hùng a slim oval, longer face (with a narrower, longer head shape in dancer-profiles), m4 Wren long face, raised brows (open grin by expr).
  boy1:{male:true,eyeY:.74,eyeX:1.04,tilt:.03,brow:0,nose:.96,lip:1.05,lipX:1.14,jawWidth:-.06,chin:-.018,browGrow:3,irisK:.84,browDrop:.005,browTilt:-.02,hl:.5,noseLine:.24,noLash:true},
  boy2:{male:true,eyeY:.72,eyeX:1.05,tilt:.10,brow:0,nose:.95,lip:1.0,lipX:1.16,jawWidth:-.085,chin:-.024,browGrow:4,irisK:.83,browDrop:.004,browTilt:.07,hl:.5,noseLine:.26,noLash:true},
- boy3:{male:true,eyeY:.78,eyeX:1.03,tilt:.04,brow:0,nose:.95,lip:1.0,lipX:1.06,jawWidth:-.06,chin:-.008,vJaw:-.12,vChin:-.016,browGrow:3,irisK:.9,browDrop:.002,browTilt:0,hl:.65,noseLine:.18,noLash:true},
+ boy3:{male:true,eyeY:.78,eyeX:1.03,tilt:.04,brow:0,nose:.95,lip:1.0,lipX:1.06,jawWidth:-.07,chin:-.022,/* owner 2026-11-11 "cho cằm quang hùng giống wren": Wren's jaw and chin, no V-chin */browGrow:3,irisK:.9,browDrop:.002,browTilt:0,hl:.65,noseLine:.18,noLash:true},
  boy4:{male:true,eyeY:.78,eyeX:1.04,tilt:.05,brow:0,nose:.95,lip:1.05,lipX:1.18,jawWidth:-.07,chin:-.022,browGrow:3,irisK:.85,browDrop:0,browTilt:.04,hl:.55,noseLine:.22,noLash:true}};
 function maleEdit(a,W,H,tag,s){
  if(/EyeHighlight/.test(tag)){const k=s.hl??.55;for(let i=3;i<a.length;i+=4)a[i]=Math.round(a[i]*k);return;}

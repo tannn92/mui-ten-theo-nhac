@@ -1,13 +1,15 @@
-import {createFaceIdentities} from './dancer-face-shapes.js?v=1011.2112';
-import {applyHeadScale} from './head-scale.js?v=1011.2112';
+import {createFaceIdentities} from './dancer-face-shapes.js?v=1111.0832';
+import {applyHeadScale} from './head-scale.js?v=1111.0832';
 export const dancerProfiles=Object.freeze([
  Object.freeze({id:'original',label:'Gương mặt gốc',headScale:.85}),
  Object.freeze({id:'rumi',label:'Rumi · cân đối',headScale:.85}),
- Object.freeze({id:'mira',label:'Mira · thon dài',headScale:.85}),
+ // Mira (owner 2026-11-11): Quang Hùng's head as it was before his 90% (same size and long narrow shape); her hair is unchanged.
+ Object.freeze({id:'mira',label:'Mira · thon dài',headScale:.76,headAspect:Object.freeze([.87,1.075,.94])}),
  Object.freeze({id:'zoey',label:'Zoey · tròn đáng yêu',headScale:.92}),
  // Secret singers (crew only): male faces, smaller heads (older, taller look)
  Object.freeze({id:'boy1',label:'Secret · CongB',headScale:.75}),Object.freeze({id:'boy2',label:'Secret · Cody Nam Võ',headScale:.75}),
- Object.freeze({id:'boy3',label:'Secret · Quang Hùng MasterD',headScale:.76,headAspect:Object.freeze([.87,1.075,.94])}),Object.freeze({id:'boy4',label:'Secret · Wren Evans',headScale:.75})
+ // Owner 2026-11-11: Quang Hùng's head length to 90% (1.075 -> .9675, width kept); Wren Evans gets the same head size.
+ Object.freeze({id:'boy3',label:'Secret · Quang Hùng MasterD',headScale:.76,headAspect:Object.freeze([.87,.9675,.94])}),Object.freeze({id:'boy4',label:'Secret · Wren Evans',headScale:.76,headAspect:Object.freeze([.87,.9675,.94])})
 ]);
 const known=id=>dancerProfiles.some(p=>p.id===id);
 const fromId=id=>typeof id==='string'?/^(?:huntrix|golden|wisl)-(rumi|mira|zoey)(?:-|$)/.exec(id)?.[1]:undefined;

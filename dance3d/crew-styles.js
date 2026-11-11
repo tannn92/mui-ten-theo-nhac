@@ -1,5 +1,5 @@
 import * as T from 'three';
-import {fitPoint,fitSection} from './body-fit.js?v=1011.2112';
+import {fitPoint,fitSection} from './body-fit.js?v=1111.0832';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 export const crewSpecs=[
  {id:1,name:'Gingham hồng · váy trắng',top:'#edb9cf',pattern:'gingham',neck:'corset',bottom:'#fffdfb',shape:'pleated',fur:true,bow:true},
