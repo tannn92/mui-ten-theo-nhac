@@ -1,6 +1,6 @@
 import * as T from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1111.2044';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1111.2136';
 // U (Super Junior), dance cover by SpadeA Shenzhen (owner song queue 2026-11-11): ten girls in black and white street suits.
 // Crew-only looks super-junior-u-crew-c1..c6-{top,bottom,shoes} and the child's shop set super-junior-u-1-{top,bottom,shoes}.
 //  1 (shop set, the centre dancer): black blazer open over a white shirt; black wide trousers with a

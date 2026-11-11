@@ -1,6 +1,6 @@
 import * as T from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1111.2044';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1111.2136';
 // LAVIEM (Tinh Hà Say Hi, owner 2026-11-11: "cách thức làm như video secret"): the four singers as crew-only looks
 // laviem-crew-m1..m4-{top,bottom,shoes} and the child's shop set laviem-1-{top,bottom,shoes} (girl version, modest).
 // Poster left->right (owner): m1 CAPTAIN BOY, m2 Pháp Kiều, m3 Quang Hùng MasterD, m4 CoolKid. From the video + poster:

@@ -6,6 +6,7 @@ export function selectBackdrop(chart={}) {
  chart=chart||{};
  const text=[chart.slug,chart.title,chart.audio].filter(Boolean).join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
  if(/super[- _]junior/.test(text))return 'sju';
+ if(/ttl-time-to-love|time to love/.test(text))return 'ttl';
  if(/laviem/.test(text))return 'laviem';
  if(/tim[- _]em/.test(text))return 'timem';
  if(/golden/.test(text))return 'golden';
@@ -232,6 +233,30 @@ function paintSju(c,{rect,path,glow,dot,line,rnd}){
  const wash=c.createRadialGradient(800,760,40,800,760,700);wash.addColorStop(0,'rgba(255,250,235,.30)');wash.addColorStop(1,'rgba(255,250,235,0)');c.fillStyle=wash;c.fillRect(0,H,1600,1000-H);
  line(0,H-4,1600,H-4,'rgba(255,255,255,.5)',2);
 }
+// TTL (Time To Love), stage from the official MV's dance scenes (owner 2026-11-11): a black stage, white neon light bars
+// radiating from a vanishing point like a light tunnel, a glossy black floor reflecting them, round white spotlights low on
+// the back. A soft grey haze behind the dancers keeps the child visible on the dark. Drawn in code: no text or logos.
+function paintTtl(c,{rect,path,glow,dot,line,rnd}){
+ const H=600,VX=800,VY=330;
+ c.fillStyle='#050507';c.fillRect(0,0,1600,1000);
+ glow(VX,VY+40,700,'#3a3d48',.55);glow(VX,VY+120,420,'#5a5e6c',.35);
+ // neon bars: segments along rays from the vanishing point, brighter and thicker further out
+ const bar=(ang,r0,r1,w)=>{const x0=VX+Math.cos(ang)*r0,y0=VY+Math.sin(ang)*r0,x1=VX+Math.cos(ang)*r1,y1=VY+Math.sin(ang)*r1;
+  c.save();c.lineCap='round';c.strokeStyle='rgba(220,232,255,.18)';c.lineWidth=w*4;c.beginPath();c.moveTo(x0,y0);c.lineTo(x1,y1);c.stroke();
+  c.strokeStyle='rgba(240,246,255,.95)';c.lineWidth=w;c.beginPath();c.moveTo(x0,y0);c.lineTo(x1,y1);c.stroke();c.restore();
+  // segment joints: the tubes are made of pieces
+  const n=Math.floor((r1-r0)/70);for(let k=1;k<n;k++){const r=r0+(r1-r0)*k/n;dot(VX+Math.cos(ang)*r,VY+Math.sin(ang)*r,w*.55,'rgba(10,12,18,.9)');}};
+ for(let k=0;k<13;k++){const ang=Math.PI*(1.06+k*.0738);bar(ang,170+(k%2)*40,900,4+2*Math.abs(Math.sin(ang)));}
+ for(const s of [-1,1])for(let k=0;k<3;k++){const ang=(s<0?Math.PI*.97:Math.PI*.03)+s*(-k*.07);bar(ang,240,1000,5);}
+ // floor: glossy black, the bars' reflections as streaks, a horizon line
+ const fl=c.createLinearGradient(0,H,0,1000);fl.addColorStop(0,'#0d0e12');fl.addColorStop(1,'#020203');c.fillStyle=fl;c.fillRect(0,H,1600,400);
+ for(let k=-9;k<=9;k++){const x=VX+k*95;c.save();const g=c.createLinearGradient(0,H,0,1000);g.addColorStop(0,'rgba(230,238,255,.30)');g.addColorStop(1,'rgba(230,238,255,0)');c.strokeStyle=g;c.lineWidth=3+Math.abs(k)*.4;c.beginPath();c.moveTo(VX+k*30,H);c.lineTo(x+k*60,1000);c.stroke();c.restore();}
+ line(0,H,1600,H,'rgba(200,210,230,.25)',2);
+ // round white spotlights low on the back, with their reflections
+ for(const x of [260,520,1080,1340]){glow(x,H-30,90,'#ffffff',.55);dot(x,H-30,9,'#ffffff');glow(x,H+60,70,'#dfe7ff',.22);}
+ // haze behind the dancers so the child reads on the black
+ const wash=c.createRadialGradient(800,700,40,800,700,620);wash.addColorStop(0,'rgba(120,126,140,.42)');wash.addColorStop(1,'rgba(120,126,140,0)');c.fillStyle=wash;c.fillRect(0,300,1600,700);
+}
 export function createSongBackgrounds(scene){
  let active='dolce',width=0,height=0,texture=null,paints=0;
  function paint(){
@@ -251,6 +276,7 @@ export function createSongBackgrounds(scene){
   if(active==='secret'){paintSecret(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
   if(active==='timem'){paintTimEm(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
   if(active==='laviem'){paintLaviem(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
+  if(active==='ttl'){paintTtl(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
   if(active==='sju'){paintSju(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
   const day=active==='how',street=['rain','takedown','how'].includes(active),accent=active==='takedown'?'#628fee':'#d996f3';
   const sky=c.createLinearGradient(0,0,0,700);sky.addColorStop(0,day?'#cadbeb':'#171c39');sky.addColorStop(.6,day?'#d6dfeb':street?'#4a4564':'#434363');sky.addColorStop(1,day?'#e4dde0':'#a390b2');c.fillStyle=sky;c.fillRect(0,0,1600,1000);
@@ -317,5 +343,5 @@ export function createSongBackgrounds(scene){
   finish(canvas);
  }
  function finish(canvas){const next=new T.CanvasTexture(canvas);next.colorSpace=T.SRGBColorSpace;next.generateMipmaps=false;next.minFilter=T.LinearFilter;scene.background=next;texture?.dispose();texture=next;paints++;}
- return{tint(){return active==='golden'?{disc:0xd9a04a,ring:0xfff0c0}:active==='sounds'?{disc:0xf0d2ea,ring:0xffffff}:active==='secret'?{disc:0xcdb497,ring:0xfff3d6}:active==='timem'?{disc:0xa9c8e8,ring:0xf2fbff}:active==='laviem'?{disc:0xe8c4cf,ring:0xfff1f4}:active==='sju'?{disc:0xbfb6a6,ring:0xffffff}:{disc:0xe0c3d5,ring:0xfffbfe};},setSong(chart){const next=selectBackdrop(chart);if(next!==active){active=next;if(width)paint();}},resize(w,h){const nextW=Math.min(1600,Math.max(640,Math.round(w))),nextH=Math.min(1600,Math.max(480,Math.round(h)));if(nextW!==width||nextH!==height){width=nextW;height=nextH;paint();}},diagnostics(){return{id:active,paints,width,height};}};
+ return{tint(){return active==='golden'?{disc:0xd9a04a,ring:0xfff0c0}:active==='sounds'?{disc:0xf0d2ea,ring:0xffffff}:active==='secret'?{disc:0xcdb497,ring:0xfff3d6}:active==='timem'?{disc:0xa9c8e8,ring:0xf2fbff}:active==='laviem'?{disc:0xe8c4cf,ring:0xfff1f4}:active==='ttl'?{disc:0x3c3f48,ring:0xe8eeff}:active==='sju'?{disc:0xbfb6a6,ring:0xffffff}:{disc:0xe0c3d5,ring:0xfffbfe};},setSong(chart){const next=selectBackdrop(chart);if(next!==active){active=next;if(width)paint();}},resize(w,h){const nextW=Math.min(1600,Math.max(640,Math.round(w))),nextH=Math.min(1600,Math.max(480,Math.round(h)));if(nextW!==width||nextH!==height){width=nextW;height=nextH;paint();}},diagnostics(){return{id:active,paints,width,height};}};
 }
