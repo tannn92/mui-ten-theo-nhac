@@ -1,5 +1,5 @@
-import {createFaceIdentities} from './dancer-face-shapes.js?v=1111.1719';
-import {applyHeadScale} from './head-scale.js?v=1111.1719';
+import {createFaceIdentities} from './dancer-face-shapes.js?v=1111.2044';
+import {applyHeadScale} from './head-scale.js?v=1111.2044';
 export const dancerProfiles=Object.freeze([
  Object.freeze({id:'original',label:'Gương mặt gốc',headScale:.85}),
  Object.freeze({id:'rumi',label:'Rumi · cân đối',headScale:.85}),
@@ -9,7 +9,10 @@ export const dancerProfiles=Object.freeze([
  // Secret singers (crew only): male faces, smaller heads (older, taller look)
  Object.freeze({id:'boy1',label:'Secret · CongB',headScale:.75}),Object.freeze({id:'boy2',label:'Secret · Cody Nam Võ',headScale:.75}),
  // Owner 2026-11-11: Quang Hùng's head length to 90% (1.075 -> .9675, width kept); Wren Evans gets the same head size.
- Object.freeze({id:'boy3',label:'Secret · Quang Hùng MasterD',headScale:.76,headAspect:Object.freeze([.87,.9675,.94])}),Object.freeze({id:'boy4',label:'Secret · Wren Evans',headScale:.76,headAspect:Object.freeze([.87,.9675,.94])})
+ Object.freeze({id:'boy3',label:'Secret · Quang Hùng MasterD',headScale:.76,headAspect:Object.freeze([.87,.9675,.94])}),Object.freeze({id:'boy4',label:'Secret · Wren Evans',headScale:.76,headAspect:Object.freeze([.87,.9675,.94])}),
+ // LAVIEM singers (crew only, 2026-11-11): CAPTAIN BOY, Pháp Kiều (narrower, a little longer), CoolKid (rounder)
+ Object.freeze({id:'boy5',label:'LAVIEM · CAPTAIN BOY',headScale:.75}),Object.freeze({id:'boy6',label:'LAVIEM · Pháp Kiều',headScale:.75,headAspect:Object.freeze([.92,1.0,.96])}),
+ Object.freeze({id:'boy7',label:'LAVIEM · CoolKid',headScale:.75,headAspect:Object.freeze([1.02,.95,1.0])})
 ]);
 const known=id=>dancerProfiles.some(p=>p.id===id);
 const fromId=id=>typeof id==='string'?/^(?:huntrix|golden|wisl)-(rumi|mira|zoey)(?:-|$)/.exec(id)?.[1]:undefined;

@@ -5,6 +5,8 @@ import * as T from 'three';
 export function selectBackdrop(chart={}) {
  chart=chart||{};
  const text=[chart.slug,chart.title,chart.audio].filter(Boolean).join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+ if(/super[- _]junior/.test(text))return 'sju';
+ if(/laviem/.test(text))return 'laviem';
  if(/tim[- _]em/.test(text))return 'timem';
  if(/golden/.test(text))return 'golden';
  if(/secret|tinh[- _]ha/.test(text))return 'secret';
@@ -156,6 +158,80 @@ function paintTimEm(c,{rect,path,glow,dot,line,rnd}){
  line(0,H+1,1600,H+1,'rgba(200,230,255,.5)',2);
  const vig=c.createRadialGradient(800,620,300,800,620,1050);vig.addColorStop(0,'rgba(5,8,16,0)');vig.addColorStop(1,'rgba(5,8,16,.40)');c.fillStyle=vig;c.fillRect(0,0,1600,1000);
 }
+// LAVIEM (Tinh Hà Say Hi stage, owner 2026-11-11): a pastel courtroom: lilac-pink palace front with mint pilasters and arched
+// windows, a big green heart arch crowned by golden scales in the middle, peach jury benches with green heart outlines on both
+// sides, two pink broken hearts, warm spotlights from above, a glossy black floor with reflections. No text or logos.
+function paintLaviem(c,{rect,path,glow,dot,line,rnd}){
+ const H=585;
+ const top=c.createLinearGradient(0,0,0,H);top.addColorStop(0,'#0c0a12');top.addColorStop(.25,'#2a2230');top.addColorStop(1,'#4a3c48');c.fillStyle=top;c.fillRect(0,0,1600,H);
+ // palace front: pink wall, mint pilasters, arched windows, cornice
+ path([[60,150],[1540,150],[1600,H],[0,H]],'#d9b7c4');rect(40,128,1520,26,'#c3a1b0');rect(40,120,1520,10,'#a7d6c2');
+ for(let i=0;i<12;i++){const x=100+i*125;rect(x,154,26,H-154,'#9fd0bb');rect(x-4,154,34,12,'#c7eadb');rect(x-4,H-30,34,30,'#8cbfa9');
+  if(i<11){const wx=x+44,wy=230,ww=56,wh=150;c.fillStyle='#efe4ea';c.beginPath();c.moveTo(wx,wy+wh);c.lineTo(wx,wy+ww/2);c.arc(wx+ww/2,wy+ww/2,ww/2,Math.PI,0);c.lineTo(wx+ww,wy+wh);c.closePath();c.fill();
+   c.fillStyle='#b9a7c9';c.beginPath();c.moveTo(wx+5,wy+wh-4);c.lineTo(wx+5,wy+ww/2);c.arc(wx+ww/2,wy+ww/2,ww/2-5,Math.PI,0);c.lineTo(wx+ww-5,wy+wh-4);c.closePath();c.fill();
+   line(wx+ww/2,wy+6,wx+ww/2,wy+wh-4,'#efe4ea',3);line(wx+5,wy+80,wx+ww-5,wy+80,'#efe4ea',3);dot(wx+ww/2,wy-14,6,'#e7889a');glow(wx+ww/2,wy-14,22,'#ffd0b0',.5);}}
+ // central pediment + green heart arch with golden scales
+ path([[640,150],[960,150],[800,70]],'#cfe9dc');path([[660,150],[940,150],[800,86]],'#e9c9d4');
+ c.lineWidth=46;c.strokeStyle='#9cc95a';c.beginPath();c.moveTo(800,520);c.bezierCurveTo(560,360,600,190,740,215);c.bezierCurveTo(780,222,800,250,800,270);c.bezierCurveTo(800,250,820,222,860,215);c.bezierCurveTo(1000,190,1040,360,800,520);c.stroke();
+ c.lineWidth=10;c.strokeStyle='#c4e483';c.stroke();
+ line(800,150,800,250,'#e2c27a',6);line(730,180,870,180,'#e2c27a',5);dot(800,146,10,'#efd38c');
+ for(const x of [735,865]){line(x,180,x-18,228,'#e2c27a',2);line(x,180,x+18,228,'#e2c27a',2);c.strokeStyle='#e2c27a';c.lineWidth=4;c.beginPath();c.moveTo(x-22,228);c.quadraticCurveTo(x,248,x+22,228);c.stroke();}
+ glow(800,200,160,'#fff0c8',.25);
+ // the judge's desk and two green balls on columns
+ rect(690,420,220,110,'#f0c9a0');rect(690,420,220,12,'#f7dcc0');for(const x of [640,960]){rect(x-18,330,36,200,'#e9d6a8');dot(x,320,30,'#b9dc8e');dot(x,272,24,'#e8c79a');}
+ // jury benches on both sides, peach with green heart outlines, stepping back in perspective
+ for(const s of [-1,1]){for(let r=0;r<3;r++){const y0=380+r*48,x0=s<0?60+r*30:1540-r*30,x1=s<0?560-r*20:1040+r*20,a=Math.min(x0,x1),b=Math.max(x0,x1);
+   rect(a,y0,b-a,40,r%2?'#f2c9a2':'#f6d6b3');rect(a,y0,b-a,6,'#fbe6cc');rect(a,y0+34,b-a,6,'#9ccf72');
+   for(let x=a+40;x<b-30;x+=90){c.strokeStyle='#8fc463';c.lineWidth=4;c.beginPath();const hx=x,hy=y0+20;c.moveTo(hx,hy+9);c.bezierCurveTo(hx-14,hy,hx-10,hy-10,hx,hy-4);c.bezierCurveTo(hx+10,hy-10,hx+14,hy,hx,hy+9);c.stroke();}}}
+ // pink broken hearts on the floor line
+ for(const [x,y,sz] of [[470,520,52],[1130,520,52]]){c.fillStyle='#f2a9b8';c.beginPath();c.moveTo(x,y+sz*.9);c.bezierCurveTo(x-sz*1.2,y+sz*.1,x-sz*.6,y-sz*.7,x,y-sz*.2);c.bezierCurveTo(x+sz*.6,y-sz*.7,x+sz*1.2,y+sz*.1,x,y+sz*.9);c.fill();
+  c.strokeStyle='#f7e3a4';c.lineWidth=5;c.beginPath();c.moveTo(x,y-sz*.2);c.lineTo(x-8,y+sz*.15);c.lineTo(x+8,y+sz*.4);c.lineTo(x,y+sz*.9);c.stroke();}
+ // warm spotlights from the rig
+ for(const x of [240,520,800,1080,1360]){const g=c.createLinearGradient(x,0,x,H);g.addColorStop(0,'rgba(255,240,205,.30)');g.addColorStop(1,'rgba(255,240,205,0)');path([[x-14,0],[x+14,0],[x+120,H],[x-120,H]],g);dot(x,8,7,'#fff6e2');glow(x,10,40,'#fff2d2',.8);}
+ // glossy black floor: soft reflections of the pink set and the lights
+ const fl=c.createLinearGradient(0,H,0,1000);fl.addColorStop(0,'#2c2228');fl.addColorStop(.35,'#17121a');fl.addColorStop(1,'#0c0a0e');c.fillStyle=fl;c.fillRect(0,H,1600,1000-H);
+ for(let i=0;i<12;i++){const x=100+i*125;const g=c.createLinearGradient(0,H,0,H+220);g.addColorStop(0,'rgba(159,208,187,.30)');g.addColorStop(1,'rgba(159,208,187,0)');rect(x,H,26,220,g);}
+ const pk=c.createLinearGradient(0,H,0,H+260);pk.addColorStop(0,'rgba(217,183,196,.35)');pk.addColorStop(1,'rgba(217,183,196,0)');c.fillStyle=pk;c.fillRect(0,H,1600,260);
+ const wash=c.createRadialGradient(800,760,40,800,760,640);wash.addColorStop(0,'rgba(255,225,200,.22)');wash.addColorStop(1,'rgba(255,225,200,0)');c.fillStyle=wash;c.fillRect(0,H,1600,1000-H);
+ for(let i=0;i<60;i++)dot(rnd()*1600,H+40+rnd()*380,1+rnd()*2.4,'rgba(255,255,255,.55)');
+ line(0,H+1,1600,H+1,'rgba(255,220,230,.45)',2);
+ const vig=c.createRadialGradient(800,620,300,800,620,1050);vig.addColorStop(0,'rgba(8,5,10,0)');vig.addColorStop(1,'rgba(8,5,10,.42)');c.fillStyle=vig;c.fillRect(0,0,1600,1000);
+}
+// U (Super Junior, SpadeA Shenzhen cover, owner song queue 2026-11-11): a city plaza by day: pale blue sky, a skyline of
+// office towers with a slender spired supertall in the middle, a band of trees, a glass railing, wide beige stone paving
+// with a grid of small dark studs. Drawn in code: no photos, people, text or logos.
+function paintSju(c,{rect,path,glow,dot,line,rnd}){
+ const H=585;
+ const sky=c.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#7fb0dc');sky.addColorStop(.55,'#a9cbe6');sky.addColorStop(1,'#d9e6ee');c.fillStyle=sky;c.fillRect(0,0,1600,H);
+ glow(1250,90,420,'#ffffff',.25);
+ // far towers: hazy blue-grey blocks
+ for(let i=0;i<18;i++){const x=i*92+rnd()*40-20,w=40+rnd()*50,h=90+rnd()*150;rect(x,H-80-h,w,h+80,i%2?'#9fb2c4':'#aabccc');for(let y=H-74-h;y<H-60;y+=9)rect(x+3,y,w-6,1.5,'rgba(255,255,255,.18)');}
+ // a glass tower: windows grid, slight reflections
+ const tower=(x,y,w,body,frame,sh)=>{rect(x,y,w,H-y,body);for(let yy=y+8;yy<H-40;yy+=10)rect(x,yy,w,2,frame);for(let xx=x+6;xx<x+w;xx+=12)rect(xx,y,2,H-y,frame);rect(x+w,y+10,sh,H-y-10,'rgba(60,80,100,.35)');};
+ // left: the big white grid office block (cut by the left edge) and a white slab tower with a dark band near the top
+ tower(-40,40,250,'#e8ebee','rgba(150,160,170,.55)',22);for(let yy=180;yy<H-40;yy+=60)rect(60,yy,26,40,'rgba(60,70,80,.55)');
+ tower(330,120,150,'#eef1f3','rgba(160,170,180,.55)',30);rect(330,190,150,10,'#8f8a7e');
+ // middle: the slender supertall, tapering, with a spire
+ path([[880,H],[880,170],[905,60],[930,40],[952,60],[975,170],[975,H]],'#7f9bb5');
+ path([[930,40],[952,60],[975,170],[975,H],[945,H],[945,120]],'#5e7a95');
+ for(let y=80;y<H;y+=14)line(882,y,973,y,'rgba(220,235,245,.35)',1);
+ line(930,40,930,6,'#5e7a95',3);
+ // right: dark glass towers and a green-glass block
+ tower(1010,200,110,'#8ea6bb','rgba(70,90,110,.45)',18);tower(1160,250,90,'#a2b6c6','rgba(80,95,115,.4)',14);
+ tower(1300,170,120,'#55718c','rgba(30,45,60,.45)',20);rect(1290,160,140,14,'#46607a');
+ path([[1440,330],[1600,300],[1600,H],[1440,H]],'#6f9a86');for(let y=340;y<H;y+=12)line(1440,y,1600,y-(y<400?30*(1-(y-330)/70):0),'rgba(220,240,230,.25)',1);
+ // trees along the far edge of the plaza
+ for(let i=0;i<46;i++){const x=i*36+rnd()*20,y=H-70+rnd()*20,r=26+rnd()*20;dot(x,y,r,i%3?'#3f5a3a':'#4d6b44');}
+ rect(0,H-40,1600,40,'#40573c');
+ // glass railing: posts and a metal top bar, the trees seen through it
+ rect(0,H-36,1600,30,'rgba(190,215,220,.28)');line(0,H-36,1600,H-36,'#d8dde0',3);for(let x=20;x<1600;x+=150)line(x,H-36,x,H-4,'rgba(220,226,230,.8)',2);
+ // pavement: beige stone, lighter far away, small dark studs in a perspective grid, soft daylight
+ const fl=c.createLinearGradient(0,H,0,1000);fl.addColorStop(0,'#cfc6b6');fl.addColorStop(.4,'#d9d0c0');fl.addColorStop(1,'#bfb5a3');c.fillStyle=fl;c.fillRect(0,H-4,1600,1004-H);
+ for(let k=1;k<9;k++){const v=Math.pow(k/9,1.6),y=H+(1000-H)*v;for(let j=-12;j<=12;j++){const x=800+j*(70+900*v);if(x>-20&&x<1620)dot(x,y,1.2+3*v,'rgba(70,64,56,.55)');}}
+ for(let i=0;i<300;i++)dot(rnd()*1600,H+rnd()*(1000-H),.8+rnd()*1.4,'rgba(255,255,255,.12)');
+ const wash=c.createRadialGradient(800,760,40,800,760,700);wash.addColorStop(0,'rgba(255,250,235,.30)');wash.addColorStop(1,'rgba(255,250,235,0)');c.fillStyle=wash;c.fillRect(0,H,1600,1000-H);
+ line(0,H-4,1600,H-4,'rgba(255,255,255,.5)',2);
+}
 export function createSongBackgrounds(scene){
  let active='dolce',width=0,height=0,texture=null,paints=0;
  function paint(){
@@ -174,6 +250,8 @@ export function createSongBackgrounds(scene){
   if(active==='sounds'){paintSounds(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
   if(active==='secret'){paintSecret(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
   if(active==='timem'){paintTimEm(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
+  if(active==='laviem'){paintLaviem(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
+  if(active==='sju'){paintSju(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
   const day=active==='how',street=['rain','takedown','how'].includes(active),accent=active==='takedown'?'#628fee':'#d996f3';
   const sky=c.createLinearGradient(0,0,0,700);sky.addColorStop(0,day?'#cadbeb':'#171c39');sky.addColorStop(.6,day?'#d6dfeb':street?'#4a4564':'#434363');sky.addColorStop(1,day?'#e4dde0':'#a390b2');c.fillStyle=sky;c.fillRect(0,0,1600,1000);
   if(!day)for(let i=0;i<38;i++)dot(rnd()*1600,rnd()*270,.6+rnd(), '#b8bbd4');
@@ -239,5 +317,5 @@ export function createSongBackgrounds(scene){
   finish(canvas);
  }
  function finish(canvas){const next=new T.CanvasTexture(canvas);next.colorSpace=T.SRGBColorSpace;next.generateMipmaps=false;next.minFilter=T.LinearFilter;scene.background=next;texture?.dispose();texture=next;paints++;}
- return{tint(){return active==='golden'?{disc:0xd9a04a,ring:0xfff0c0}:active==='sounds'?{disc:0xf0d2ea,ring:0xffffff}:active==='secret'?{disc:0xcdb497,ring:0xfff3d6}:active==='timem'?{disc:0xa9c8e8,ring:0xf2fbff}:{disc:0xe0c3d5,ring:0xfffbfe};},setSong(chart){const next=selectBackdrop(chart);if(next!==active){active=next;if(width)paint();}},resize(w,h){const nextW=Math.min(1600,Math.max(640,Math.round(w))),nextH=Math.min(1600,Math.max(480,Math.round(h)));if(nextW!==width||nextH!==height){width=nextW;height=nextH;paint();}},diagnostics(){return{id:active,paints,width,height};}};
+ return{tint(){return active==='golden'?{disc:0xd9a04a,ring:0xfff0c0}:active==='sounds'?{disc:0xf0d2ea,ring:0xffffff}:active==='secret'?{disc:0xcdb497,ring:0xfff3d6}:active==='timem'?{disc:0xa9c8e8,ring:0xf2fbff}:active==='laviem'?{disc:0xe8c4cf,ring:0xfff1f4}:active==='sju'?{disc:0xbfb6a6,ring:0xffffff}:{disc:0xe0c3d5,ring:0xfffbfe};},setSong(chart){const next=selectBackdrop(chart);if(next!==active){active=next;if(width)paint();}},resize(w,h){const nextW=Math.min(1600,Math.max(640,Math.round(w))),nextH=Math.min(1600,Math.max(480,Math.round(h)));if(nextW!==width||nextH!==height){width=nextW;height=nextH;paint();}},diagnostics(){return{id:active,paints,width,height};}};
 }

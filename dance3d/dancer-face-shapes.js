@@ -9,7 +9,13 @@ const specs={rumi:{eyeY:.83,eyeX:1.08,tilt:.10,brow:.004,nose:.88,lip:1.22,lipX:
  boy1:{male:true,eyeY:.74,eyeX:1.04,tilt:.03,brow:0,nose:.96,lip:1.05,lipX:1.14,jawWidth:-.06,chin:-.018,browGrow:3,irisK:.84,browDrop:.005,browTilt:-.02,hl:.5,noseLine:.24,noLash:true},
  boy2:{male:true,eyeY:.72,eyeX:1.05,tilt:.10,brow:0,nose:.95,lip:1.0,lipX:1.16,jawWidth:-.085,chin:-.024,browGrow:4,irisK:.83,browDrop:.004,browTilt:.07,hl:.5,noseLine:.26,noLash:true},
  boy3:{male:true,eyeY:.78,eyeX:1.03,tilt:.04,brow:0,nose:.95,lip:1.0,lipX:1.06,jawWidth:-.07,chin:-.022,/* owner 2026-11-11 "cho cằm quang hùng giống wren": Wren's jaw and chin, no V-chin */browGrow:3,irisK:.9,browDrop:.002,browTilt:0,hl:.65,noseLine:.18,noLash:true},
- boy4:{male:true,eyeY:.78,eyeX:1.04,tilt:.05,brow:0,nose:.95,lip:1.05,lipX:1.18,jawWidth:-.07,chin:-.022,browGrow:3,irisK:.85,browDrop:0,browTilt:.04,hl:.55,noseLine:.22,noLash:true}};
+ boy4:{male:true,eyeY:.78,eyeX:1.04,tilt:.05,brow:0,nose:.95,lip:1.05,lipX:1.18,jawWidth:-.07,chin:-.022,browGrow:3,irisK:.85,browDrop:0,browTilt:.04,hl:.55,noseLine:.22,noLash:true},
+ // LAVIEM singers (crew only, owner 2026-11-11; Quang Hùng keeps boy3): boy5 CAPTAIN BOY soft round face, small bright eyes,
+ // high straight brows; boy6 Pháp Kiều slim V face, long upturned eyes, angled brows, a defined nose; boy7 CoolKid round
+ // face, small eyes, low soft brows, a wide mouth
+ boy5:{male:true,eyeY:.74,eyeX:1.03,tilt:.06,brow:0,nose:.97,lip:1.04,lipX:1.12,jawWidth:-.035,chin:-.010,browGrow:3,irisK:.86,browDrop:-.002,browTilt:-.01,hl:.6,noseLine:.18,noLash:true},
+ boy6:{male:true,eyeY:.72,eyeX:1.06,tilt:.13,brow:0,nose:.93,lip:1.0,lipX:1.10,jawWidth:-.10,chin:-.028,browGrow:3,irisK:.82,browDrop:.004,browTilt:.07,hl:.5,noseLine:.30,noseLong:true,noLash:true},
+ boy7:{male:true,eyeY:.70,eyeX:1.02,tilt:.02,brow:0,nose:.98,lip:1.06,lipX:1.20,jawWidth:-.02,chin:-.006,browGrow:3,irisK:.86,browDrop:.005,browTilt:-.03,hl:.55,noseLine:.18,noLash:true}};
 function maleEdit(a,W,H,tag,s){
  if(/EyeHighlight/.test(tag)){const k=s.hl??.55;for(let i=3;i<a.length;i+=4)a[i]=Math.round(a[i]*k);return;}
  if(/Face_00_SKIN/.test(tag)&&s.noseLine){// a short shadow stroke down his right side of the nose to the drawn tip (texture .50,.653), a small one under it
