@@ -39,10 +39,10 @@
     };
   })();
 </script>
-<script src="sfx.js?v=1111.2211"></script>
-<link rel="stylesheet" href="dance3d/wardrobe.css?v=1111.2211">
+<script src="sfx.js?v=1111.2237"></script>
+<link rel="stylesheet" href="dance3d/wardrobe.css?v=1111.2237">
 <script type="importmap">{"imports":{"three":"./lib/three.module.js","three/addons/":"./lib/jsm/","@pixiv/three-vrm":"./lib/three-vrm.module.js"}}</script>
-<script src="dance.js?v=1111.2211"></script>
+<script src="dance.js?v=1111.2237"></script>
 <style>
   /* ===== Look: "kẹo ngọt long lanh". One palette: plum text, pink action, gold stars, mint/yellow/pink for the 3 levels. ===== */
   :root{
@@ -515,7 +515,7 @@ body.duo #scoreBox{display:none}
 <div id="gateHint" aria-hidden="true">Bố mẹ: giữ ⚙️ 1 giây để mở</div>
 
 <div id="menu">
-  <div id="verTag" aria-label="Phiên bản">Bản 1111.2211</div>
+  <div id="verTag" aria-label="Phiên bản">Bản 1111.2237</div>
   <div class="panel" id="mainPanel">
     <svg class="logo" viewBox="0 0 480 96" role="img" aria-label="Mũi Tên Theo Nhạc">
       <g transform="translate(48 50)">
@@ -596,7 +596,7 @@ body.duo #scoreBox{display:none}
 </div>
 
 <script>
-const V = '1111.2211';  // stamped by the deploy build
+const V = '1111.2237';  // stamped by the deploy build
 // Two rows, low on the screen where hands hold an iPad: 560 and 710. A touch above 635 is the upper row.
 const SPLIT_Y = 635,
   
@@ -626,6 +626,26 @@ buildLanes();
 function travelOf(lane) { const [x0, y0, x1, y1] = LANES[lane]; return Math.hypot(x1 - x0, y1 - y0) / SPEED; }
 let MAX_TRAVEL = Math.max(...Object.keys(LANES).map(travelOf));
 const $ = id => document.getElementById(id);
+// Look previews (owner 2026-11-11 "Ok vụ improvement", reports/look-options/HANDOFF.md): OFF unless ?look=lanes,burst,chev,…
+// or localStorage 'spike-look' names them (read once at start). The 3D ones (shade, lead, beat) live in dance3d/runtime.js.
+// Owner 2026-11-11 ("làm như bạn đề xuất đi"): shade, lead-dim, lead-pool, lanes and burst are ON by default; chev and beat
+// stay switches to try on the iPad. ?look=chev,beat adds them and is remembered on this device (the version reload drops
+// the query); ?look=none shows the old look; ?look=-burst turns one off; ?look= (empty) forgets the choice.
+const LOOK_DEFAULT = ['shade', 'lead-dim', 'lead-pool', 'lanes', 'burst'];
+const LOOK = (() => { let s = null; try { const q = new URLSearchParams(location.search); if (q.has('look')) { s = q.get('look'); if (s) localStorage.setItem('spike-look', s); else localStorage.removeItem('spike-look'); } else s = localStorage.getItem('spike-look'); } catch (e) {}
+  const words = String(s || '').toLowerCase().split(/[\s,]+/).filter(Boolean), w = new Set(words.includes('none') ? [] : LOOK_DEFAULT);
+  for (const x of words) { if (x === 'none') continue; if (x[0] === '-') w.delete(x.slice(1)); else w.add(x); }
+  if (w.has('all')) ['lanes', 'burst', 'chev', 'beat'].forEach(x => w.add(x)); return w; })();
+// lanes (#5): a darker plum band instead of the pale white one, and a plum outline round each flower ring (same places, same sizes)
+if (LOOK.has('lanes')) {
+  $('scene').style.setProperty('--lane', 'rgba(66,22,78,.6)');
+  $('flowerRing').insertAdjacentHTML('afterbegin', '<circle r="104" fill="none" stroke="#4a1a52" stroke-width="24" opacity=".5"/>');
+  $('flowerRing').insertAdjacentHTML('beforeend', '<circle r="89" fill="none" stroke="#4a1a52" stroke-width="5"/><circle r="75" fill="none" stroke="#4a1a52" stroke-width="4"/>');
+}
+// burst (#6): the flash on the ring keeps only its circle (the sparks round it covered the next arrow)
+if (LOOK.has('burst')) $('burstArt').querySelectorAll('use').forEach(u => u.remove());
+// chev (#7): in a tight run of arrows on one lane, show the first and the one behind it; the rest wait (still tapped as before)
+const CHEV_GAP = 0.5, CHEV_BEHIND = 1;
 const NS = 'http://www.w3.org/2000/svg';
 let ctx, source, chart, notes = [], startAt = 0, playing = false, tickNext = 0, firstLive = 0;
 let combo = 0, maxCombo = 0, comboTimer = 0;
@@ -778,12 +798,13 @@ const FX = (() => {
   function spawn(o) { parts.push({ ...base, ...o }); if (!running) { running = true; last = performance.now(); requestAnimationFrame(step); } }
   return {
     // x, y in screen pixels; gi = grade index (0 = best); k = screen pixels per scene unit, so a burst keeps its size on every screen
-    burst(x, y, gi, k = 1) {
-      const c = BURST[Math.min(gi, BURST.length - 1)], n = REDUCED ? Math.ceil(c.n / 3) : c.n, kk = Math.max(k, 0.55);
+    burst(x, y, gi, k = 1, away = null) {
+      const c = BURST[Math.min(gi, BURST.length - 1)], tidy = LOOK.has('burst') && away != null, cn = tidy ? Math.max(3, Math.round(c.n * 8 / 15)) : c.n, n = REDUCED ? Math.ceil(cn / 3) : cn, kk = Math.max(k, 0.55);
       spawn({ shape: 'ring', x, y, r0: 40 * kk, r1: 130 * kk, lw: 10 * kk, color: gi === 0 ? '#ffd23f' : '#fff', life: 0.42 });
       for (let i = 0; i < n; i++) {
-        const a = (i / n) * 6.2832 + rnd(-0.3, 0.3), sp = rnd(...c.speed) * kk;
-        spawn({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60 * kk, g: 520 * kk, drag: 2.2, vr: rnd(-6, 6), rot: rnd(0, 6.28), size: rnd(...c.size) * kk * 0.9, color: pick(c.cols), shape: pick(c.shapes), life: rnd(0.55, 0.95) });
+        // tidy: a fan pointing away from where the next arrows come in (±70° round the lane's direction), shorter lives
+        const a = tidy ? away + ((i + 0.5) / n - 0.5) * 2.45 + rnd(-0.15, 0.15) : (i / n) * 6.2832 + rnd(-0.3, 0.3), sp = rnd(...c.speed) * kk;
+        spawn({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60 * kk, g: 520 * kk, drag: 2.2, vr: rnd(-6, 6), rot: rnd(0, 6.28), size: rnd(...c.size) * kk * 0.9, color: pick(c.cols), shape: pick(c.shapes), life: tidy ? rnd(0.45, 0.7) : rnd(0.55, 0.95) });
       }
     },
     // big: paper shot up from both bottom corners (end of a song). small: a short rain from the top (a combo mark).
@@ -1292,6 +1313,7 @@ function frame() {
   if (window.spike.autoTap) for (let i = firstLive; i < notes.length; i++) { const n = notes[i]; if (n.t > now + 0.012) break; if (!n.done && now <= n.t + 0.07) tap(n.lane); }
   scheduleTicks(audioClock());
   const near = {};   // per lane: how far (seconds) the closest arrow is from its ring, so the ring can light up as one arrives
+  const chevRun = LOOK.has('chev') ? {} : null;   // look preview chev: per lane, the last arrow on screen and how many sit right behind the first
   for (let i = firstLive; i < notes.length; i++) {
     const n = notes[i];
     if (n.t - MAX_TRAVEL > now) break;  // nothing later can be on screen yet
@@ -1309,7 +1331,9 @@ function frame() {
     else {
       const appear = Math.min(Math.max(p / 0.12, 0), 1);  // fades in as it comes out from behind the dancer
       const leave = now > n.t + 0.4 ? Math.max(0, 1 - (now - n.t - 0.4) / (WINDOW - 0.4)) : 1;
-      n.el.setAttribute('opacity', String(Math.min(appear, leave)));
+      let op = Math.min(appear, leave);
+      if (chevRun) { const c = chevRun[n.lane], run = c && n.t - c.t < CHEV_GAP ? c.run + 1 : 0, want = run > CHEV_BEHIND ? 0 : 1; chevRun[n.lane] = { t: n.t, run }; n.cv = n.cv == null ? want : n.cv + (want - n.cv) * 0.3; op *= n.cv; }
+      n.el.setAttribute('opacity', String(op));
     }
   }
   while (firstLive < notes.length && notes[firstLive].done) firstLive++;
@@ -1319,6 +1343,7 @@ function frame() {
   while (lo < hi) { const m = (lo + hi + 1) >> 1; if (b[m] <= now) lo = m; else hi = m - 1; }
   const next = b[lo + 1] ?? b[lo] + 0.5;
   const phase = Math.min(Math.max((now - b[lo]) / (next - b[lo]), 0), 1);
+  if (LOOK.has('beat')) Dance.test?.look?.beat(phase);   // look preview beat: the light under her feet pulses
   Dance.draw(now);
   const prog = Math.min(Math.max(now, 0) / songLength(), 1);
   barEl.setAttribute('width', String(BAR_W * prog));
@@ -1402,10 +1427,10 @@ function tap(lane) {
   $('hits').textContent = `${hits}/${playable}`;
   layoutScoreBox();
   pop($('scoreBox'), [{ transform: 'scale(1)' }, { transform: 'scale(1.1)', offset: .3 }, { transform: 'scale(1)' }], 240);
-  pop($('burst' + lane), [{ transform: 'scale(.55)', opacity: 1 }, { transform: 'scale(1.45)', opacity: 0 }], 520);
+  pop($('burst' + lane), [{ transform: 'scale(.55)', opacity: 1 }, { transform: 'scale(1.45)', opacity: 0 }], LOOK.has('burst') ? 200 : 520);
   // stars, hearts and sparkles fly out of the ring: the better the tap, the more of them
   const st = STAGE[lane];
-  if (st) { const [px, py, k] = screenOf(st.x, st.y); FX.burst(px, py, GRADES.indexOf(grade), k); }
+  if (st) { const [px, py, k] = screenOf(st.x, st.y), [x0, y0, x1, y1] = LANES[lane]; FX.burst(px, py, GRADES.indexOf(grade), k, Math.atan2(y1 - y0, x1 - x0)); }
   // the praise word; on a combo mark (10, 20, 30, 50, 100) it says the mark instead, in gold, with paper and a pink glow
   const mark = comboWord(combo), say = $('say');
   say.textContent = mark || grade[1];

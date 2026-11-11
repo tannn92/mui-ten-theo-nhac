@@ -1,18 +1,18 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=1111.2211';
-import {createSongBackgrounds} from './song-backgrounds.js?v=1111.2211';
-import {loadWardrobe} from './wardrobe.js?v=1111.2211';
-import {createChoreography} from './choreography.js?v=1111.2211';
-import {createPoseBank} from './pose-bank.js?v=1111.2211';
-import {applyFaceExpression} from './face-expressions.js?v=1111.2211';
-import {createCrew} from './crew.js?v=1111.2211';
-import {newspaperProps} from './newspaper-prop.js?v=1111.2211';
-import {applyHeadScale} from './head-scale.js?v=1111.2211';
-import {createDancerProfiles,resolveDancerProfile} from './dancer-profiles.js?v=1111.2211';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1111.2211';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1111.2211';
-import {createPartner} from './partner.js?v=1111.2211';
-import {shrinkLargeTextures,sweepGpu} from './texture-budget.js?v=1111.2211';
+import {createPerformanceLibrary} from './performance-library.js?v=1111.2237';
+import {createSongBackgrounds} from './song-backgrounds.js?v=1111.2237';
+import {loadWardrobe} from './wardrobe.js?v=1111.2237';
+import {createChoreography} from './choreography.js?v=1111.2237';
+import {createPoseBank} from './pose-bank.js?v=1111.2237';
+import {applyFaceExpression} from './face-expressions.js?v=1111.2237';
+import {createCrew} from './crew.js?v=1111.2237';
+import {newspaperProps} from './newspaper-prop.js?v=1111.2237';
+import {applyHeadScale} from './head-scale.js?v=1111.2237';
+import {createDancerProfiles,resolveDancerProfile} from './dancer-profiles.js?v=1111.2237';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1111.2237';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1111.2237';
+import {createPartner} from './partner.js?v=1111.2237';
+import {shrinkLargeTextures,sweepGpu} from './texture-budget.js?v=1111.2237';
 export async function createRuntime(canvas,bundle){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
@@ -29,6 +29,13 @@ export async function createRuntime(canvas,bundle){
  const renderer=new T.WebGLRenderer({canvas,antialias:(devicePixelRatio||1)<2,alpha:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.outputColorSpace=T.SRGBColorSpace;
  const scene=new T.Scene();scene.background=new T.Color('#f4e4ed');const backdrop=createSongBackgrounds(scene);const camera=new T.OrthographicCamera(-1.6,1.6,1.12,-1.12,.01,20);camera.position.set(0,.75,5);camera.lookAt(0,.75,0);
  scene.add(new T.HemisphereLight(0xffffff,0x997c94,1.35));const light=new T.DirectionalLight(0xfff5ef,1.1);light.position.set(-2,4,5);scene.add(light);
+ // Look previews (owner 2026-11-11 "Ok vụ improvement", reports/look-options/HANDOFF.md): OFF unless ?look=… or
+ // localStorage 'spike-look' names them (read once). Defaults since 2026-11-11 (owner "làm như bạn đề xuất đi"): shade, lead-dim,
+ // lead-pool, lanes, burst — the same list as LOOK_DEFAULT in index.html; ?look=none restores the old look.
+ const LOOK=(()=>{let s=null;try{const q=new URLSearchParams(location.search);s=q.has('look')?q.get('look'):localStorage.getItem('spike-look');}catch(e){}const words=String(s||'').toLowerCase().split(/[\s,]+/).filter(Boolean),w=new Set(words.includes('none')?[]:['shade','lead-dim','lead-pool','lanes','burst']);for(const x of words){if(x==='none')continue;if(x[0]==='-')w.delete(x.slice(1));else w.add(x);}if(w.has('all'))['shade','lead','lanes','burst','chev','beat'].forEach(x=>w.add(x));if(w.has('lead'))['lead-dim','lead-rim','lead-pool'].forEach(x=>w.add(x));return w;})();
+ const lookShade=LOOK.has('shade')?'all':LOOK.has('shade-clothes')?'clothes':null;
+ // shade (#4): less flat light, so bodies and clothes get their shadow side back
+ if(lookShade){for(const o of scene.children)if(o.isHemisphereLight)o.intensity=.95;light.intensity=1.7;}
  const disc=new T.Mesh(new T.CylinderGeometry(.9,.95,.04,48),new T.MeshStandardMaterial({color:0xe0c3d5,roughness:1}));disc.position.y=-.03;scene.add(disc);
  const ring=new T.Mesh(new T.TorusGeometry(.92,.006,6,64),new T.MeshBasicMaterial({color:0xfffbfe}));ring.rotation.x=Math.PI/2;ring.position.y=-.005;scene.add(ring);
  const wardrobe=await loadWardrobe(scene,config),motion=createChoreography(data);
@@ -55,6 +62,31 @@ export async function createRuntime(canvas,bundle){
  // (host left, guest right, on both iPads). duo = null in one-player play.
  const partner=createPartner(scene,wardrobe,config),SLOT_X=.33;let duo=null,leadX=0;
  const poseBank=createPoseBank(data,wardrobe.variants);
+ const look=(()=>{if(!LOOK.size)return{frame(){},beat(){},on:[]};
+  const SKIN=/skin|face|eye|mouth|brow|lash|teeth|tooth|cheek/i,shaded=new WeakSet(),rimOrig=new WeakMap(),dimOf=new WeakMap(),dims=new WeakSet(),RIM=new T.Color(0xff9fcb);
+  const dimOn=LOOK.has('lead-dim'),rimOn=LOOK.has('lead-rim'),pool=LOOK.has('lead-pool'),beatOn=LOOK.has('beat');let n=0,beat=null;
+  // shade: MToon materials tuned "always lit" (shadingShift ≥ 0.99) get a toon shadow side; near-white shade colours 18% darker
+  const shade=m=>{if(!lookShade||shaded.has(m)||!m.isMToonMaterial)return;shaded.add(m);if(lookShade==='clothes'&&SKIN.test(m.name||''))return;
+   if(m.shadingShiftFactor>=.99){m.shadingShiftFactor=0;m.shadingToonyFactor=.9;}const c=m.shadeColorFactor;if(c&&c.r+c.g+c.b>2.6)c.multiplyScalar(.82);};
+  // lead (#3): the child gets a soft pink rim; the backups get their own darker, greyer copies of the shared materials
+  // (materials only: the copies use the same textures)
+  const rim=m=>{if(!rimOn||!m.isMToonMaterial||rimOrig.has(m)||dims.has(m))return;rimOrig.set(m,rimPlain&&rimSig(m)?rimPlain:[m.parametricRimColorFactor.clone(),m.parametricRimFresnelPowerFactor,m.parametricRimLiftFactor,m.rimLightingMixFactor]);
+   rimPlain=rimPlain||rimOrig.get(m);m.parametricRimColorFactor.copy(RIM).multiplyScalar(.55);m.parametricRimFresnelPowerFactor=3;m.parametricRimLiftFactor=.05;m.rimLightingMixFactor=.6;};
+  let rimPlain=null;const rimSig=m=>m.parametricRimFresnelPowerFactor===3&&m.parametricRimLiftFactor===.05&&Math.abs(m.parametricRimColorFactor.r-.55)<.01;
+  const grey=new T.Color(),dimColor=c=>{if(!c?.isColor)return;const l=c.r*.3+c.g*.59+c.b*.11;c.lerp(grey.setRGB(l,l,l),.2).multiplyScalar(.85);};
+  const dim=m=>{if(dims.has(m))return m;let d=dimOf.get(m);if(d)return d;d=m.clone();dims.add(d);if(shaded.has(m))shaded.add(d);
+   // a material copied from a rimmed one (crew-only styles are built from the child's) gets the plain rim back too
+   const r=rimOrig.get(m)||(rimOn&&d.isMToonMaterial&&rimSig(d)?rimPlain:null);if(r&&d.isMToonMaterial){d.parametricRimColorFactor.copy(r[0]);d.parametricRimFresnelPowerFactor=r[1];d.parametricRimLiftFactor=r[2];d.rimLightingMixFactor=r[3];}
+   if(dimOn){dimColor(d.color);if(d.isMToonMaterial)dimColor(d.shadeColorFactor);}d.update?.(0);dimOf.set(m,d);return d;};
+  const sweep=()=>{if(lookShade)scene.traverse(o=>{for(const m of [].concat(o.material||[]))if(m)shade(m);});
+   if(rimOn)for(const v of wardrobe.variants)v.vrm.scene.traverse(o=>{for(const m of [].concat(o.material||[]))if(m)rim(m);});
+   if(dimOn||rimOn)crew.group.traverse(o=>{if(!o.isMesh||!o.material)return;o.material=Array.isArray(o.material)?o.material.map(dim):dim(o.material);});};
+  // light pool under her feet (lead-pool), pulsing on the beat (beat, #9): a soft glow behind her feet (the camera looks level)
+  let glow=null;if(pool||beatOn){const c=document.createElement('canvas');c.width=128;c.height=64;const g=c.getContext('2d'),gr=g.createRadialGradient(64,32,0,64,32,64);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.45,'rgba(255,214,236,.75)');gr.addColorStop(1,'rgba(255,170,215,0)');g.fillStyle=gr;g.fillRect(0,0,128,64);
+   const tex=new T.CanvasTexture(c);tex.colorSpace=T.SRGBColorSpace;glow=new T.Mesh(new T.PlaneGeometry(1.15,.34),new T.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,opacity:0}));glow.position.set(0,.02,-.3);glow.renderOrder=-2;glow.visible=false;scene.add(glow);}
+  return{on:[...LOOK],beat(p){beat=Number.isFinite(p)?p:null;},
+   frame(playing,x){if(n++%30===0)sweep();if(!glow)return;glow.visible=playing;if(!playing)return;const k=beatOn&&beat!=null?Math.pow(1-beat,2):0;
+    glow.position.x=x;glow.material.opacity=Math.min(1,(pool?.6:0)+.4*k);glow.scale.setScalar(1+.08*k);}};})();
  let capturedIndex=new Map(captured?.boneNames.map((n,i)=>[n,i])||[]);
  let captureReferenceOffset=wardrobe.variants.find(v=>v.spec.id===captured?.referenceVariant)?.restOffset||0;
  // Bake only the two transition windows. Unwrapping the relative rotation
@@ -175,7 +207,7 @@ export async function createRuntime(canvas,bundle){
  for(let i=0;i<wardrobe.variants.length;i++){const variant=wardrobe.variants[i],vrm=variant.vrm;vrm.scene.position.y=groundedY+(variant.restOffset||0);const active=needed.has(i);if(active){vrm.scene.updateMatrixWorld(true);if(seek||!variant.wasActive)vrm.springBoneManager?.reset();applyFaceExpression(vrm,wardrobe.options.face[wardrobe.outfit.face],clock);vrm.update(dt);}variant.wasActive=active;}
  const side=menuOpen&&width<1000&&width>height&&height<=600,compact=menuOpen&&width<1000&&!side;camera.zoom=compact?.55:1;camera.updateProjectionMatrix();
   // landscape phone: the menu panel covers the right part, so centre the dancer in the free strip on the left
-  camera.position.x=menuOpen&&width>=1000?.47:side?(1-(width-10-Math.min(470,width*.58))/width)*1.12*width/height:0;camera.position.y=compact?-.4:.75;camera.lookAt(camera.position.x,camera.position.y,0);news.hideAll();if(crewVisible)news.update('lead',wardrobe.master.humanoid,news.slug,t);crew.update(crewVisible,playing?t:null,width/height,captureWeight===1&&capture?.root?capture.root:null);partner.update(!!duo,clock,leadX,playing);if(crewVisible&&partner.visible)news.update('partner',partner.humanoid,news.slug,t,'lead');renderer.render(scene,camera);
+  camera.position.x=menuOpen&&width>=1000?.47:side?(1-(width-10-Math.min(470,width*.58))/width)*1.12*width/height:0;camera.position.y=compact?-.4:.75;camera.lookAt(camera.position.x,camera.position.y,0);news.hideAll();if(crewVisible)news.update('lead',wardrobe.master.humanoid,news.slug,t);crew.update(crewVisible,playing?t:null,width/height,captureWeight===1&&capture?.root?capture.root:null);partner.update(!!duo,clock,leadX,playing);if(crewVisible&&partner.visible)news.update('partner',partner.humanoid,news.slug,t,'lead');look.frame(crewVisible,rootX+leadX);renderer.render(scene,camera);
   // Away from a song, every 3 s, free the GPU copies of what nobody shows (outfits tried on before). See texture-budget.js.
   if(!playing&&started-lastSweep>3000){lastSweep=started;try{sweepGpu(scene,leadFace?.resources?.()||[]);}catch(e){console.warn('gpu sweep',e);}}
  lastSnapshot={time:playing?t:null,motionSource:captureWeight===1?'captured':captureWeight>0?'blend':'authored',captured:{asset:captureAsset,available:!!captured,matched:captured?.matched||false,active:captureWeight>0,weight:captureWeight,source:'cac-center',transition:'continuous-relative-120hz',sourceTime:capture?.sourceTime??null,localTime:capture?.localTime??null,index:capture?.index??null,next:capture?.next??null,alpha:capture?.alpha??null,t0:captured?.t0??null,duration:captured?.duration??null,entryFade:captured?.entryFade??null,exitFade:captured?.exitFade??null},activeVariants:[...needed].sort((a,b)=>a-b),source:captureWeight>0?capture.localTime:sample.layers[0]?.time,layers:[...sample.layers.map(l=>({...l,weight:l.weight*(1-captureWeight)})).filter(l=>l.weight>0),...(captureWeight>0?[{clip:'cac-center',time:capture.localTime,weight:captureWeight}]:[])],clipIds:captureWeight===1?['cac-center']:captureWeight>0?['cac-center',...sample.layers.map(l=>l.clip)]:sample.layers.map(l=>l.clip),mode:sample.mode,phraseId:sample.phraseId,energy:sample.energy,amplitude:sample.amplitude,rootX,rootZ,leadX,sourceRoot,speed:sample.phaseRate,phaseRate:sample.phaseRate,rootVelocity:sample.rootVelocity,beatPhase:sample.beatPhase,rootPosition:[rootX,wardrobe.master.scene.position.y,rootZ],yaw:rootYaw,seek,drawMs:performance.now()-started,triangles:renderer.info.render.triangles,calls:renderer.info.render.calls};
@@ -194,7 +226,7 @@ export async function createRuntime(canvas,bundle){
  for(const c of crewEntry?.crew||[])if(c.outfit)await wardrobe.prepareOutfit(c.outfit);if(request!==songRequest)return false;
  captured=loaded?.lead?createCapturedMotion(loaded.lead):defaultCaptured;captureAsset=loaded?.lead?entry.lead:defaultCaptureAsset;
  capturedIndex=new Map(captured?.boneNames.map((n,i)=>[n,i])||[]);captureReferenceOffset=wardrobe.variants.find(v=>v.spec.id===captured?.referenceVariant)?.restOffset||0;
- songMoves=moves;news.slug=chart?.slug||Object.keys(raw.performances||{}).find(k=>raw.performances[k]===entry)||null;backdrop.setSong(chart);{const tint=backdrop.tint?.();if(tint){disc.material.color.set(tint.disc);ring.material.color.set(tint.ring);}}motion.setSong(moves,chart);const matched=captured?.setSong(moves,chart);if(loaded?.lead&&!matched)throw Error('Lead track song identity mismatch');{const keep=leadFace?.selected;if(keep&&keep!=='original')leadFace.apply('original');crew.setSong(chart,crewEntry,loaded?.crewData);if(keep&&keep!=='original')leadFace.apply(keep);}leadHeight=crewEntry?.leadHeight||1;partner.setSpot(-leadX,setHeight(news.slug,partner.selection));bakeCapturedFades();lastTime=null;idleStart=performance.now();return true;},outfits:presets,get outfit(){const i=presets.findIndex((_,i)=>physicalSlots.every(s=>wardrobe.variantFor(s,wardrobe.outfit[s])===i&&!wardrobe.options[s][wardrobe.outfit[s]].style));return i>=0&&!(wardrobe.outfit.accessory>0)?presets[i].id:'mixed';},setOutfit(id){const i=presets.findIndex(p=>p.id===id);if(i>=0){physicalSlots.forEach(s=>{const choice=wardrobe.options?.[s]?.findIndex(o=>o.variant===i)??i;if(choice>=0)equip(s,choice);});if(wardrobe.slots.includes('accessory'))equip('accessory',0);}},mountWardrobe(container){refresh=mountWardrobe(container,config,equipFromUI,()=>wardrobe.outfit,name=>bundle.files['wardrobe/icons/'+name+'.webp']||null);},test:{wardrobe,camera,scene,renderer,motion,poseBank,crew,captured,partner,config}};
+ songMoves=moves;news.slug=chart?.slug||Object.keys(raw.performances||{}).find(k=>raw.performances[k]===entry)||null;backdrop.setSong(chart);{const tint=backdrop.tint?.();if(tint){disc.material.color.set(tint.disc);ring.material.color.set(tint.ring);}}motion.setSong(moves,chart);const matched=captured?.setSong(moves,chart);if(loaded?.lead&&!matched)throw Error('Lead track song identity mismatch');{const keep=leadFace?.selected;if(keep&&keep!=='original')leadFace.apply('original');crew.setSong(chart,crewEntry,loaded?.crewData);if(keep&&keep!=='original')leadFace.apply(keep);}leadHeight=crewEntry?.leadHeight||1;partner.setSpot(-leadX,setHeight(news.slug,partner.selection));bakeCapturedFades();lastTime=null;idleStart=performance.now();return true;},outfits:presets,get outfit(){const i=presets.findIndex((_,i)=>physicalSlots.every(s=>wardrobe.variantFor(s,wardrobe.outfit[s])===i&&!wardrobe.options[s][wardrobe.outfit[s]].style));return i>=0&&!(wardrobe.outfit.accessory>0)?presets[i].id:'mixed';},setOutfit(id){const i=presets.findIndex(p=>p.id===id);if(i>=0){physicalSlots.forEach(s=>{const choice=wardrobe.options?.[s]?.findIndex(o=>o.variant===i)??i;if(choice>=0)equip(s,choice);});if(wardrobe.slots.includes('accessory'))equip('accessory',0);}},mountWardrobe(container){refresh=mountWardrobe(container,config,equipFromUI,()=>wardrobe.outfit,name=>bundle.files['wardrobe/icons/'+name+'.webp']||null);},test:{wardrobe,camera,scene,renderer,motion,poseBank,crew,captured,partner,config,look}};
  // Warm both crew costumes while the loading state is still visible. Otherwise
  // their first shader compilation can stall the first audible dance beat.
  // Owner 2026-11-09: trying clothes on must not wait. Sew the shop (set items first) while the loading screen is up, for

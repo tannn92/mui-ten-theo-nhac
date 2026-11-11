@@ -1,6 +1,6 @@
 import * as T from 'three';
-import {fitPoint,fitSection,armShell,armRadius} from './body-fit.js?v=1111.2211';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1111.2211';
+import {fitPoint,fitSection,armShell,armRadius} from './body-fit.js?v=1111.2237';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1111.2237';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // "Tìm em" (B-Wild Christmas street dance, owner 2026-11-11): white fur, red velvet, red sequin belts, fluffy leg warmers.
 // Same construction as secret-styles.js: tops hug the body through body-fit.js (convex torso slice + 4 mm), sleeves and
