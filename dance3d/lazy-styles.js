@@ -1,26 +1,26 @@
-import {buildGoldenStageStyles} from './golden-stage-styles.js?v=1111.0832';
-import {buildSecretStyles} from './secret-styles.js?v=1111.0832';
-import {buildSecretStars} from './secret-stars.js?v=1111.0832';
-import {buildSecretHair} from './secret-hair.js?v=1111.0832';
-import {buildBoyHair} from './boy-hair.js?v=1111.0832';
-import {buildStarHair} from './star-hair.js?v=1111.0832';
-import {buildWislStyles} from './wisl-styles.js?v=1111.0832';
-import {buildGoldenHair} from './golden-hair.js?v=1111.0832';
-import {buildHuntrixHair} from './huntrix-hair.js?v=1111.0832';
-import {buildHuntrixTrioStyles} from './huntrix-trio-styles.js?v=1111.0832';
-import {buildTaiSinhCrewStyles} from './tai-sinh-crew-styles.js?v=1111.0832';
-import {buildTaiSinhHair} from './tai-sinh-hair.js?v=1111.0832';
-import {buildTaiSinhStyles} from './tai-sinh-styles.js?v=1111.0832';
-import {buildGirlXinhBoyStyles} from './girl-xinh-boys-styles.js?v=1111.0832';
-import {buildGirlXinhHair} from './girl-xinh-hair.js?v=1111.0832';
-import {buildGirlXinhLeadStyles} from './girl-xinh-lead.js?v=1111.0832';
-import {buildDolceCrewHair} from './dolce-hair.js?v=1111.0832';
-import {buildDolceCrewStyles} from './dolce-crew-styles.js?v=1111.0832';
-import {buildHatMuaCrewHair} from './crew-hair.js?v=1111.0832';
-import {buildHatMuaCrewStyles} from './crew-styles.js?v=1111.0832';
-import {buildClothingStyles} from './clothing-styles.js?v=1111.0832';
-import {buildHuntrixStyles} from './huntrix-styles.js?v=1111.0832';
-import {buildHatMuaStyles} from './hat-mua-styles.js?v=1111.0832';
+import {buildGoldenStageStyles} from './golden-stage-styles.js?v=1111.0928';
+import {buildSecretStyles} from './secret-styles.js?v=1111.0928';
+import {buildSecretStars} from './secret-stars.js?v=1111.0928';
+import {buildSecretHair} from './secret-hair.js?v=1111.0928';
+import {buildBoyHair} from './boy-hair.js?v=1111.0928';
+import {buildStarHair} from './star-hair.js?v=1111.0928';
+import {buildWislStyles} from './wisl-styles.js?v=1111.0928';
+import {buildGoldenHair} from './golden-hair.js?v=1111.0928';
+import {buildHuntrixHair} from './huntrix-hair.js?v=1111.0928';
+import {buildHuntrixTrioStyles} from './huntrix-trio-styles.js?v=1111.0928';
+import {buildTaiSinhCrewStyles} from './tai-sinh-crew-styles.js?v=1111.0928';
+import {buildTaiSinhHair} from './tai-sinh-hair.js?v=1111.0928';
+import {buildTaiSinhStyles} from './tai-sinh-styles.js?v=1111.0928';
+import {buildGirlXinhBoyStyles} from './girl-xinh-boys-styles.js?v=1111.0928';
+import {buildGirlXinhHair} from './girl-xinh-hair.js?v=1111.0928';
+import {buildGirlXinhLeadStyles} from './girl-xinh-lead.js?v=1111.0928';
+import {buildDolceCrewHair} from './dolce-hair.js?v=1111.0928';
+import {buildDolceCrewStyles} from './dolce-crew-styles.js?v=1111.0928';
+import {buildHatMuaCrewHair} from './crew-hair.js?v=1111.0928';
+import {buildHatMuaCrewStyles} from './crew-styles.js?v=1111.0928';
+import {buildClothingStyles} from './clothing-styles.js?v=1111.0928';
+import {buildHuntrixStyles} from './huntrix-styles.js?v=1111.0928';
+import {buildHatMuaStyles} from './hat-mua-styles.js?v=1111.0928';
 
 // Every cooperative step is a synchronous rest-pose transaction. The renderer
 // always sees the live pose, never a donor left at rest across an event-loop yield.
@@ -73,10 +73,11 @@ export function createLazyStyles(variants,options){
   const tasks=[];for(const [slot,index]of Object.entries(outfit))if(options[slot]&&!isStyleReady(slot,index))tasks.push(taskFor(slot,index,priority).promise);
   schedule();return Promise.all(tasks).then(()=>undefined);
  }
- function prewarmOutfits(outfits=[]){
-  // Caller supplies song/crew priorities first. All other options follow at zero.
+ function prewarmOutfits(outfits=[],{everything=true}={}){
+  // Caller supplies song/crew priorities first. All other options follow at zero, unless everything is false (iPad
+  // memory, owner 2026-11-11: the game sews only the sets ahead; any other item is sewn when tapped).
   const tasks=outfits.map((outfit,i)=>prepareOutfit(outfit,{priority:Math.max(1,50-i)}));
-  for(const [slot,items]of Object.entries(options))items.forEach((_,index)=>tasks.push(prepareOutfit({[slot]:index},{priority:0})));
+  if(everything)for(const [slot,items]of Object.entries(options))items.forEach((_,index)=>tasks.push(prepareOutfit({[slot]:index},{priority:0})));
   return Promise.all(tasks).then(()=>undefined);
  }
  function setBackgroundPaused(value){paused=!!value;schedule();}

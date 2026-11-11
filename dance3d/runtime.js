@@ -1,17 +1,18 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=1111.0832';
-import {createSongBackgrounds} from './song-backgrounds.js?v=1111.0832';
-import {loadWardrobe} from './wardrobe.js?v=1111.0832';
-import {createChoreography} from './choreography.js?v=1111.0832';
-import {createPoseBank} from './pose-bank.js?v=1111.0832';
-import {applyFaceExpression} from './face-expressions.js?v=1111.0832';
-import {createCrew} from './crew.js?v=1111.0832';
-import {newspaperProps} from './newspaper-prop.js?v=1111.0832';
-import {applyHeadScale} from './head-scale.js?v=1111.0832';
-import {createDancerProfiles,resolveDancerProfile} from './dancer-profiles.js?v=1111.0832';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1111.0832';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1111.0832';
-import {createPartner} from './partner.js?v=1111.0832';
+import {createPerformanceLibrary} from './performance-library.js?v=1111.0928';
+import {createSongBackgrounds} from './song-backgrounds.js?v=1111.0928';
+import {loadWardrobe} from './wardrobe.js?v=1111.0928';
+import {createChoreography} from './choreography.js?v=1111.0928';
+import {createPoseBank} from './pose-bank.js?v=1111.0928';
+import {applyFaceExpression} from './face-expressions.js?v=1111.0928';
+import {createCrew} from './crew.js?v=1111.0928';
+import {newspaperProps} from './newspaper-prop.js?v=1111.0928';
+import {applyHeadScale} from './head-scale.js?v=1111.0928';
+import {createDancerProfiles,resolveDancerProfile} from './dancer-profiles.js?v=1111.0928';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1111.0928';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1111.0928';
+import {createPartner} from './partner.js?v=1111.0928';
+import {shrinkLargeTextures,sweepGpu} from './texture-budget.js?v=1111.0928';
 export async function createRuntime(canvas,bundle){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
@@ -27,6 +28,8 @@ export async function createRuntime(canvas,bundle){
  const disc=new T.Mesh(new T.CylinderGeometry(.9,.95,.04,48),new T.MeshStandardMaterial({color:0xe0c3d5,roughness:1}));disc.position.y=-.03;scene.add(disc);
  const ring=new T.Mesh(new T.TorusGeometry(.92,.006,6,64),new T.MeshBasicMaterial({color:0xfffbfe}));ring.rotation.x=Math.PI/2;ring.position.y=-.005;scene.add(ring);
  const wardrobe=await loadWardrobe(scene,config),motion=createChoreography(data);
+ // iPad memory (owner 2026-11-11, two iPads ran out of memory): halve the donors' 2048 px images before the first draw.
+ try{await shrinkLargeTextures(wardrobe.variants.map(v=>v.vrm.scene));}catch(e){console.warn('shrink textures',e);}
  // Smaller head (owner 2026-11-10 "tỉ lệ cái đầu đang hơi to"; Codex chose 0.85): uniform raw-head scale on every donor, once,
  // AFTER the lazy styles captured the unscaled rest pose (their build steps restore it) and BEFORE any crew rig is cloned
  // (clones inherit the scale, the canonical baseline and the scaled head colliders/hair hit radii).
@@ -116,7 +119,7 @@ export async function createRuntime(canvas,bundle){
  const frontRowOut=c=>({...c,...(c.anchor?{anchor:frontOut(c.anchor)}:{}),...(c.moves?{moves:c.moves.map(m=>m.to?{...m,to:frontOut(m.to)}:m)}:{})});
  // HUNTR/X character heights for a selection (the set it wears in that song), as for the child (leadHeight)
  function setHeight(slug,sel){const spec=config.crewOutfits?.[slug];if(!sel||!spec||Array.isArray(spec)||spec.mode!=='complement')return 1;const set=(spec.sets||[]).map(id=>(config.sets||[]).find(x=>x.id===id)).filter(Boolean).find(x=>['top','bottom'].every(k=>x.selection?.[k]===sel[k]));if(!set)return 1;for(const [k,h] of Object.entries(spec.heights||{}))if(set.id.includes(k))return h;return 1;}
- let bgPlaying=null;
+ let bgPlaying=null,lastSweep=0;
  function draw(t){const started=performance.now();resize();const playing=t!=null&&Number.isFinite(t);{const lh=playing?leadHeight:1;for(const v of wardrobe.variants)if(v.vrm.scene.scale.x!==lh)v.vrm.scene.scale.setScalar(lh);}if(playing!==bgPlaying){bgPlaying=playing;try{wardrobe.setBackgroundPaused?.(playing);}catch(e){}}const clock=playing?t:(performance.now()-idleStart)/1000;const delta=lastTime==null?0:clock-lastTime,seek=lastMode!==playing||delta<0||delta>.15,dt=seek?0:Math.min(.05,Math.max(0,delta));lastTime=clock;lastMode=playing;const menu=document.querySelector('#menu'),menuOpen=menu&&!menu.hidden&&!menu.classList.contains('hide')&&menu.style.display!=='none',crewVisible=playing&&!menuOpen,needed=new Set([0]);if(crewVisible)for(const i of crew.sharedVariants())needed.add(i);for(const slot of physicalSlots){const i=wardrobe.variantFor?wardrobe.variantFor(slot,wardrobe.outfit[slot]):wardrobe.outfit[slot];if(Number.isInteger(i))needed.add(i);}const activeVariants=wardrobe.variants.filter((_,i)=>needed.has(i));const sample=motion.sample(playing?clock:clock*.5),capture=playing?captured?.sample(captured.t0===0&&clock<0?0:clock):null,captureWeight=capture?.weight||0,fadePose=captureWeight>0&&captureWeight<1?fadePoseAt(clock):null,sourceRoot=poseBank.root(sample),authoredRootX=.3*Math.tanh(((sample.rootX||0)+sourceRoot[0]*.5)/.3),authoredRootZ=T.MathUtils.clamp((sample.rootZ||0)+sourceRoot[2]*.5,-.13,.13),rootX=T.MathUtils.lerp(authoredRootX,capture?.root[0]||0,captureWeight),rootZ=T.MathUtils.lerp(authoredRootZ,capture?.root[2]||0,captureWeight),rootYaw=(sample.yaw||0)*(1-captureWeight);
  for(const variant of wardrobe.variants){variant.vrm.scene.position.x=rootX+leadX;variant.vrm.scene.position.z=rootZ;variant.vrm.scene.rotation.y=rootYaw;}
  for(const variant of activeVariants){
@@ -133,6 +136,8 @@ export async function createRuntime(canvas,bundle){
  const side=menuOpen&&width<1000&&width>height&&height<=600,compact=menuOpen&&width<1000&&!side;camera.zoom=compact?.55:1;camera.updateProjectionMatrix();
   // landscape phone: the menu panel covers the right part, so centre the dancer in the free strip on the left
   camera.position.x=menuOpen&&width>=1000?.47:side?(1-(width-10-Math.min(470,width*.58))/width)*1.12*width/height:0;camera.position.y=compact?-.4:.75;camera.lookAt(camera.position.x,camera.position.y,0);news.hideAll();if(crewVisible)news.update('lead',wardrobe.master.humanoid,news.slug,t);crew.update(crewVisible,playing?t:null,width/height,captureWeight===1&&capture?.root?capture.root:null);partner.update(!!duo,clock,leadX,playing);if(crewVisible&&partner.visible)news.update('partner',partner.humanoid,news.slug,t,'lead');renderer.render(scene,camera);
+  // Away from a song, every 3 s, free the GPU copies of what nobody shows (outfits tried on before). See texture-budget.js.
+  if(!playing&&started-lastSweep>3000){lastSweep=started;try{sweepGpu(scene,leadFace?.resources?.()||[]);}catch(e){console.warn('gpu sweep',e);}}
  lastSnapshot={time:playing?t:null,motionSource:captureWeight===1?'captured':captureWeight>0?'blend':'authored',captured:{asset:captureAsset,available:!!captured,matched:captured?.matched||false,active:captureWeight>0,weight:captureWeight,source:'cac-center',transition:'continuous-relative-120hz',sourceTime:capture?.sourceTime??null,localTime:capture?.localTime??null,index:capture?.index??null,next:capture?.next??null,alpha:capture?.alpha??null,t0:captured?.t0??null,duration:captured?.duration??null,entryFade:captured?.entryFade??null,exitFade:captured?.exitFade??null},activeVariants:[...needed].sort((a,b)=>a-b),source:captureWeight>0?capture.localTime:sample.layers[0]?.time,layers:[...sample.layers.map(l=>({...l,weight:l.weight*(1-captureWeight)})).filter(l=>l.weight>0),...(captureWeight>0?[{clip:'cac-center',time:capture.localTime,weight:captureWeight}]:[])],clipIds:captureWeight===1?['cac-center']:captureWeight>0?['cac-center',...sample.layers.map(l=>l.clip)]:sample.layers.map(l=>l.clip),mode:sample.mode,phraseId:sample.phraseId,energy:sample.energy,amplitude:sample.amplitude,rootX,rootZ,leadX,sourceRoot,speed:sample.phaseRate,phaseRate:sample.phaseRate,rootVelocity:sample.rootVelocity,beatPhase:sample.beatPhase,rootPosition:[rootX,wardrobe.master.scene.position.y,rootZ],yaw:rootYaw,seek,drawMs:performance.now()-started,triangles:renderer.info.render.triangles,calls:renderer.info.render.calls};
  }
  function snapshot(){const bones={};for(const name of ['hips','spine','chest','neck','head','leftShoulder','rightShoulder','leftUpperArm','rightUpperArm','leftLowerArm','rightLowerArm','leftHand','rightHand','leftUpperLeg','rightUpperLeg','leftLowerLeg','rightLowerLeg','leftFoot','rightFoot']){const b=wardrobe.master.humanoid.getRawBoneNode(name);if(!b)continue;b.getWorldPosition(v);const world=v.toArray(),screen=v.clone().project(camera);bones[name]={world,screen:[(screen.x+1)*width/2,(1-screen.y)*height/2],quaternion:b.quaternion.toArray()};}return{...lastSnapshot,backdrop:backdrop.diagnostics(),crew:crew.diagnostics(),selection:{...wardrobe.outfit},bones,finite:Object.values(bones).every(b=>b.world.every(Number.isFinite)),face:{id:wardrobe.options.face[wardrobe.outfit.face].id,values:wardrobe.options.face[wardrobe.outfit.face].values},parts:wardrobe.variants.flatMap((v,i)=>Object.entries(v.parts).flatMap(([slot,ms])=>ms.map(m=>({slot,variant:i,visible:m.visible,meshId:m.uuid,geometryId:m.geometry.uuid,indexCount:m.geometry.index?.count||0})))).concat((wardrobe.styleParts||[]).map(p=>({slot:p.slot,variant:p.variant,donor:p.donor,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count}))).concat((wardrobe.accessoryParts||[]).map(p=>({slot:p.slot,variant:p.variant,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count}))),accessories:(wardrobe.accessoryParts||[]).map(p=>({slot:p.slot,variant:p.variant,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count})),audit:wardrobe.audit};}
@@ -163,6 +168,8 @@ export async function createRuntime(canvas,bundle){
  draw(null);crew.update(true,0,width/height);
  if(renderer.compileAsync)await renderer.compileAsync(scene,camera);else renderer.compile(scene,camera);
  renderer.render(scene,camera);crew.update(false,null,width/height);draw(null);
- setTimeout(()=>{try{wardrobe.prewarmOutfits?.([...(config.sets||[]).map(x=>x.selection),...Object.values(config.crewOutfits||{}).flat().map(crewSelection).filter(Boolean)]);}catch(e){console.warn('prewarm',e);}},2500);
+ // iPad memory (owner 2026-11-11): the crew-only looks of every song (mostly the Secret singers' hair) held ~290 MB sewn
+ // ahead; they are sewn when their song opens (setSong waits for them). The shop itself stays sewn: try-on must not wait.
+ setTimeout(()=>{try{wardrobe.prewarmOutfits?.((config.sets||[]).map(x=>x.selection),{everything:false});}catch(e){console.warn('prewarm',e);}},2500);
  return api;
 }

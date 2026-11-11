@@ -1,5 +1,5 @@
-import {createFaceIdentities} from './dancer-face-shapes.js?v=1111.0832';
-import {applyHeadScale} from './head-scale.js?v=1111.0832';
+import {createFaceIdentities} from './dancer-face-shapes.js?v=1111.0928';
+import {applyHeadScale} from './head-scale.js?v=1111.0928';
 export const dancerProfiles=Object.freeze([
  Object.freeze({id:'original',label:'Gương mặt gốc',headScale:.85}),
  Object.freeze({id:'rumi',label:'Rumi · cân đối',headScale:.85}),
@@ -25,12 +25,12 @@ export function resolveDancerProfile({explicitCharacter,selection={},options={},
 }
 export function createDancerProfiles({faceMeshes,rigs=[],initial='original'}={}){
  const face=createFaceIdentities(faceMeshes||[]);
- if(!face.supported)return{supported:false,reason:face.reason,apply:()=>false,prepare:()=>false,dispose(){}};
+ if(!face.supported)return{supported:false,reason:face.reason,apply:()=>false,prepare:()=>false,resources:()=>[],dispose(){}};
  const prior=rigs.map(v=>{const h=v.humanoid.getRawBoneNode('head'),base=h?.userData.previewHeadScaleBase?.scale;return base?h.scale.x/base[0]:1;});
  let current=null;
  function prepare(id='original'){if(!known(id))throw Error('Unknown dancer profile: '+id);return id==='original'?true:face.build(id);}
  function apply(id='original'){if(!known(id))throw Error('Unknown dancer profile: '+id);face.set(id);const p=dancerProfiles.find(p=>p.id===id);for(const rig of rigs)applyHeadScale(rig,p.headScale,p.headAspect);current=id;return true;}
  // Initialize before actor visibility. Baseline exists only for resource cleanup.
  apply(initial);
- return{supported:true,apply,prepare,get selected(){return current;},get timings(){return face.timings;},dispose(){face.dispose();rigs.forEach((r,i)=>applyHeadScale(r,prior[i]));current=null;}};
+ return{supported:true,apply,prepare,resources:()=>face.resources?.()||[],get selected(){return current;},get timings(){return face.timings;},dispose(){face.dispose();rigs.forEach((r,i)=>applyHeadScale(r,prior[i]));current=null;}};
 }

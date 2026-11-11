@@ -2,7 +2,7 @@
 // the other joins and picks clothes, taps "Sẵn sàng"; the host taps "Bắt đầu" and both go in together; two dancers on stage,
 // head-to-head scores. Messages carry numbers, song slugs, level keys and wardrobe option ids only.
 // Every `at` on the line is in HOST performance.now() ms; the guest keeps offset = host - local (bestOffset of 20 pings).
-import {bestOffset, ctxTimeAt} from './clock.js?v=1111.0832';
+import {bestOffset, ctxTimeAt} from './clock.js?v=1111.0928';
 
 const COUNTDOWN_MS = 3500, PINGS = 20, PING_GAP_MS = 50, RESULT_WAIT_MS = 5000, JOIN_LEAD_MS = 1500, SOLO_LEAD_MS = 1000;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -30,7 +30,10 @@ export function createSession({link, game, dance}) {
   // ---- lobby ----
   function sendLobby() { send({t: 'lobby', ...(isHost ? {song: S.room.song, level: S.room.level} : {}), outfit: S.me.outfit, ready: S.me.ready, mute: S.me.mute}); }
   // the partner's dancer wears the partner's clothes (debounced: a set is several taps in one go)
-  function dress() { clearTimeout(dressTimer); dressTimer = setTimeout(() => { dressed = Promise.resolve(dance.setDuo(S.partner.outfit ? {side: isHost ? 'L' : 'R', partner: S.partner.outfit} : null)).catch(e => console.warn('duo dress', e)); }, 300); }
+  // now: at the start the clothes are fixed (owner 2026-11-11 "quần áo, điệu nhảy cố định hết từ thời điểm đó"), no wait
+  function dress(now) { clearTimeout(dressTimer); const run = () => { dressTimer = 0; dressed = Promise.resolve(dance.setDuo(S.partner.outfit ? {side: isHost ? 'L' : 'R', partner: S.partner.outfit} : null)).catch(e => console.warn('duo dress', e)); }; if (now) run(); else dressTimer = setTimeout(run, 300); }
+  // the partner's last clothes, as they were when the song started: dress at once if they differ from what is shown
+  function fixPartner(outfit) { if (outfit && !same(outfit, S.partner.outfit)) { S.partner.outfit = outfit; dress(true); } else if (dressTimer) dress(true); return dressed; }
   link.on('lobby', m => {
     if (!isHost && 'song' in m) { S.room.song = m.song ?? null; S.room.level = m.level ?? null; }
     const newOutfit = !same(m.outfit, S.partner.outfit);
@@ -86,7 +89,8 @@ export function createSession({link, game, dance}) {
     if (!isHost || S.phase !== 'lobby' || !S.partner.ready || !S.room.song || !S.room.level || link.state !== 'open') return false;
     game.unlockAudio();   // inside the tap: iPad audio may only start after a touch
     newRun(); S.notice = null; S.phase = 'prep'; changed();
-    send({t: 'prep', song: S.room.song, level: S.room.level});
+    S.me.outfit = dance.outfitIds();   // what this child wears now is what the other iPad shows for the whole song
+    send({t: 'prep', song: S.room.song, level: S.room.level, outfit: S.me.outfit});
     clearTimeout(prepTimer); prepTimer = setTimeout(() => { if (S.phase === 'prep') { send({t: 'prepCancel'}); S.phase = 'lobby'; S.notice = 'prepFail'; changed(); } }, 20000);   // never hang on 'Đang mở bài…'
     try { await prepareLocal(); } catch (e) { console.warn('duo prepare', e); clearTimeout(prepTimer); send({t: 'prepCancel'}); S.phase = 'lobby'; changed(); return false; }
     S.run.loadedMe = true; maybeGo();
@@ -95,14 +99,16 @@ export function createSession({link, game, dance}) {
   link.on('prep', async m => {
     if (isHost) return;
     S.room.song = m.song; S.room.level = m.level; newRun(); S.phase = 'prep'; changed();
+    fixPartner(m.outfit);
+    S.me.outfit = dance.outfitIds(); sendLobby();   // the host hears my last clothes before the song opens there
     const sync = syncClock();
     try { await prepareLocal(); } catch (e) { console.warn('duo prepare', e); send({t: 'prepFail'}); S.phase = 'lobby'; changed(); return; }
     await sync;
-    if (S.phase === 'prep') send({t: 'loaded'});
+    if (S.phase === 'prep') send({t: 'loaded', outfit: S.me.outfit});
   });
   link.on('prepFail', () => { if (isHost && S.phase === 'prep') { clearTimeout(prepTimer); S.phase = 'lobby'; S.notice = 'prepFail'; changed(); } });
   link.on('prepCancel', () => { if (!isHost && S.phase === 'prep') { S.phase = 'lobby'; changed(); } });
-  link.on('loaded', () => { if (isHost) { S.run.loadedPartner = true; maybeGo(); } });
+  link.on('loaded', async m => { if (!isHost) return; await fixPartner(m?.outfit); S.run.loadedPartner = true; maybeGo(); });
   function maybeGo() {
     if (!isHost || S.phase !== 'prep' || !S.run.loadedMe || !S.run.loadedPartner) return;
     clearTimeout(prepTimer);
