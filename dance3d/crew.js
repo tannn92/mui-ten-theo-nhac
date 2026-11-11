@@ -1,17 +1,17 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=1111.2136';
-import {createDancerProfiles} from './dancer-profiles.js?v=1111.2136';
-import {hideNativeCrewSafety} from './crew-styles.js?v=1111.2136';
-import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=1111.2136';
-import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1111.2136';
-import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=1111.2136';
-import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1111.2136';
-import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=1111.2136';
-import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1111.2136';
-import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1111.2136';
-import {hideNativeWislSafety} from './wisl-styles.js?v=1111.2136';
-import {hideNativeSecretSafety} from './secret-styles.js?v=1111.2136';
-import {newspaperProps,paperState} from './newspaper-prop.js?v=1111.2136';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=1111.2211';
+import {createDancerProfiles} from './dancer-profiles.js?v=1111.2211';
+import {hideNativeCrewSafety} from './crew-styles.js?v=1111.2211';
+import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=1111.2211';
+import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1111.2211';
+import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=1111.2211';
+import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1111.2211';
+import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=1111.2211';
+import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1111.2211';
+import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1111.2211';
+import {hideNativeWislSafety} from './wisl-styles.js?v=1111.2211';
+import {hideNativeSecretSafety} from './secret-styles.js?v=1111.2211';
+import {newspaperProps,paperState} from './newspaper-prop.js?v=1111.2211';
 
 // Four background performers reuse the live A/B skeletons, geometry, materials
 // and morph arrays. Detached binding applies a crew transform AFTER skinning;

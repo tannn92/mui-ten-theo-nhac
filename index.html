@@ -39,10 +39,10 @@
     };
   })();
 </script>
-<script src="sfx.js?v=1111.2136"></script>
-<link rel="stylesheet" href="dance3d/wardrobe.css?v=1111.2136">
+<script src="sfx.js?v=1111.2211"></script>
+<link rel="stylesheet" href="dance3d/wardrobe.css?v=1111.2211">
 <script type="importmap">{"imports":{"three":"./lib/three.module.js","three/addons/":"./lib/jsm/","@pixiv/three-vrm":"./lib/three-vrm.module.js"}}</script>
-<script src="dance.js?v=1111.2136"></script>
+<script src="dance.js?v=1111.2211"></script>
 <style>
   /* ===== Look: "kẹo ngọt long lanh". One palette: plum text, pink action, gold stars, mint/yellow/pink for the 3 levels. ===== */
   :root{
@@ -515,7 +515,7 @@ body.duo #scoreBox{display:none}
 <div id="gateHint" aria-hidden="true">Bố mẹ: giữ ⚙️ 1 giây để mở</div>
 
 <div id="menu">
-  <div id="verTag" aria-label="Phiên bản">Bản 1111.2136</div>
+  <div id="verTag" aria-label="Phiên bản">Bản 1111.2211</div>
   <div class="panel" id="mainPanel">
     <svg class="logo" viewBox="0 0 480 96" role="img" aria-label="Mũi Tên Theo Nhạc">
       <g transform="translate(48 50)">
@@ -596,7 +596,7 @@ body.duo #scoreBox{display:none}
 </div>
 
 <script>
-const V = '1111.2136';  // stamped by the deploy build
+const V = '1111.2211';  // stamped by the deploy build
 // Two rows, low on the screen where hands hold an iPad: 560 and 710. A touch above 635 is the upper row.
 const SPLIT_Y = 635,
   
@@ -663,6 +663,21 @@ function levelNotes(c, level) {
 }
 let recording = false, taps = [];  // 'Ghi nhịp gõ': the player taps what they hear, the times are kept
 // minutes:seconds of what the player hears, so feedback can name the moment
+// Score box layout (owner 2026-11-11 via reports/audition-study: "429/492" ran under the heart): the heart sits just left of
+// the hit count (right-aligned at x 140); when the score gets long, the star and the score move left and the box grows left.
+function layoutScoreBox() {
+  const box = $('scoreBox'), s = $('score'), h = $('hits'), icon = $('hitsIcon');
+  if (!box || !s || !h || !icon) return;
+  let sw = 0, hw = 0;
+  try { sw = s.getComputedTextLength(); hw = h.getComputedTextLength(); } catch (e) { return; }
+  if (!(sw > 0) || !(hw > 0)) return;                    // not laid out (hidden): keep the drawn defaults
+  const heartX = Math.min(58, 140 - hw - 24);             // heart centre, about 21 px wide
+  const shift = Math.max(0, (-78 + sw + 8) - (heartX - 13));
+  icon.setAttribute('transform', `translate(${heartX} 0) scale(.42)`);
+  s.setAttribute('x', -78 - shift);
+  box.querySelector('use').setAttribute('transform', `translate(${-106 - shift} 0) scale(.5)`);
+  const r = box.querySelector('rect'); r.setAttribute('x', -138 - shift); r.setAttribute('width', 290 + shift);
+}
 function mmss(s) { s = Math.floor(Math.max(s, 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
 
 // The music on the public site is encrypted. The key lives only in the private link.
@@ -1122,6 +1137,7 @@ async function prepareRun(s, level, opts = {}) {
   tally = {};
   $('score').textContent = '0';
   $('hits').textContent = `0/${playable}`;
+  layoutScoreBox();
   $('hitsIcon').style.display = recording ? 'none' : '';
   $('bar').setAttribute('width', '0'); $('knob').setAttribute('transform', `translate(${BAR_X} 0)`);
   $('result').textContent = '';
@@ -1359,7 +1375,7 @@ function tap(lane) {
     hitSound(ctx.currentTime);
     pop($('ring' + lane), [{ transform: 'scale(.86)' }, { transform: 'scale(1)' }], 180);
     pop($('ghost' + lane), [{ transform: 'scale(.8)', opacity: .95 }, { transform: 'scale(1)', opacity: .5 }], 220);
-    $('hits').textContent = `${taps.length} lần gõ`;
+    $('hits').textContent = `${taps.length} lần gõ`; layoutScoreBox();
     return;
   }
   pop($('ring' + lane), [{ transform: 'scale(.86)' }, { transform: 'scale(1)' }], 180);
@@ -1384,6 +1400,7 @@ function tap(lane) {
   comboShow();
   $('score').textContent = score;
   $('hits').textContent = `${hits}/${playable}`;
+  layoutScoreBox();
   pop($('scoreBox'), [{ transform: 'scale(1)' }, { transform: 'scale(1.1)', offset: .3 }, { transform: 'scale(1)' }], 240);
   pop($('burst' + lane), [{ transform: 'scale(.55)', opacity: 1 }, { transform: 'scale(1.45)', opacity: 0 }], 520);
   // stars, hearts and sparkles fly out of the ring: the better the tap, the more of them
