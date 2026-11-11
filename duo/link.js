@@ -4,7 +4,7 @@
 // - On every new connection both sides say hello (build version + a nonce) and prove the key (HMAC of the other's nonce);
 //   the host then says welcome. Nothing about the child ever goes over the line: the session sends numbers and ids only.
 // - One guest. A dropped line comes back by itself (guest redials for 60 s; host waits for the same guest for 60 s).
-import {roomPeerId, newNonce, proofFor, checkProof} from './proof.js?v=1111.1248';
+import {roomPeerId, newNonce, proofFor, checkProof} from './proof.js?v=1111.1719';
 
 const randomCode = () => String(1000 + Math.floor(Math.random() * 9000));
 const fail = (code, message = code) => Object.assign(Error(message), {code});

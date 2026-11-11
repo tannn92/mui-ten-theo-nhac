@@ -1,6 +1,6 @@
 import * as T from 'three';
-import {fitPoint,fitSection,armShell,armRadius} from './body-fit.js?v=1111.1248';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1111.1248';
+import {fitPoint,fitSection,armShell,armRadius} from './body-fit.js?v=1111.1719';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1111.1719';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 const caches=new WeakMap();
 const V=()=>new T.Vector3();
