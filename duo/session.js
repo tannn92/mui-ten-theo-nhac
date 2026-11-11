@@ -2,7 +2,7 @@
 // the other joins and picks clothes, taps "Sẵn sàng"; the host taps "Bắt đầu" and both go in together; two dancers on stage,
 // head-to-head scores. Messages carry numbers, song slugs, level keys and wardrobe option ids only.
 // Every `at` on the line is in HOST performance.now() ms; the guest keeps offset = host - local (bestOffset of 20 pings).
-import {bestOffset, ctxTimeAt} from './clock.js?v=1111.0928';
+import {bestOffset, ctxTimeAt} from './clock.js?v=1111.1248';
 
 const COUNTDOWN_MS = 3500, PINGS = 20, PING_GAP_MS = 50, RESULT_WAIT_MS = 5000, JOIN_LEAD_MS = 1500, SOLO_LEAD_MS = 1000;
 const sleep = ms => new Promise(r => setTimeout(r, ms));

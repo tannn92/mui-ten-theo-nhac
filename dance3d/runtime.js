@@ -1,18 +1,18 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=1111.0928';
-import {createSongBackgrounds} from './song-backgrounds.js?v=1111.0928';
-import {loadWardrobe} from './wardrobe.js?v=1111.0928';
-import {createChoreography} from './choreography.js?v=1111.0928';
-import {createPoseBank} from './pose-bank.js?v=1111.0928';
-import {applyFaceExpression} from './face-expressions.js?v=1111.0928';
-import {createCrew} from './crew.js?v=1111.0928';
-import {newspaperProps} from './newspaper-prop.js?v=1111.0928';
-import {applyHeadScale} from './head-scale.js?v=1111.0928';
-import {createDancerProfiles,resolveDancerProfile} from './dancer-profiles.js?v=1111.0928';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1111.0928';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1111.0928';
-import {createPartner} from './partner.js?v=1111.0928';
-import {shrinkLargeTextures,sweepGpu} from './texture-budget.js?v=1111.0928';
+import {createPerformanceLibrary} from './performance-library.js?v=1111.1248';
+import {createSongBackgrounds} from './song-backgrounds.js?v=1111.1248';
+import {loadWardrobe} from './wardrobe.js?v=1111.1248';
+import {createChoreography} from './choreography.js?v=1111.1248';
+import {createPoseBank} from './pose-bank.js?v=1111.1248';
+import {applyFaceExpression} from './face-expressions.js?v=1111.1248';
+import {createCrew} from './crew.js?v=1111.1248';
+import {newspaperProps} from './newspaper-prop.js?v=1111.1248';
+import {applyHeadScale} from './head-scale.js?v=1111.1248';
+import {createDancerProfiles,resolveDancerProfile} from './dancer-profiles.js?v=1111.1248';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1111.1248';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1111.1248';
+import {createPartner} from './partner.js?v=1111.1248';
+import {shrinkLargeTextures,sweepGpu} from './texture-budget.js?v=1111.1248';
 export async function createRuntime(canvas,bundle){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
@@ -100,9 +100,11 @@ export async function createRuntime(canvas,bundle){
  function themedCrew(entry,chart){const slug=chart?.slug||Object.keys(raw.performances||{}).find(k=>raw.performances[k]===entry);
   // Trio songs (Huntrix): crewOutfits[slug] = {mode:'complement', sets:[...]} -> the backups wear the sets the child is NOT
   // wearing (left backup first). If she wears none of them, the first set (the group's leader) is left out.
-  {const spec=config.crewOutfits?.[slug];if(spec&&!Array.isArray(spec)&&spec.mode==='complement'&&entry?.crew?.length){const sets=(spec.sets||[]).map(id=>(config.sets||[]).find(x=>x.id===id)).filter(Boolean),cur=wardrobe.outfit||{},wears=o=>o&&sets.find(x=>['top','bottom'].every(k=>x.selection?.[k]===o[k])),wearing=wears(cur),
-    // two players: the backups wear the sets NEITHER player wears; a backup left without a set steps out (a true trio)
-    worn=duo?[wearing,wears(partner.selection)].filter(Boolean):[],rest=worn.length?sets.filter(x=>!worn.includes(x)):sets.filter(x=>x!==(wearing||sets[0]));// Character heights (owner 2026-11-10 "chiều cao các nhân vật chưa cân xứng": Mira ~170 cm, Rumi ~165, Zoey ~153):
+  {const spec=config.crewOutfits?.[slug];if(spec&&!Array.isArray(spec)&&spec.mode==='complement'&&entry?.crew?.length){const sets=(spec.sets||[]).map(id=>(config.sets||[]).find(x=>x.id===id)).filter(Boolean),cur=wardrobe.outfit||{},mine=characterOf(cur),wearing=sets.find(x=>characterOfSet(x)===mine),
+    // two players: the backups are the characters NEITHER player is; a backup left without a character steps out (a true
+    // trio). By CHARACTER, whatever the theme of the set (owner 2026-11-11: Golden Zoey + HUNTR/X Rumi in Takedown showed
+    // Mira and a second Zoey): one character or the same one twice -> 2 backups, two different ones -> 1.
+    worn=duo?[mine,characterOf(partner.selection)].filter(Boolean):[],rest=worn.length?sets.filter(x=>!worn.includes(characterOfSet(x))):sets.filter(x=>x!==(wearing||sets[0]));// Character heights (owner 2026-11-10 "chiều cao các nhân vật chưa cân xứng": Mira ~170 cm, Rumi ~165, Zoey ~153):
    // spec.heights = {rumi:1, mira:1.036, zoey:.93} by name in the set id; the child takes the height of the set she wears.
    const hOf=x=>{for(const [k,v] of Object.entries(spec.heights||{}))if(x?.id?.includes(k))return v;return 1;};
    if(rest.length){const list=duo?entry.crew.slice(0,rest.length):entry.crew;return {...entry,...(duo?{crewCount:list.length}:{}),leadHeight:wearing?hOf(wearing):1,crew:list.map((c,i)=>{const set=rest[i%rest.length],k=hOf(set);return {...c,variant:1,outfit:{...set.selection},face:(/^(?:huntrix|golden|wisl)-(rumi|mira|zoey)/.exec(set.id)||[])[1]||'original',scale:(c.scale??1)*k,moves:c.moves?.map(m=>m.scale!=null?{...m,scale:m.scale*k}:m)};})};}}}const pool=(Array.isArray(config.crewOutfits?.[slug])?config.crewOutfits[slug]:[]).map(s=>({s,sel:crewSelection(s)})).filter(x=>x.sel);if(!entry?.crew?.length||!pool.length)return entry;
@@ -115,10 +117,36 @@ export async function createRuntime(canvas,bundle){
   return {...entry,crew:entry.crew.map(c=>{const list=byRole.get(c.role||'girl')||pool;let n=used.get(list)||0,x=c.look?pool.find(y=>y.s.id===c.look)||null:null;const pinned=!!x;if(!pinned)for(let k=0;k<list.length;k++){const cand=list[(n+k)%list.length];if((count.get(cand)||0)<(cand.s.max??Infinity)){x=cand;n+=k;break;}}if(!x)x=list.filter(y=>y.s.max==null)[0]||list[n%list.length];if(!pinned)used.set(list,n+1);count.set(x,(count.get(x)||0)+1);const hk=x.s.height||1;return {...c,variant:x.s.variant??1,outfit:x.sel,...(x.s.face?{face:x.s.face}:{}),...(x.s.expr?{expr:x.s.expr}:{}),...(hk!==1?{scale:(c.scale??1)*hk,moves:c.moves?.map(m=>m.scale!=null?{...m,scale:m.scale*hk}:m)}:{})};})};}
  // Two-iPad play: no backup may stand where the partner dances. Any spot in the front row (z > -0.3, |x| < 0.75) moves out
  // to x = ±0.95 on its own side (Secret: the singer who comes up beside the child stands beside the pair instead).
- const frontOut=p=>Array.isArray(p)&&p.length===3&&p[2]>-.3&&Math.abs(p[0])<.75?[p[0]<0?-.95:.95,p[1],p[2]]:p;
- const frontRowOut=c=>({...c,...(c.anchor?{anchor:frontOut(c.anchor)}:{}),...(c.moves?{moves:c.moves.map(m=>m.to?{...m,to:frontOut(m.to)}:m)}:{})});
+ // Two players (owner 2026-11-11: "2 bé che luôn hoàn toàn 2 phụ hoạ đứng sau, mà đoạn giữa 2 bé thì trống trơn"). The solo
+ // formations surround ONE child at x 0; in duo the children stand at ±0.33, right where the backups beside her stood.
+ // - a spot in front of the children (z > 0.3, e.g. Hạt Mưa's two front dancers) moves out to x ±0.95 on its own side;
+ // - a spot on the children's line (a Secret singer coming up beside her) stays beside the child on its side, just
+ //   outside the pair (two singers on one side keep their order); in the middle two singers crowded the children's arms;
+ // - a spot behind the children's band (|x| < 0.52) closes in to the gap between them (x * 0.36).
+ const duoSpot=p=>{if(!Array.isArray(p)||p.length!==3)return p;const [x,y,z]=p,ax=Math.abs(x),s=x<0?-1:1;
+  if(z>.3)return ax<.75?[.95*s,y,z]:p;
+  if(z>-.3)return ax<.75?[s*(.66+Math.max(0,ax-.45)*1.2),y,z]:p;
+  return ax<.52?[x*.36,y,z]:p;};
+ const frontRowOut=c=>({...c,...(c.anchor?{anchor:duoSpot(c.anchor)}:{}),...(c.moves?{moves:c.moves.map(m=>m.to?{...m,to:duoSpot(m.to)}:m)}:{})});
+ // The gap between the children holds one dancer a side: when two backups of the same side close in to it (their home
+ // spots within 0.1 of each other), the one further back steps out (off stage on its side) instead of hiding behind the
+ // other (Dolce, Tái Sinh, Girl Xinh: the M2 pair behind B1). Tracks stay matched to their dancers (no one is removed).
+ const offStage=c=>{const out=p=>Array.isArray(p)&&p.length===3?[p[0]<0?-2.3:2.3,p[1],p[2]]:p;return {...c,duoOut:true,...(c.anchor?{anchor:out(c.anchor)}:{}),...(c.moves?{moves:c.moves.map(m=>m.to?{...m,to:out(m.to)}:m)}:{})};};
+ // A dancer's home spot: the median of its on-stage spots (many walk on from off stage, so the anchor alone can be ±2.3).
+ function homeSpot(c){const pts=[c.anchor,...(c.moves||[]).map(m=>m.to)].filter(p=>Array.isArray(p)&&p.length===3&&Math.abs(p[0])<1.15);if(!pts.length)return null;
+  const med=k=>{const v=pts.map(p=>p[k]).sort((a,b)=>a-b),n=v.length;return n%2?v[(n-1)/2]:(v[n/2-1]+v[n/2])/2;};return [med(0),med(1),med(2)];}
+ function duoCrew(list){const moved=list.map(frontRowOut);
+  const mid=list.map((c,i)=>{const o=homeSpot(c);return {i,orig:o,a:o&&duoSpot(o)};}).filter(x=>x.orig&&x.orig[2]<=-.3&&Math.abs(x.orig[0])<.52&&Math.abs(x.a[0])<.2);
+  const out=new Set();for(const side of [-1,1]){const row=mid.filter(x=>(x.orig[0]<0?-1:1)===side).sort((p,q)=>q.a[2]-p.a[2]);const kept=[];for(const x of row){if(kept.some(k=>Math.abs(k.a[0]-x.a[0])<.1))out.add(x.i);else kept.push(x);}}
+  return moved.map((c,i)=>out.has(i)?offStage(list[i]):c);}
+ // HUNTR/X trio with two different characters: the one backup left is the third of the trio, in the middle behind them
+ const centred=c=>{const mid=p=>Array.isArray(p)&&p.length===3?[0,p[1],p[2]]:p;return {...c,...(c.anchor?{anchor:mid(c.anchor)}:{}),...(c.moves?{moves:c.moves.map(m=>m.to?{...m,to:mid(m.to)}:m)}:{})};};
  // HUNTR/X character heights for a selection (the set it wears in that song), as for the child (leadHeight)
- function setHeight(slug,sel){const spec=config.crewOutfits?.[slug];if(!sel||!spec||Array.isArray(spec)||spec.mode!=='complement')return 1;const set=(spec.sets||[]).map(id=>(config.sets||[]).find(x=>x.id===id)).filter(Boolean).find(x=>['top','bottom'].every(k=>x.selection?.[k]===sel[k]));if(!set)return 1;for(const [k,h] of Object.entries(spec.heights||{}))if(set.id.includes(k))return h;return 1;}
+ // HUNTR/X character of an outfit (slot -> option index): the top and bottom of any Rumi/Mira/Zoey set, whatever its theme
+ // (huntrix-, golden-, wisl-). Used for the trio backups and the heights; the face uses resolveDancerProfile (same sets).
+ function characterOfSet(x){return (/^(?:huntrix|golden|wisl)-(rumi|mira|zoey)$/.exec(x?.id||'')||[])[1]||null;}
+ function characterOf(sel){if(!sel)return null;for(const x of config.sets||[]){const c=characterOfSet(x);if(c&&['top','bottom'].every(k=>x.selection?.[k]===sel[k]))return c;}return null;}
+ function setHeight(slug,sel){const spec=config.crewOutfits?.[slug];if(!sel||!spec||Array.isArray(spec)||spec.mode!=='complement')return 1;const c=characterOf(sel);return c&&Number.isFinite(spec.heights?.[c])?spec.heights[c]:1;}
  let bgPlaying=null,lastSweep=0;
  function draw(t){const started=performance.now();resize();const playing=t!=null&&Number.isFinite(t);{const lh=playing?leadHeight:1;for(const v of wardrobe.variants)if(v.vrm.scene.scale.x!==lh)v.vrm.scene.scale.setScalar(lh);}if(playing!==bgPlaying){bgPlaying=playing;try{wardrobe.setBackgroundPaused?.(playing);}catch(e){}}const clock=playing?t:(performance.now()-idleStart)/1000;const delta=lastTime==null?0:clock-lastTime,seek=lastMode!==playing||delta<0||delta>.15,dt=seek?0:Math.min(.05,Math.max(0,delta));lastTime=clock;lastMode=playing;const menu=document.querySelector('#menu'),menuOpen=menu&&!menu.hidden&&!menu.classList.contains('hide')&&menu.style.display!=='none',crewVisible=playing&&!menuOpen,needed=new Set([0]);if(crewVisible)for(const i of crew.sharedVariants())needed.add(i);for(const slot of physicalSlots){const i=wardrobe.variantFor?wardrobe.variantFor(slot,wardrobe.outfit[slot]):wardrobe.outfit[slot];if(Number.isInteger(i))needed.add(i);}const activeVariants=wardrobe.variants.filter((_,i)=>needed.has(i));const sample=motion.sample(playing?clock:clock*.5),capture=playing?captured?.sample(captured.t0===0&&clock<0?0:clock):null,captureWeight=capture?.weight||0,fadePose=captureWeight>0&&captureWeight<1?fadePoseAt(clock):null,sourceRoot=poseBank.root(sample),authoredRootX=.3*Math.tanh(((sample.rootX||0)+sourceRoot[0]*.5)/.3),authoredRootZ=T.MathUtils.clamp((sample.rootZ||0)+sourceRoot[2]*.5,-.13,.13),rootX=T.MathUtils.lerp(authoredRootX,capture?.root[0]||0,captureWeight),rootZ=T.MathUtils.lerp(authoredRootZ,capture?.root[2]||0,captureWeight),rootYaw=(sample.yaw||0)*(1-captureWeight);
  for(const variant of wardrobe.variants){variant.vrm.scene.position.x=rootX+leadX;variant.vrm.scene.position.z=rootZ;variant.vrm.scene.rotation.y=rootYaw;}
@@ -150,7 +178,7 @@ export async function createRuntime(canvas,bundle){
  // Song-themed backup outfits (config.crewOutfits[slug], crew-only garments): each backup gets a random one per song,
  // no repeats while the pool lasts. Sewn before the crew rigs clone the meshes.
  for(const v of wardrobe.variants)v.vrm.scene.scale.setScalar(1);leadHeight=1;
- let crewEntry=themedCrew(entry,chart);if(duo&&crewEntry?.crew)crewEntry={...crewEntry,crew:crewEntry.crew.map(frontRowOut)};
+ let crewEntry=themedCrew(entry,chart);if(duo&&crewEntry?.crew)crewEntry={...crewEntry,crew:crewEntry.crewCount===1&&crewEntry.crew.length===1?crewEntry.crew.map(centred):duoCrew(crewEntry.crew)};
  for(const c of crewEntry?.crew||[])if(c.outfit)await wardrobe.prepareOutfit(c.outfit);if(request!==songRequest)return false;
  captured=loaded?.lead?createCapturedMotion(loaded.lead):defaultCaptured;captureAsset=loaded?.lead?entry.lead:defaultCaptureAsset;
  capturedIndex=new Map(captured?.boneNames.map((n,i)=>[n,i])||[]);captureReferenceOffset=wardrobe.variants.find(v=>v.spec.id===captured?.referenceVariant)?.restOffset||0;

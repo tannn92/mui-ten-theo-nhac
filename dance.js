@@ -1,6 +1,6 @@
 'use strict';
 window.Dance=(()=>{let runtime=null,pendingSong=[null,null];return{
- async init(canvas,bundle){const {createRuntime}=await import('./dance3d/runtime.js?v=1111.0928');runtime=await createRuntime(canvas,bundle);await runtime.setSong(...pendingSong);},
+ async init(canvas,bundle){const {createRuntime}=await import('./dance3d/runtime.js?v=1111.1248');runtime=await createRuntime(canvas,bundle);await runtime.setSong(...pendingSong);},
  setSong(moves,chart){pendingSong=[moves,chart];return runtime?.setSong(moves,chart);},draw(t){runtime?.draw(t);},
  setOutfit(id){runtime?.setOutfit(id);},
  // two-iPad play: the partner dancer (side 'L' = host, 'R' = guest), the outfit as option ids, head points for the markers
