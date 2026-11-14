@@ -5,6 +5,11 @@ import * as T from 'three';
 export function selectBackdrop(chart={}) {
  chart=chart||{};
  const text=[chart.slug,chart.title,chart.audio].filter(Boolean).join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+ if(/ddu[- _]du/i.test(text))return 'ddudu';
+ if(/kill[- _]this[- _]love/.test(text))return 'ktl';
+ if(/how[- _]you[- _]like[- _]that/.test(text))return 'hylt';
+ if(/pink[- _]venom/.test(text))return 'pv';
+ if(/jisoo[- _]flower|flower \(jisoo\)/.test(text))return 'jf';
  if(/roly[- _]poly/.test(text))return 'rolypoly';
  if(/super[- _]junior/.test(text))return 'sju';
  if(/ttl-time-to-love|time to love/.test(text))return 'ttl';
@@ -339,6 +344,211 @@ function paintRolyPoly(c,{rect,path,glow,dot,line,rnd}){
  glow(800,H+60,380,'#ffffff',.10);glow(260,H+40,160,'#ff4f9a',.18);glow(1340,H+40,160,'#2fe0cf',.18);
  const pool=c.createRadialGradient(800,720,40,800,720,600);pool.addColorStop(0,'rgba(255,240,245,.20)');pool.addColorStop(1,'rgba(255,240,245,0)');c.fillStyle=pool;c.fillRect(0,300,1600,700);
 }
+// DDU-DU DDU-DU (BLACKPINK, official MV, 2026-11-14): the main dance set of the final chorus (MV 2:50-3:24): a temple of
+// neon-painted roof eaves: two red pointed-arch eaves sweep from the top centre down to the floor at both sides, lined with
+// rafters painted in red / teal / pink bands with dot rows (dancheong-like); in the middle a stepped pyramid of nested neon
+// outlines (pink, orange, teal, blue, violet) with a glowing pale triangle at its foot; a black mirror floor reflecting it,
+// purple haze at the sides. Drawn in code: no photos, people, text or logos.
+function paintDdu(c,{rect,path,glow,dot,line,rnd}){
+ const H=610,CX=800;
+ c.fillStyle='#0b0716';c.fillRect(0,0,1600,1000);
+ glow(800,380,820,'#3a1450',.55);glow(140,420,360,'#6a3cc8',.30);glow(1460,420,360,'#6a3cc8',.30);glow(800,330,420,'#ff2f6a',.18);
+ // the eaves: an arch edge from the top centre to each lower side, rafters radiating outwards from the edge
+ const edge=(s,t)=>{const x=CX+s*(40+760*Math.pow(t,.85)),y=-30+(H+10)*Math.pow(t,1.35);return [x,y];};
+ const band=['#d91e3c','#ff3b5c','#19c7d6','#ff4fa8','#f2c14a','#2b6be0'];
+ for(const s of [-1,1]){
+  for(let k=0;k<34;k++){const t0=k/34,t1=(k+.72)/34,[x0,y0]=edge(s,t0),[x1,y1]=edge(s,t1),L=240+130*Math.sin(t0*Math.PI),dx=s*.55,dy=-.83,
+    p=[[x0,y0],[x1,y1],[x1+dx*L,y1+dy*L*.55+L*.25],[x0+dx*L,y0+dy*L*.55+L*.25]];
+   path(p,k%2?'#c8173a':'#e0244a');
+   // painted bands along the rafter: teal / pink / gold stripes and a dot row near the tip
+   for(const [f,col] of [[.16,'#19c7d6'],[.30,'#19c7d6'],[.44,'#ff4fa8'],[.58,'#19c7d6'],[.72,'#f2c14a'],[.84,'#19c7d6']]){const a=[x0+dx*L*f,y0+(dy*.55+.25)*L*f],b=[x1+dx*L*f,y1+(dy*.55+.25)*L*f];line(a[0],a[1],b[0],b[1],col,7);}
+   const tip=[(x0+x1)/2+dx*L*.9,(y0+y1)/2+(dy*.55+.25)*L*.9];dot(tip[0],tip[1],4,'#ffe6a0');}
+  // the arch edge itself: a thick red beam with a gold line and a row of studs
+  for(let k=0;k<60;k++){const [xa,ya]=edge(s,k/60),[xb,yb]=edge(s,(k+1)/60);line(xa,ya,xb,yb,'#a80f2c',26);line(xa,ya,xb,yb,'#ff6a3d',4);if(k%2===0)dot(xa+s*6,ya+8,3.5,'#ffd27a');}
+ }
+ // inner wall between the eaves: violet with stepped neon outlines forming the pyramid/diamond
+ const tri=(w,h,col,lw)=>{c.save();c.strokeStyle=col;c.lineWidth=lw;c.beginPath();const top=150+(560-h),st=8;
+  // stepped edges: the pyramid's sides go up in steps
+  c.moveTo(CX-w,H-10);for(let i=0;i<st;i++){const x=CX-w+(w/st)*i,y=H-10-(H-10-top)*(i/st);c.lineTo(x,y-(H-10-top)/st);c.lineTo(x+w/st,y-(H-10-top)/st);}
+  for(let i=st-1;i>=0;i--){const x=CX+w-(w/st)*i,y=H-10-(H-10-top)*(i/st);c.lineTo(x,y-(H-10-top)/st);c.lineTo(x,y);}c.stroke();c.restore();};
+ c.save();c.globalAlpha=.85;path([[CX-330,H],[CX,150],[CX+330,H]],'#3b1a5c');c.restore();
+ const cols=['#ff4fa8','#ff7a2f','#19c7d6','#2b6be0','#c45cff','#ffd24a','#ff3b5c'];
+ for(let k=0;k<9;k++){const w=330-k*32,h=420-k*40;glow(CX,H-60-k*20,30,cols[k%7],.05);tri(w,h,cols[k%7],7);}
+ // the glowing pale triangle at the pyramid's foot, framed by teal
+ path([[CX-78,H-6],[CX,H-150],[CX+78,H-6]],'#19c7d6');path([[CX-58,H-12],[CX,H-122],[CX+58,H-12]],'#ffe9f2');glow(CX,H-60,140,'#ffd6ea',.45);
+ for(let k=1;k<4;k++)line(CX-58+k*10,H-12-k*28,CX+58-k*10,H-12-k*28,'rgba(255,120,180,.55)',2);
+ // ornaments: small gold cloud scrolls either side of the triangle
+ for(const s of [-1,1]){for(let k=0;k<3;k++){c.save();c.strokeStyle='#ffd24a';c.lineWidth=3;c.beginPath();c.arc(CX+s*(120+k*18),H-170-k*6,10,0,Math.PI*1.5);c.stroke();c.restore();}}
+ // black mirror floor: the pyramid and eaves reflected faintly, glossy streaks
+ rect(0,H,1600,400,'#07050c');
+ c.save();c.globalAlpha=.20;path([[CX-330,H],[CX,H+260],[CX+330,H]],'#ff4fa8');c.globalAlpha=.16;path([[CX-160,H],[CX,H+140],[CX+160,H]],'#19c7d6');c.restore();
+ for(const s of [-1,1]){c.save();c.globalAlpha=.18;for(let k=0;k<8;k++){const x=CX+s*(420+k*50);line(x,H+6,x+s*80,H+200,k%2?'#ff3b5c':'#19c7d6',6);}c.restore();}
+ for(let k=0;k<14;k++){c.save();c.globalAlpha=.06+rnd()*.06;line(200+rnd()*1200,H+20+rnd()*300,200+rnd()*1200,H+20+rnd()*300,'#ffffff',2);c.restore();}
+ glow(CX,H+30,420,'#ff6aa8',.14);
+ const pool=c.createRadialGradient(800,720,40,800,720,600);pool.addColorStop(0,'rgba(255,235,245,.16)');pool.addColorStop(1,'rgba(255,235,245,0)');c.fillStyle=pool;c.fillRect(0,300,1600,700);
+}
+// Kill This Love (BLACKPINK, official MV, 2026-11-14): the main dance set of the final chorus (MV 2:50-3:08), a red palace
+// hall seen down its length: pink-red carved walls and two great dark-red vault arches sweeping in from the top corners, a
+// glowing pink-cloud painted ceiling panel in a gold frame, at the far end a blue-lit arch with white organ pipes, gothic
+// stained-glass windows glowing amber with wall sconces on both sides, red banners, black stepped platforms at the back and
+// an ivory glossy runway down the middle of a black mirror floor. Drawn in code: no photos, people, text or logos.
+function paintKtl(c,{rect,path,glow,dot,line,rnd}){
+ const H=600,VX=800,VY=330;
+ // walls: deep pink-red, darker towards the edges
+ const wall=c.createLinearGradient(0,0,1600,0);wall.addColorStop(0,'#5a0e22');wall.addColorStop(.28,'#b8344f');wall.addColorStop(.5,'#d65a72');wall.addColorStop(.72,'#b8344f');wall.addColorStop(1,'#5a0e22');c.fillStyle=wall;c.fillRect(0,0,1600,H);
+ // ceiling panel: a trapezoid of pink-violet painted clouds in a gold-brown frame
+ const cp=[[470,40],[1130,40],[1010,190],[590,190]];path([[400,0],[1200,0],[1060,215],[540,215]],'#6b3a24');path([[430,14],[1170,14],[1040,205],[560,205]],'#a8743c');
+ const sky=c.createLinearGradient(0,40,0,190);sky.addColorStop(0,'#ff6fb5');sky.addColorStop(.5,'#c75ad8');sky.addColorStop(1,'#ff9a9e');c.fillStyle=sky;c.beginPath();cp.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.fill();
+ c.save();c.beginPath();cp.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.clip();for(let k=0;k<26;k++)glow(480+rnd()*640,50+rnd()*140,30+rnd()*50,k%3?'#ffd1ec':'#8a4fd8',.35);c.restore();
+ glow(VX,120,380,'#ff7ac0',.25);
+ // carved wall ornament: faint scroll rings on both walls
+ for(let k=0;k<40;k++){const s=k%2?1:-1,x=VX+s*(260+rnd()*480),y=60+rnd()*420;c.save();c.globalAlpha=.16;c.strokeStyle='#ffd0da';c.lineWidth=2;c.beginPath();c.arc(x,y,10+rnd()*22,0,Math.PI*(1+rnd()));c.stroke();c.restore();}
+ // far end: pale frame, a blue-lit arch with white organ pipes
+ rect(VX-190,170,380,H-170,'#e9b9c4');path([[VX-150,H],[VX-150,280],[VX,190],[VX+150,280],[VX+150,H]],'#2a74c9');glow(VX,330,200,'#8fd0ff',.55);
+ for(let k=0;k<17;k++){const x=VX-128+k*16,h=110+70*Math.sin(Math.PI*(k/16))+(k%2?-18:0),top=H-50-h-60;rect(x,top,11,H-50-top,'#f4f6fb');rect(x+7,top,3,H-50-top,'#b8c4d8');dot(x+5.5,top,5.5,'#ffffff');}
+ rect(VX-150,H-60,300,14,'#d6dbe6');
+ // stained-glass windows with warm light and wall sconces, both sides, in perspective
+ for(const s of [-1,1])for(let k=0;k<3;k++){const d=[1,.72,.5][k],x=VX+s*(670-k*170)*1,w=110*d,h=250*d,y=VY-60*d-h*.35;
+  path([[x-w/2,y+h],[x-w/2,y+w*.45],[x,y],[x+w/2,y+w*.45],[x+w/2,y+h]],'#3a0d18');path([[x-w/2+7*d,y+h-6],[x-w/2+7*d,y+w*.45+4],[x,y+9*d],[x+w/2-7*d,y+w*.45+4],[x+w/2-7*d,y+h-6]],'#f0a040');
+  for(let q=0;q<10;q++)dot(x+(rnd()-.5)*w*.6,y+w*.4+rnd()*h*.55,6*d,['#d8402c','#ffd36a','#3d7bd8','#a8302c','#ffef9e'][q%5]);
+  line(x,y+10*d,x,y+h,'#3a0d18',3*d);line(x-w/2+8,y+h*.55,x+w/2-8,y+h*.55,'#3a0d18',3*d);glow(x,y+h*.5,w*1.2,'#ffb050',.35);
+  const lx=x+s*(-w*.85);dot(lx,y+h*.55,7*d,'#ffe7a8');glow(lx,y+h*.55,50*d,'#ffcf7a',.6);
+  // red banner hanging beside each window
+  rect(x-s*w*.95-14*d,y-20*d,28*d,h*.95,'#9c0f22');path([[x-s*w*.95-14*d,y-20*d+h*.95],[x-s*w*.95,y-4*d+h*.95+14*d],[x-s*w*.95+14*d,y-20*d+h*.95]],'#9c0f22');}
+ // the two great vault arches: dark red ribs from the top corners curving down to the floor
+ for(const s of [-1,1]){for(const [off,col,lw] of [[0,'#4a0a18',70],[0,'#7e1a2c',44],[8,'#c04a5a',6]]){c.save();c.strokeStyle=col;c.lineWidth=lw;c.beginPath();c.moveTo(VX+s*(40-off),-30);c.bezierCurveTo(VX+s*420,-10,VX+s*700,120,VX+s*(820-off),H+20);c.stroke();c.restore();}
+  for(let k=0;k<14;k++){const t=k/13,x=VX+s*(40+(820-40)*(1-Math.pow(1-t,1.7))),y=-30+(H+50)*t*t;dot(x,y,3,'#ffb1a0');}}
+ // back platforms: black stepped stages either side of the end wall
+ for(const s of [-1,1]){path([[VX+s*150,H-40],[VX+s*470,H-40],[VX+s*520,H],[VX+s*150,H]],'#141016');path([[VX+s*150,H-70],[VX+s*400,H-70],[VX+s*430,H-40],[VX+s*150,H-40]],'#1d171e');line(VX+s*150,H-40,VX+s*470,H-40,'#5a4a54',2);}
+ // floor: black mirror, ivory glossy runway widening to the front, warm reflections
+ rect(0,H,1600,400,'#0c0809');
+ const run=c.createLinearGradient(0,H,0,1000);run.addColorStop(0,'#f3e2cf');run.addColorStop(1,'#d9b89a');c.fillStyle=run;c.beginPath();c.moveTo(VX-200,H);c.lineTo(VX+200,H);c.lineTo(VX+760,1000);c.lineTo(VX-760,1000);c.closePath();c.fill();
+ for(const s of [-1,1]){line(VX+s*200,H,VX+s*760,1000,'#7a5a4a',3);c.save();c.globalAlpha=.22;for(let k=0;k<3;k++){const x=VX+s*(670-k*170);line(x,H+8,x+s*30,H+160,'#ffb050',14);}c.restore();}
+ c.save();c.globalAlpha=.30;rect(VX-130,H,260,120,'#9fd4ff');c.restore();c.save();c.globalAlpha=.18;for(let k=0;k<8;k++){const x=VX-120+k*34;line(x,H+4,x+(x-VX)*.4,H+150,'#ffffff',6);}c.restore();
+ glow(VX,H+40,520,'#ffd9c8',.20);
+ const pool=c.createRadialGradient(800,740,40,800,740,600);pool.addColorStop(0,'rgba(255,240,230,.22)');pool.addColorStop(1,'rgba(255,240,230,0)');c.fillStyle=pool;c.fillRect(0,300,1600,700);
+}
+// How You Like That (BLACKPINK, official MV, 2026-11-14): the main dance set of the final chorus (MV 2:40-2:57), the pink
+// blossom hall: a round hall with glowing pink plaster walls under a dense canopy of pink-violet blossom trees that arches over
+// the top, a round window at the top centre, two big brown wooden (patchwork) horse statues on the back ledge either side of a
+// bright white doorway, a low curved ivory ring wall round the dance floor, a pale grey-pink stone floor with a bright pool of
+// light, and dark blue drapes at the far left and right edges. Drawn in code: no photos, people, text or logos.
+function paintHylt(c,{rect,path,glow,dot,line,rnd}){
+ const H=560,VX=800;
+ // back walls: glowing pink plaster, brighter in the middle
+ const wall=c.createLinearGradient(0,0,1600,0);wall.addColorStop(0,'#7a2a5a');wall.addColorStop(.25,'#e0609a');wall.addColorStop(.5,'#ff9cc6');wall.addColorStop(.75,'#e0609a');wall.addColorStop(1,'#7a2a5a');c.fillStyle=wall;c.fillRect(0,0,1600,H);
+ for(let k=0;k<30;k++){c.save();c.globalAlpha=.10;c.strokeStyle='#ffe0ee';c.lineWidth=2;const x=200+rnd()*1200,y=200+rnd()*320;c.beginPath();c.moveTo(x,y);c.lineTo(x+(rnd()-.5)*60,y+20+rnd()*60);c.stroke();c.restore();}
+ // white doorway at the back centre, with its light spilling out
+ glow(VX,H-110,260,'#ffffff',.55);rect(VX-58,H-215,116,175,'#fff8fb');path([[VX-58,H-215],[VX,H-245],[VX+58,H-215]],'#fff8fb');
+ // back ledge with the two wooden horses facing the centre
+ rect(0,H-48,1600,48,'#b05a7a');rect(0,H-52,1600,6,'#e48ab0');
+ const horse=(x,s)=>{const B='#7a4526',L='#a8683c',D='#4a2614';c.save();c.translate(x,H-52);c.scale(s,1);
+  path([[-120,-150],[60,-160],[95,-150],[100,-110],[-110,-100],[-130,-120]],B);// body
+  for(const lx of [-100,-60,40,80]){rect(lx,-110,20,110,lx<0?L:B);rect(lx-2,-14,24,14,D);}
+  path([[60,-160],[95,-250],[120,-300],[160,-290],[175,-262],[140,-250],[120,-205],[100,-150]],B);// neck + head
+  path([[95,-252],[118,-300],[106,-305],[86,-262]],D);for(let k=0;k<7;k++)rect(84+k*5,-262-k*7,7,9,'#c23a2a');// mane studs
+  path([[-128,-145],[-160,-90],[-150,-70],[-122,-118]],D);// tail
+  c.globalAlpha=.35;for(let k=0;k<40;k++){const px=-120+rnd()*220,py=-155+rnd()*45;rect(px,py,10+rnd()*14,8+rnd()*8,[L,D,'#c08050'][k%3]);}c.restore();};
+ horse(VX-330,1);horse(VX+330,-1);
+ // blossom canopy: dense pink-violet clusters from the top edge, thick at the sides, arching over the round window
+ dot(VX,62,58,'#f6e9ee');for(let k=0;k<12;k++){const a=k/12*Math.PI*2;line(VX,62,VX+Math.cos(a)*56,62+Math.sin(a)*56,'#b0889a',3);}dot(VX,62,16,'#c8a8b8');
+ for(let k=0;k<520;k++){const side=rnd()<.5?-1:1,t=rnd(),x=VX+side*(80+t*760)+(rnd()-.5)*60,y=-20+Math.pow(t,1.3)*360*(0.35+rnd()*.75)+rnd()*40;if(Math.abs(x-VX)<75&&y<130)continue;
+  dot(x,y,8+rnd()*16,['#ff7ab8','#d659b5','#ffb3d6','#9c3c9a','#f05aa0','#7a2a7a'][k%6]);}
+ for(let k=0;k<70;k++){const x=rnd()*1600,y=rnd()*260;dot(x,y,3+rnd()*4,'#ffe6f2');}
+ for(const s of [-1,1]){line(VX+s*780,H,VX+s*700,260,'#5a2a3a',22);line(VX+s*700,260,VX+s*560,120,'#5a2a3a',12);line(VX+s*700,300,VX+s*820,150,'#5a2a3a',10);}
+ // dark blue drapes at the far edges (the tunnel opening)
+ for(const s of [-1,1]){const x0=s<0?0:1600;path([[x0,0],[x0+s*-90,0],[x0+s*-60,H+440],[x0,H+440]],'#1c2a52');for(let k=0;k<4;k++)line(x0-s*(16+k*18),0,x0-s*(12+k*14),1000,'#2e4478',4);}
+ // floor: pale grey-pink stone with a bright pool of light in the middle
+ const fl=c.createLinearGradient(0,H,0,1000);fl.addColorStop(0,'#b8909e');fl.addColorStop(1,'#8a6e7a');c.fillStyle=fl;c.fillRect(0,H,1600,440);
+ for(let k=0;k<90;k++){c.save();c.globalAlpha=.05;dot(rnd()*1600,H+rnd()*440,6+rnd()*28,k%2?'#5a4450':'#e8d0d8');c.restore();}
+ // low curved ivory ring wall round the dance floor
+ c.save();c.strokeStyle='#efe2e6';c.lineWidth=26;c.beginPath();c.ellipse(VX,H+120,700,150,0,Math.PI*1.02,Math.PI*1.98);c.stroke();c.strokeStyle='#c9b0ba';c.lineWidth=5;c.beginPath();c.ellipse(VX,H+133,700,150,0,Math.PI*1.02,Math.PI*1.98);c.stroke();c.restore();
+ const pool=c.createRadialGradient(VX,760,40,VX,760,560);pool.addColorStop(0,'rgba(255,245,250,.55)');pool.addColorStop(1,'rgba(255,245,250,0)');c.fillStyle=pool;c.fillRect(0,H,1600,440);
+ glow(VX,300,520,'#ff8cc4',.18);
+}
+// Pink Venom (BLACKPINK, official MV, 2026-11-14): the main group-dance set of the second chorus (MV 2:02-2:20), the white
+// marble hall: pale blue-white marble walls with rows of white columns on both sides, a tall arch at the back centre with a big
+// round stained-glass clock window (gold frame, spokes) over three tall bright windows, a big grey stone sphere in front of it,
+// two white rearing stag statues on the side ledges, broken white blocks and rubble with green vines, and a white floor
+// scattered with crimson-pink petals. Drawn in code: no photos, people, text or logos.
+function paintPv(c,{rect,path,glow,dot,line,rnd}){
+ const H=560,VX=800;
+ // back wall: pale blue-white marble, cooler at the edges
+ const wall=c.createLinearGradient(0,0,1600,0);wall.addColorStop(0,'#9fb4c4');wall.addColorStop(.3,'#dfe8ee');wall.addColorStop(.5,'#f4f8fa');wall.addColorStop(.7,'#dfe8ee');wall.addColorStop(1,'#9fb4c4');c.fillStyle=wall;c.fillRect(0,0,1600,H);
+ for(let k=0;k<40;k++){c.save();c.globalAlpha=.10;c.strokeStyle='#8fa2b2';c.lineWidth=1.5;const x=rnd()*1600,y=rnd()*H;c.beginPath();c.moveTo(x,y);c.lineTo(x+(rnd()-.5)*50,y+10+rnd()*40);c.stroke();c.restore();}
+ // rows of white columns receding on both sides (bigger and further out toward the edges)
+ for(const s of [-1,1])for(let k=4;k>=0;k--){const x=VX+s*(250+k*120+k*k*14),w=34+k*14,top=150-k*30;rect(x-w/2,top,w,H-top,'#f2f6f8');rect(x-w/2,top,w*.28,H-top,'#c8d6e0');rect(x-w/2-8,top-14,w+16,16,'#e6eef2');rect(x-w/2-8,H-18,w+16,18,'#d4e0e8');}
+ // the central arch with the round clock window over three tall bright windows
+ path([[VX-190,H],[VX-190,190],[VX-170,120],[VX-120,70],[VX-60,42],[VX,34],[VX+60,42],[VX+120,70],[VX+170,120],[VX+190,190],[VX+190,H]],'#e9f0f4');
+ for(const k of [-1,0,1]){const x=VX+k*62;glow(x,H-120,90,'#ffffff',.5);rect(x-24,H-230,48,190,'#fbfdff');rect(x-24,H-230,48,8,'#cdb27a');}
+ dot(VX,160,108,'#c9a865');dot(VX,160,96,'#7fb6b8');dot(VX,160,86,'#e8f2e6');
+ for(let k=0;k<16;k++){const a=k/16*Math.PI*2;line(VX+Math.cos(a)*22,160+Math.sin(a)*22,VX+Math.cos(a)*88,160+Math.sin(a)*88,'#9a7c40',4);}
+ for(let k=0;k<12;k++){const a=k/12*Math.PI*2;dot(VX+Math.cos(a)*70,160+Math.sin(a)*70,7,['#5aa0a8','#d9b45a','#9cc8b0'][k%3]);}
+ dot(VX,160,24,'#b8954e');dot(VX,160,10,'#6e5426');line(VX,160,VX+44,128,'#3e2e14',5);line(VX,160,VX-12,214,'#3e2e14',4);
+ // ornate gold rim round the arch
+ c.save();c.strokeStyle='#cdb27a';c.lineWidth=6;c.beginPath();c.arc(VX,190,186,Math.PI*1.03,Math.PI*1.97);c.stroke();c.restore();
+ // the big grey stone sphere in front of the arch (slightly right of centre, as in the MV)
+ const sg=c.createRadialGradient(VX+130,H-150,10,VX+150,H-120,120);sg.addColorStop(0,'#e4e8ec');sg.addColorStop(.6,'#9aa2aa');sg.addColorStop(1,'#5e666e');c.fillStyle=sg;c.beginPath();c.arc(VX+150,H-120,112,0,7);c.fill();
+ c.save();c.globalAlpha=.25;for(let k=0;k<14;k++)line(VX+150+(rnd()-.5)*160,H-120+(rnd()-.5)*160,VX+150+(rnd()-.5)*160,H-120+(rnd()-.5)*160,'#4a5058',2);c.restore();
+ // side ledges with the two white rearing stags facing the centre
+ rect(0,H-40,620,40,'#d8e2ea');rect(980,H-40,620,40,'#d8e2ea');
+ const stag=(x,s)=>{const W='#f6f9fb',S='#c6d4de';c.save();c.translate(x,H-40);c.scale(s,1);
+  path([[-90,-140],[30,-190],[70,-200],[80,-170],[-60,-110],[-100,-110]],W);// body rearing up
+  rect(-92,-120,18,120,S);rect(-62,-118,18,118,W);// hind legs
+  path([[40,-190],[110,-150],[118,-140],[104,-136],[50,-168]],W);path([[60,-196],[120,-200],[126,-190],[112,-186],[62,-182]],S);// front legs
+  path([[60,-200],[78,-270],[100,-292],[120,-286],[112,-262],[90,-248],[82,-196]],W);// neck + head
+  for(const[dx,dy] of [[0,0],[-14,6]]){line(96+dx,-290+dy,84+dx,-350+dy,S,5);line(88+dx,-322+dy,62+dx,-346+dy,S,4);line(86+dx,-336+dy,104+dx,-368+dy,S,4);line(84+dx,-350+dy,70+dx,-380+dy,S,3);}
+  c.restore();};
+ stag(VX-430,1);stag(VX+430,-1);
+ // broken white blocks, rubble and green vines at the sides
+ for(let k=0;k<26;k++){const s=rnd()<.5?-1:1,x=VX+s*(330+rnd()*460),y=H-20+rnd()*60,w=24+rnd()*60,h=14+rnd()*34;rect(x-w/2,y-h,w,h,k%3?'#eef3f6':'#c4d0da');}
+ for(let k=0;k<14;k++){const s=k%2?-1:1,x=VX+s*(300+rnd()*480),y0=rnd()*120;for(let j=0;j<8;j++)dot(x+Math.sin(j*.9+k)*8,y0+j*22,4+rnd()*3,['#4f8a3a','#6aa04a','#3a6a2c'][j%3]);}
+ glow(VX,240,520,'#ffffff',.25);
+ // floor: white stone with soft grey wear and crimson-pink petals scattered (thicker at the edges)
+ const fl=c.createLinearGradient(0,H,0,1000);fl.addColorStop(0,'#e6edf2');fl.addColorStop(1,'#f6f9fb');c.fillStyle=fl;c.fillRect(0,H,1600,440);
+ for(let k=0;k<70;k++){c.save();c.globalAlpha=.06;dot(rnd()*1600,H+rnd()*440,8+rnd()*30,'#8a9aa8');c.restore();}
+ for(let k=0;k<420;k++){const edge=rnd()<.6,x=edge?(rnd()<.5?rnd()*420:1180+rnd()*420):rnd()*1600,y=H+4+rnd()*436;dot(x,y,2+rnd()*(2+(y-H)/90),['#b0204a','#d0305e','#8a1438','#e05a80'][k%4]);}
+}
+// 꽃 (FLOWER) (JISOO, official MV, 2026-11-14): the main dance set of the first chorus (MV 1:05-1:33), an old European street by
+// day under a pale overcast sky: tall pale-stone neoclassical buildings, fluted columns at the front left, a cream palace at the end
+// of the street (balustrade, rows of windows, paired columns, a dark arched door), a red-brown stone building on the right, teal
+// lamp posts, a dark green vintage car and a pot of pink-red flowers far off, grey asphalt with white petals scattered on it.
+// Drawn in code: no photos, people, text or logos.
+function paintJf(c,{rect,path,glow,dot,line,rnd}){
+ const H=560,VX=820,VY=470;
+ // sky: pale overcast blue-grey
+ const sky=c.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#c9d3dc');sky.addColorStop(1,'#e4e8ea');c.fillStyle=sky;c.fillRect(0,0,1600,H);
+ // the cream palace at the end of the street
+ const P0=560,P1=1150,PT=150;
+ rect(P0,PT,P1-P0,H-PT,'#e9e4da');rect(P0-10,PT-18,P1-P0+20,22,'#d9d2c4');
+ for(let x=P0;x<P1;x+=16)rect(x+4,PT-44,6,26,'#e2dccf');rect(P0-10,PT-50,P1-P0+20,8,'#d4ccbd');// balustrade
+ rect(760,PT-110,280,62,'#e6e0d4');path([[740,PT-110],[900,PT-150],[1060,PT-110]],'#ddd6c8');// raised centre + pediment
+ for(const y of [PT+30,PT+110])for(let x=P0+30;x<P1-30;x+=62){if(x>820&&x<980&&y>PT+60)continue;rect(x,y,26,40,'#8c9aa6');rect(x-3,y-6,32,6,'#d2cabb');rect(x+12,y,2,40,'#d8d2c6');}
+ for(const x of [800,840,960,1000]){rect(x,PT+150,18,H-PT-150,'#f1ece2');rect(x,PT+150,5,H-PT-150,'#cfc7b8');}
+ path([[860,H],[860,PT+230],[880,PT+200],[900,PT+192],[920,PT+200],[940,PT+230],[940,H]],'#4a4f55');// arched door
+ rect(842,PT+170,116,22,'#7a6e5a');// carved panel over the door (plain)
+ // left: tall pale stone building with arched windows, receding to the palace
+ path([[330,0],[P0,PT-60],[P0,H],[330,H+30]],'#ddd8cf');
+ for(let k=0;k<4;k++){const x=360+k*52,s=1-k*.15;rect(x,210+k*14,26*s,60*s,'#7f8c97');path([[x,210+k*14],[x+13*s,196+k*14],[x+26*s,210+k*14]],'#7f8c97');rect(x,330+k*10,26*s,50*s,'#7f8c97');}
+ // front left: huge fluted columns on a stone base
+ rect(0,0,330,H+40,'#e2ddd4');
+ for(const x of [20,140,250]){const g=c.createLinearGradient(x,0,x+90,0);g.addColorStop(0,'#b9b2a6');g.addColorStop(.45,'#f3efe8');g.addColorStop(1,'#c4bdb0');c.fillStyle=g;c.fillRect(x,0,90,H-60);for(let f=8;f<90;f+=12)rect(x+f,0,2,H-60,'rgba(120,110,95,.25)');rect(x-10,H-70,110,30,'#d3ccbf');}
+ rect(0,H-40,330,60,'#cfc8bb');
+ // right: red-brown stone building receding, dark windows and a cornice
+ path([[1150,PT-40],[1600,0],[1600,H+40],[1150,H]],'#9a7a6c');path([[1150,PT-40],[1600,0],[1600,30],[1150,PT-24]],'#7d6155');
+ for(let k=0;k<5;k++){const x=1180+k*80+k*k*6,w=26+k*8,top=PT-10-k*28;for(const y of [top+40,top+150,top+260])rect(x,y,w,50+k*10,'#3e3c40');}
+ for(let k=0;k<4;k++)rect(1200+k*95+k*k*8,PT+20-k*30,8+k*3,H-PT-20+k*40,'#b49386');
+ // teal lamp posts and a far dark green vintage car, a pot of pink-red flowers
+ for(const[x,h,w] of [[300,330,8],[520,190,5],[1180,210,5]]){rect(x,H-h,w,h,'#4f7f7c');dot(x+w/2,H-h-8,w*1.6,'#e8ecea');}
+ path([[650,H-6],[656,H-30],[690,H-44],[730,H-44],[756,H-30],[770,H-6]],'#1f3a33');dot(668,H-4,9,'#151617');dot(752,H-4,9,'#151617');rect(690,H-40,36,10,'#9fb2b0');
+ rect(470,H-30,40,26,'#6c5e52');for(let k=0;k<16;k++)dot(474+rnd()*32,H-36-rnd()*20,5+rnd()*3,['#d8506a','#f08aa0','#c02a40','#f2c0c8'][k%4]);
+ glow(VX,VY-120,520,'#ffffff',.18);
+ // street: grey asphalt in perspective, pale curbs converging, white petals scattered
+ const fl=c.createLinearGradient(0,H,0,1000);fl.addColorStop(0,'#a9b0b5');fl.addColorStop(1,'#8e969c');c.fillStyle=fl;c.fillRect(0,H,1600,440);
+ path([[0,H+40],[560,H],[600,H],[0,H+150]],'#c3c4c0');path([[1600,H+40],[1150,H],[1110,H],[1600,H+150]],'#b9b6b0');
+ for(let k=0;k<60;k++){c.save();c.globalAlpha=.07;dot(rnd()*1600,H+rnd()*440,10+rnd()*40,'#5d656b');c.restore();}
+ for(let k=0;k<170;k++){const y=H+6+rnd()*434;dot(rnd()*1600,y,1.2+rnd()*(1+(y-H)/160),['#f4f2ee','#e9e6e0','#ffffff'][k%3]);}
+}
 export function createSongBackgrounds(scene){
  let active='dolce',width=0,height=0,texture=null,paints=0;
  function paint(){
@@ -362,6 +572,11 @@ export function createSongBackgrounds(scene){
   if(active==='ttl'){paintTtl(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
   if(active==='sju'){paintSju(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
   if(active==='rolypoly'){paintRolyPoly(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
+  if(active==='hylt'){paintHylt(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
+  if(active==='pv'){paintPv(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
+  if(active==='jf'){paintJf(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
+  if(active==='ktl'){paintKtl(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
+  if(active==='ddudu'){paintDdu(c,{rect,path,glow:soft,dot,line,rnd});return finish(canvas);}
   const day=active==='how',street=['rain','takedown','how'].includes(active),accent=active==='takedown'?'#628fee':'#d996f3';
   const sky=c.createLinearGradient(0,0,0,700);sky.addColorStop(0,day?'#cadbeb':'#171c39');sky.addColorStop(.6,day?'#d6dfeb':street?'#4a4564':'#434363');sky.addColorStop(1,day?'#e4dde0':'#a390b2');c.fillStyle=sky;c.fillRect(0,0,1600,1000);
   if(!day)for(let i=0;i<38;i++)dot(rnd()*1600,rnd()*270,.6+rnd(), '#b8bbd4');
@@ -427,5 +642,5 @@ export function createSongBackgrounds(scene){
   finish(canvas);
  }
  function finish(canvas){const next=new T.CanvasTexture(canvas);next.colorSpace=T.SRGBColorSpace;next.generateMipmaps=false;next.minFilter=T.LinearFilter;scene.background=next;texture?.dispose();texture=next;paints++;}
- return{tint(){return active==='rolypoly'?{disc:0xd9b7c9,ring:0xfff2f8}:active==='golden'?{disc:0xd9a04a,ring:0xfff0c0}:active==='sounds'?{disc:0xf0d2ea,ring:0xffffff}:active==='secret'?{disc:0xcdb497,ring:0xfff3d6}:active==='timem'?{disc:0xa9c8e8,ring:0xf2fbff}:active==='laviem'?{disc:0xe8c4cf,ring:0xfff1f4}:active==='dbd'?{disc:0xd2c3ae,ring:0xffffff}:active==='ttl'?{disc:0x3c3f48,ring:0xe8eeff}:active==='sju'?{disc:0xbfb6a6,ring:0xffffff}:{disc:0xe0c3d5,ring:0xfffbfe};},setSong(chart){const next=selectBackdrop(chart);if(next!==active){active=next;if(width)paint();}},resize(w,h){const nextW=Math.min(1600,Math.max(640,Math.round(w))),nextH=Math.min(1600,Math.max(480,Math.round(h)));if(nextW!==width||nextH!==height){width=nextW;height=nextH;paint();}},diagnostics(){return{id:active,paints,width,height};}};
+ return{tint(){return active==='jf'?{disc:0xb8bec4,ring:0xf2eee8}:active==='pv'?{disc:0xe4ecf0,ring:0xffffff}:active==='hylt'?{disc:0xe8b4c8,ring:0xfff2f8}:active==='ktl'?{disc:0xd8a6b0,ring:0xfff0f2}:active==='ddudu'?{disc:0xc9a3c8,ring:0xffe8f4}:active==='rolypoly'?{disc:0xd9b7c9,ring:0xfff2f8}:active==='golden'?{disc:0xd9a04a,ring:0xfff0c0}:active==='sounds'?{disc:0xf0d2ea,ring:0xffffff}:active==='secret'?{disc:0xcdb497,ring:0xfff3d6}:active==='timem'?{disc:0xa9c8e8,ring:0xf2fbff}:active==='laviem'?{disc:0xe8c4cf,ring:0xfff1f4}:active==='dbd'?{disc:0xd2c3ae,ring:0xffffff}:active==='ttl'?{disc:0x3c3f48,ring:0xe8eeff}:active==='sju'?{disc:0xbfb6a6,ring:0xffffff}:{disc:0xe0c3d5,ring:0xfffbfe};},setSong(chart){const next=selectBackdrop(chart);if(next!==active){active=next;if(width)paint();}},resize(w,h){const nextW=Math.min(1600,Math.max(640,Math.round(w))),nextH=Math.min(1600,Math.max(480,Math.round(h)));if(nextW!==width||nextH!==height){width=nextW;height=nextH;paint();}},diagnostics(){return{id:active,paints,width,height};}};
 }
