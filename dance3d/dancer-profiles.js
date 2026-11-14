@@ -1,5 +1,5 @@
-import {createFaceIdentities} from './dancer-face-shapes.js?v=1111.2237';
-import {applyHeadScale} from './head-scale.js?v=1111.2237';
+import {createFaceIdentities} from './dancer-face-shapes.js?v=1411.1139';
+import {applyHeadScale} from './head-scale.js?v=1411.1139';
 export const dancerProfiles=Object.freeze([
  Object.freeze({id:'original',label:'Gương mặt gốc',headScale:.85}),
  Object.freeze({id:'rumi',label:'Rumi · cân đối',headScale:.85}),
@@ -12,7 +12,9 @@ export const dancerProfiles=Object.freeze([
  Object.freeze({id:'boy3',label:'Secret · Quang Hùng MasterD',headScale:.76,headAspect:Object.freeze([.87,.9675,.94])}),Object.freeze({id:'boy4',label:'Secret · Wren Evans',headScale:.76,headAspect:Object.freeze([.87,.9675,.94])}),
  // LAVIEM singers (crew only, 2026-11-11): CAPTAIN BOY, Pháp Kiều (narrower, a little longer), CoolKid (rounder)
  Object.freeze({id:'boy5',label:'LAVIEM · CAPTAIN BOY',headScale:.75}),Object.freeze({id:'boy6',label:'LAVIEM · Pháp Kiều',headScale:.75,headAspect:Object.freeze([.92,1.0,.96])}),
- Object.freeze({id:'boy7',label:'LAVIEM · CoolKid',headScale:.75,headAspect:Object.freeze([1.02,.95,1.0])})
+ Object.freeze({id:'boy7',label:'LAVIEM · CoolKid',headScale:.75,headAspect:Object.freeze([1.02,.95,1.0])}),
+ // Nam, the player's boy (owner 2026-11-14): a head close to the girl's .85 (the singers' .75 reads older)
+ Object.freeze({id:'nam',label:'Nam · cậu bé',headScale:.84})
 ]);
 const known=id=>dancerProfiles.some(p=>p.id===id);
 const fromId=id=>typeof id==='string'?/^(?:huntrix|golden|wisl)-(rumi|mira|zoey)(?:-|$)/.exec(id)?.[1]:undefined;

@@ -39,10 +39,10 @@
     };
   })();
 </script>
-<script src="sfx.js?v=1111.2237"></script>
-<link rel="stylesheet" href="dance3d/wardrobe.css?v=1111.2237">
+<script src="sfx.js?v=1411.1139"></script>
+<link rel="stylesheet" href="dance3d/wardrobe.css?v=1411.1139">
 <script type="importmap">{"imports":{"three":"./lib/three.module.js","three/addons/":"./lib/jsm/","@pixiv/three-vrm":"./lib/three-vrm.module.js"}}</script>
-<script src="dance.js?v=1111.2237"></script>
+<script src="dance.js?v=1411.1139"></script>
 <style>
   /* ===== Look: "kẹo ngọt long lanh". One palette: plum text, pink action, gold stars, mint/yellow/pink for the 3 levels. ===== */
   :root{
@@ -226,6 +226,25 @@ body.duo #scoreBox{display:none}
     .done-btns{margin-top:10px}.big{min-height:66px;font-size:21px;border-radius:24px}
   }
 
+  /* ===== Character choice (owner 2026-11-14): Nữ or Nam on every open, two big picture cards, last choice highlighted ===== */
+  #charPick{position:fixed;inset:0;z-index:110;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.2vh;padding:max(16px,env(safe-area-inset-top)) 20px 16px;background:radial-gradient(120% 90% at 20% 10%,#fff0f7 0,#ffd3e7 40%,#e8d6ff 100%);transition:opacity .25s}
+  #charPick[hidden]{display:none}
+  #charPick.picked{opacity:0;pointer-events:none}
+  #charPick h1{margin:0;font:900 clamp(30px,5.4vh,46px) var(--font);color:#c9275f;text-shadow:0 3px 0 #fff}
+  .cp-cards{display:flex;gap:4vw;justify-content:center;align-items:stretch;width:100%;max-width:980px;height:min(74vh,640px)}
+  .cp-card{position:relative;flex:0 1 380px;display:flex;flex-direction:column;align-items:center;gap:1.2vh;padding:14px 14px 12px;border:0;border-radius:36px;background:#fff;color:var(--plum);box-shadow:0 8px 0 var(--cp-edge,#ffb3d1),0 14px 30px rgba(80,20,60,.2);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:transform .12s}
+  .cp-card:active{transform:translateY(5px);box-shadow:0 3px 0 var(--cp-edge,#ffb3d1),0 8px 18px rgba(80,20,60,.2)}
+  .cp-card[data-char="nam"]{--cp-edge:#8fc3ff;--cp-bg:#e6f2ff;--cp-ink:#2364b8}
+  .cp-card[data-char="nu"]{--cp-bg:#ffeaf3;--cp-ink:#c9275f}
+  .cp-pic{flex:1;width:100%;min-height:0;border-radius:26px;background:var(--cp-bg);display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
+  .cp-pic img{height:100%;width:100%;object-fit:contain;object-position:50% 100%;pointer-events:none}
+  .cp-pic .cp-ph{font-size:min(22vh,160px);line-height:1.4}
+  .cp-name{font:900 clamp(34px,6.4vh,54px)/1 var(--font);color:var(--cp-ink)}
+  .cp-card.last{outline:7px solid #ffd23f;outline-offset:3px}
+  .cp-card.last::after{content:'Lần trước';position:absolute;top:-14px;right:22px;padding:5px 14px;border-radius:999px;background:#ffd23f;color:#6b3300;font:900 17px var(--font);box-shadow:0 3px 0 #d9a400}
+  .tab.swap{flex:0 0 auto;flex-direction:column;gap:1px;padding:4px 10px;font-size:12px;line-height:1.1}
+  .tab.swap .ti{font-size:18px}
+
   /* ===== Loading ===== */
   #load{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(120% 90% at 20% 10%,#fff0f7 0,#ffd3e7 40%,#e4d2ff 100%);font-family:var(--font)}
   #load.soft{background:rgba(255,214,232,.6);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
@@ -354,6 +373,15 @@ body.duo #scoreBox{display:none}
   </defs>
 </svg>
 
+<!-- character choice, on every open (owner 2026-11-14): one big tap target per card; the pictures are real renders
+     (wardrobe/icons/char-*.webp, inside the encrypted bundle) and appear as soon as that part has arrived -->
+<div id="charPick" role="dialog" aria-modal="true" aria-labelledby="charTitle" hidden>
+  <h1 id="charTitle">Chọn nhân vật</h1>
+  <div class="cp-cards">
+    <button type="button" class="cp-card" data-char="nu" aria-label="Nữ"><span class="cp-pic"><span class="cp-ph" aria-hidden="true">👧</span></span><span class="cp-name">Nữ</span></button>
+    <button type="button" class="cp-card" data-char="nam" aria-label="Nam"><span class="cp-pic"><span class="cp-ph" aria-hidden="true">👦</span></span><span class="cp-name">Nam</span></button>
+  </div>
+</div>
 <div id="load" role="status" aria-live="polite">
   <i class="sp s1"></i><i class="sp s2"></i><i class="sp s3"></i><i class="sp s4"></i><i class="sp s5"></i>
   <div class="card">
@@ -515,7 +543,7 @@ body.duo #scoreBox{display:none}
 <div id="gateHint" aria-hidden="true">Bố mẹ: giữ ⚙️ 1 giây để mở</div>
 
 <div id="menu">
-  <div id="verTag" aria-label="Phiên bản">Bản 1111.2237</div>
+  <div id="verTag" aria-label="Phiên bản">Bản 1411.1139</div>
   <div class="panel" id="mainPanel">
     <svg class="logo" viewBox="0 0 480 96" role="img" aria-label="Mũi Tên Theo Nhạc">
       <g transform="translate(48 50)">
@@ -536,6 +564,7 @@ body.duo #scoreBox{display:none}
     <nav class="tabs" aria-label="Đi nhanh tới">
       <button type="button" class="tab" data-go="songs"><span class="ti">🎵</span>Bài hát</button>
       <button type="button" class="tab" data-go="outfitRow"><span class="ti">👗</span>Đồ của bé</button>
+      <button type="button" class="tab swap" id="charSwap" aria-label="Đổi nhân vật"><span class="ti">🔄</span>Đổi nhân vật</button>
       <button type="button" class="tab gear" data-go="parent" aria-label="Dành cho bố mẹ"><span class="ti">⚙️</span></button>
     </nav>
     <p id="result" role="status"></p>
@@ -596,7 +625,7 @@ body.duo #scoreBox{display:none}
 </div>
 
 <script>
-const V = '1111.2237';  // stamped by the deploy build
+const V = '1411.1139';  // stamped by the deploy build
 // Two rows, low on the screen where hands hold an iPad: 560 and 710. A touch above 635 is the upper row.
 const SPLIT_Y = 635,
   
@@ -998,7 +1027,8 @@ async function loadDance() {
     const r = await fetch(`dance/manifest.json?v=${V}`);
     if (r.ok) {
       const man = await r.json();
-      return { files: Object.fromEntries(man.files.map(n => [n, `dance/${n}?v=${V}`])), json: async n => (await fetch(`dance/${n}?v=${V}`)).json() };
+      const files = window.DANCE_FILES = Object.fromEntries(man.files.map(n => [n, `dance/${n}?v=${V}`]));
+      return { files, json: async n => (await fetch(`dance/${n}?v=${V}`)).json() };
     }
   }
   const key = await crypto.subtle.importKey('raw', keyBytes(), 'AES-GCM', false, ['decrypt']);
@@ -1011,7 +1041,7 @@ async function loadDance() {
     }
     return plain;
   }
-  const files = {};
+  const files = window.DANCE_FILES = {};   // filled part by part (the choice screen shows its pictures from here)
   function unpack(plain) {
     const n = new DataView(plain).getUint32(0, true), head = JSON.parse(new TextDecoder().decode(new Uint8Array(plain, 4, n)));
     for (const f of head.files) files[f.name] = URL.createObjectURL(new Blob([new Uint8Array(plain, 4 + n + f.at, f.len)], { type: f.type }));
@@ -1653,7 +1683,42 @@ const portraitMQ = matchMedia('(orientation: portrait)');
 function alignScene() { $('scene').setAttribute('preserveAspectRatio', portraitMQ.matches ? 'xMidYMax meet' : 'xMidYMid meet'); }
 if (portraitMQ.addEventListener) portraitMQ.addEventListener('change', alignScene); else portraitMQ.addListener(alignScene);
 alignScene();
-danceReady = loadDance().then(b => { DANCE = b; setLoad('char'); return Dance.init($('stage'), b); }).then(() => { clearTimeout(slowTimer); showOutfits(); setLoad('done'); $('loadLbl').textContent = 'Sẵn sàng!'; setTimeout(() => { if (!starting) loadEl.classList.add('hide'); }, 500); }).catch(e => {
+// Player character (owner 2026-11-14 "khi mở game sẽ có option chọn nam hoặc nữ rồi vào flow game như bình thường"): asked on
+// every open, the last choice highlighted (localStorage). The donors load behind the screen; the runtime waits for the answer
+// only where the face and the shop are set up. ?char=nu|nam answers it from the link; automated checks (navigator.webdriver)
+// skip it with the last choice (else Nữ) unless ?pick=1 asks for the screen.
+const CHAR_KEY = 'spike-character';
+const charChoice = (() => {
+  const q = new URLSearchParams(location.search), forced = q.get('char');
+  let last = null; try { last = localStorage.getItem(CHAR_KEY); } catch (e) {}
+  if (last !== 'nu' && last !== 'nam') last = null;
+  const done = c => { document.body.dataset.character = c; return c; };
+  if (forced === 'nu' || forced === 'nam') return Promise.resolve(done(forced));
+  if (navigator.webdriver && !q.has('pick')) return Promise.resolve(done(last || 'nu'));
+  const el = $('charPick'), cards = [...el.querySelectorAll('.cp-card')];
+  for (const b of cards) { const on = b.dataset.char === last; b.classList.toggle('last', on); b.setAttribute('aria-pressed', String(on)); }
+  el.hidden = false;
+  const pics = setInterval(() => {   // real renders, as soon as their bundle part is in
+    let all = true;
+    for (const b of cards) {
+      const pic = b.querySelector('.cp-pic'), url = window.DANCE_FILES?.[`wardrobe/icons/char-${b.dataset.char}.webp`];
+      if (pic.querySelector('img')) continue;
+      if (!url || url.startsWith('lazy:')) { all = false; continue; }
+      const img = new Image(); img.alt = ''; img.decoding = 'async'; img.draggable = false; img.src = url; pic.replaceChildren(img);
+    }
+    if (all || el.hidden) clearInterval(pics);
+  }, 120);
+  return new Promise(res => el.addEventListener('click', e => {
+    const b = e.target.closest('.cp-card'); if (!b || el.classList.contains('picked')) return;
+    const c = b.dataset.char === 'nam' ? 'nam' : 'nu';
+    try { localStorage.setItem(CHAR_KEY, c); } catch (err) {}
+    el.classList.add('picked'); setTimeout(() => { el.hidden = true; }, 260);
+    res(done(c));
+  }));
+})();
+// "Đổi nhân vật" on the menu: open the game again, which asks again (a ?char= in the link would skip the screen, drop it)
+$('charSwap').addEventListener('click', () => { const u = new URL(location.href); u.searchParams.delete('char'); location.replace(u.href); });
+danceReady = loadDance().then(b => { DANCE = b; setLoad('char'); return Dance.init($('stage'), b, { character: charChoice }); }).then(() => { clearTimeout(slowTimer); showOutfits(); setLoad('done'); $('loadLbl').textContent = 'Sẵn sàng!'; setTimeout(() => { if (!starting) loadEl.classList.add('hide'); }, 500); }).catch(e => {
   $('outfits').textContent = 'Không mở được nhân vật 3D. Hãy tải lại trang. ' + e.message;
   $('outfits').setAttribute('role', 'alert');
   console.warn('dance', e);

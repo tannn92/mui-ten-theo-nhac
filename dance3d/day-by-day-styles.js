@@ -1,6 +1,6 @@
 import * as T from 'three';
-import {fitPoint,fitSection,armShell} from './body-fit.js?v=1111.2237';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1111.2237';
+import {fitPoint,fitSection,armShell} from './body-fit.js?v=1411.1139';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1411.1139';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // "Day by Day" (T-ARA), dance cover by Tiature (owner song queue 2026-11-11): the whole unit wears pink sleeveless trench
 // mini dresses (notched lapel, double-breasted black buttons, self belt with a black square buckle, A-line skirt) in shades

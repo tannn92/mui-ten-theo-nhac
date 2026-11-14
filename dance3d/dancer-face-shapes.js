@@ -15,7 +15,10 @@ const specs={rumi:{eyeY:.83,eyeX:1.08,tilt:.10,brow:.004,nose:.88,lip:1.22,lipX:
  // face, small eyes, low soft brows, a wide mouth
  boy5:{male:true,eyeY:.74,eyeX:1.03,tilt:.06,brow:0,nose:.97,lip:1.04,lipX:1.12,jawWidth:-.035,chin:-.010,browGrow:3,irisK:.86,browDrop:-.002,browTilt:-.01,hl:.6,noseLine:.18,noLash:true},
  boy6:{male:true,eyeY:.72,eyeX:1.06,tilt:.13,brow:0,nose:.93,lip:1.0,lipX:1.10,jawWidth:-.10,chin:-.028,browGrow:3,irisK:.82,browDrop:.004,browTilt:.07,hl:.5,noseLine:.30,noseLong:true,noLash:true},
- boy7:{male:true,eyeY:.70,eyeX:1.02,tilt:.02,brow:0,nose:.98,lip:1.06,lipX:1.20,jawWidth:-.02,chin:-.006,browGrow:3,irisK:.86,browDrop:.005,browTilt:-.03,hl:.55,noseLine:.18,noLash:true}};
+ boy7:{male:true,eyeY:.70,eyeX:1.02,tilt:.02,brow:0,nose:.98,lip:1.06,lipX:1.20,jawWidth:-.02,chin:-.006,browGrow:3,irisK:.86,browDrop:.005,browTilt:-.03,hl:.55,noseLine:.18,noLash:true},
+ // Nam (owner 2026-11-14, the dad's player character, "làm theo cách nhanh nhất"): a cute boy her age, NOT a singer. The male
+ // edits (no lash flicks, thicker brows, no blush) on her own big round eyes; a soft round jaw, a faint nose line.
+ nam:{male:true,eyeY:.9,eyeX:1.0,tilt:.02,brow:0,nose:.98,lip:1.0,lipX:1.06,jawWidth:.015,chin:0,browGrow:2,irisK:.95,browDrop:.002,browTilt:-.01,hl:.8,noseLine:.1,noLash:true}};
 function maleEdit(a,W,H,tag,s){
  if(/EyeHighlight/.test(tag)){const k=s.hl??.55;for(let i=3;i<a.length;i+=4)a[i]=Math.round(a[i]*k);return;}
  if(/Face_00_SKIN/.test(tag)&&s.noseLine){// a short shadow stroke down his right side of the nose to the drawn tip (texture .50,.653), a small one under it

@@ -1,18 +1,20 @@
-import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1111.2237';
-import {hideNativeWislSafety} from './wisl-styles.js?v=1111.2237';
-import {hideNativeSecretSafety} from './secret-styles.js?v=1111.2237';
-import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1111.2237';
-import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1111.2237';
-import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1111.2237';
+import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1411.1139';
+import {hideNativeWislSafety} from './wisl-styles.js?v=1411.1139';
+import {hideNativeSecretSafety} from './secret-styles.js?v=1411.1139';
+import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1411.1139';
+import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1411.1139';
+import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1411.1139';
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {VRMLoaderPlugin} from '@pixiv/three-vrm';
-import {createAccessories} from './accessories.js?v=1111.2237';
-import {getWardrobeOptions,wardrobeDefaults} from './wardrobe-ui.js?v=1111.2237';
-import {addSkirtShorts,limitSkirtSprings} from './skirt-safety.js?v=1111.2237';
-import {createLazyStyles} from './lazy-styles.js?v=1111.2237';
+import {createAccessories} from './accessories.js?v=1411.1139';
+import {getWardrobeOptions,wardrobeDefaults} from './wardrobe-ui.js?v=1411.1139';
+import {addSkirtShorts,limitSkirtSprings} from './skirt-safety.js?v=1411.1139';
+import {createLazyStyles} from './lazy-styles.js?v=1411.1139';
 
 const physicalSlots=['hair','top','bottom','shoes'];
+// boys' trousers (crew looks, also the Nam player's shop, 2026-11-14): the skirt's pink safety shorts showed in the crotch gap
+const MALE_TROUSERS=/-crew-[mb]\d+-bottom$/;
 const vector=new T.Vector3();
 const equalMatrix=(a,b)=>a.elements.every((n,i)=>Math.abs(n-b.elements[i])<1e-4);
 const materialName=mesh=>[].concat(mesh.material)[0]?.name||'';
@@ -120,7 +122,7 @@ export async function loadWardrobe(scene,config,onProgress=()=>{}){
  for(const key of Object.keys(variant.parts)){
  const slot=key==='upper'?'top':key==='lower'?'bottom':key==='feet'?'shoes':key;
  const show=key==='face'?i===0:i===variantFor(slot,sel[slot])&&(!physicalSlots.includes(key)||!styles.meshesFor(slot,sel[slot]));
- if(show)for(const mesh of variant.parts[key])if(!(mesh.userData.excludeHatMua&&bottom.style?.startsWith('hat-mua-'))&&!(mesh.userData.excludeHuntrix&&bottom.style?.startsWith('huntrix-'))&&!hideNativeGirlXinhSafety(mesh,bottom)&&!hideNativeTaiSinhSafety(mesh,bottom)&&!hideNativeHuntrixTrioSafety(mesh,bottom)&&!hideNativeGoldenStageSafety(mesh,bottom)&&!hideNativeWislSafety(mesh,bottom)&&!hideNativeSecretSafety(mesh,bottom)&&(!mesh.userData.requiredBottomStyle||bottom.style===mesh.userData.requiredBottomStyle))put(i,mesh);
+ if(show)for(const mesh of variant.parts[key])if(!(mesh.userData.excludeHatMua&&bottom.style?.startsWith('hat-mua-'))&&!(mesh.userData.excludeHuntrix&&bottom.style?.startsWith('huntrix-'))&&!hideNativeGirlXinhSafety(mesh,bottom)&&!hideNativeTaiSinhSafety(mesh,bottom)&&!hideNativeHuntrixTrioSafety(mesh,bottom)&&!hideNativeGoldenStageSafety(mesh,bottom)&&!hideNativeWislSafety(mesh,bottom)&&!hideNativeSecretSafety(mesh,bottom)&&(!mesh.userData.requiredBottomStyle||bottom.style===mesh.userData.requiredBottomStyle)&&!(mesh.name.endsWith('_cream_undershorts')&&MALE_TROUSERS.test(bottom.id||'')))put(i,mesh);
  }
  });
  for(const slot of [...physicalSlots,'accessory']){const ms=styles.meshesFor(slot,sel[slot]);if(ms)for(const m of ms)put(options[slot][sel[slot]].variant??1,m);}

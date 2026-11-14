@@ -1,19 +1,20 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=1111.2237';
-import {createSongBackgrounds} from './song-backgrounds.js?v=1111.2237';
-import {loadWardrobe} from './wardrobe.js?v=1111.2237';
-import {createChoreography} from './choreography.js?v=1111.2237';
-import {createPoseBank} from './pose-bank.js?v=1111.2237';
-import {applyFaceExpression} from './face-expressions.js?v=1111.2237';
-import {createCrew} from './crew.js?v=1111.2237';
-import {newspaperProps} from './newspaper-prop.js?v=1111.2237';
-import {applyHeadScale} from './head-scale.js?v=1111.2237';
-import {createDancerProfiles,resolveDancerProfile} from './dancer-profiles.js?v=1111.2237';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1111.2237';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1111.2237';
-import {createPartner} from './partner.js?v=1111.2237';
-import {shrinkLargeTextures,sweepGpu} from './texture-budget.js?v=1111.2237';
-export async function createRuntime(canvas,bundle){
+import {createPerformanceLibrary} from './performance-library.js?v=1411.1139';
+import {createSongBackgrounds} from './song-backgrounds.js?v=1411.1139';
+import {loadWardrobe} from './wardrobe.js?v=1411.1139';
+import {createChoreography} from './choreography.js?v=1411.1139';
+import {createPoseBank} from './pose-bank.js?v=1411.1139';
+import {applyFaceExpression} from './face-expressions.js?v=1411.1139';
+import {createCrew} from './crew.js?v=1411.1139';
+import {newspaperProps} from './newspaper-prop.js?v=1411.1139';
+import {applyHeadScale} from './head-scale.js?v=1411.1139';
+import {createDancerProfiles,resolveDancerProfile} from './dancer-profiles.js?v=1411.1139';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1411.1139';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1411.1139';
+import {createPartner} from './partner.js?v=1411.1139';
+import {shrinkLargeTextures,sweepGpu} from './texture-budget.js?v=1411.1139';
+import {characterView,normCharacter} from './characters.js?v=1411.1139';
+export async function createRuntime(canvas,bundle,opts={}){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
  let captureAsset=beautyDemo?'wardrobe/beauty-demo.json':raw.captureAsset||(bundle.files[FULL_CAPTURE_ASSET]?FULL_CAPTURE_ASSET:CAPTURE_ASSET);
@@ -52,7 +53,11 @@ export async function createRuntime(canvas,bundle){
  // HUNTR/X faces (owner 2026-11-10 "mặt gốc vẫn giữ, mà với set huntrix thì thay cả mặt"): wearing a full Rumi/Mira/Zoey set
  // (top+bottom+shoes of a huntrix-/golden-/wisl- set) gives the child that character's face and head shape; anything else keeps the
  // original face (Codex dancer-profiles.js; absolute head scales, original .85). Built on demand, outside the draw loop.
- const faceOf=()=>resolveDancerProfile({selection:wardrobe.outfit,options:wardrobe.options,sets:config.sets});
+ // Player character (owner 2026-11-14): opts.character ('nu' | 'nam', or a promise of it while the choice screen is up) is
+ // awaited only here, after the donors loaded behind the choice. Nam: his face profile, his shop, his own remembered outfit.
+ const who=characterView(config,wardrobe.options,normCharacter(await opts.character));
+ if(who.initial)for(const [s,i] of Object.entries(who.initial)){try{wardrobe.equip(s,i);}catch(e){console.warn('nam outfit',e);}}
+ const faceOf=()=>who.profile||resolveDancerProfile({selection:wardrobe.outfit,options:wardrobe.options,sets:config.sets});
  let leadFace=null;try{leadFace=createDancerProfiles({faceMeshes:wardrobe.variants[0].parts.face,rigs:wardrobe.variants.map(v=>v.vrm),initial:faceOf()});if(!leadFace.supported){console.warn('lead face',leadFace.reason);leadFace=null;}}catch(e){console.warn('lead face',e);leadFace=null;}
  let faceQueued=false;const queueFace=()=>{if(!leadFace||faceQueued)return;faceQueued=true;queueMicrotask(()=>{faceQueued=false;try{const id=faceOf();if(id!==leadFace.selected)leadFace.apply(id);}catch(e){console.warn('lead face',e);}});};let leadHeight=1,songMoves=null,lastTime=null,lastMode=null,idleStart=performance.now(),refresh=()=>{},lastSnapshot={},width=0,height=0;
  const v=new T.Vector3();
@@ -120,7 +125,7 @@ export async function createRuntime(canvas,bundle){
  }
  function fadePoseAt(t){const fade=capturedFades.find(f=>t>=f.start&&t<=f.end);if(!fade)return null;const f=T.MathUtils.clamp((t-fade.start)*fade.fps,0,fade.rows.length-1),i=Math.floor(f),a=fade.rows[i],b=fade.rows[Math.min(i+1,fade.rows.length-1)],u=f-i,q=[];for(const e of wardrobe.variants[0].entries){fadeQ.fromArray(a.q,e.index*4).slerp(fadeR.fromArray(b.q,e.index*4),u).toArray(q,e.index*4);}return{q,bob:T.MathUtils.lerp(a.bob,b.bob,u)};}
  const physicalSlots=['hair','top','bottom','shoes'],presets=config.variants.map((v,i)=>({id:v.id,name:v.name||v.label||(i===0?'Bạc hà':i===1?'Nơ hồng':`Bộ ${i+1}`)}));
- function equip(slot,index){wardrobe.equip(slot,index);saveWardrobe(wardrobe.outfit);refresh();queueFace();}
+ function equip(slot,index){wardrobe.equip(slot,index);if(who.save)who.save(wardrobe.outfit);else saveWardrobe(wardrobe.outfit);refresh();queueFace();}
  // Wardrobe taps: a garment that was never worn is sewn on first use (up to ~2 s of CPU). Show "Đang may đồ…" first and
  // let it paint, then build. The API equip above stays synchronous for tools and tests.
  let sewingEl=null,sewingCount=0;
@@ -215,7 +220,8 @@ export async function createRuntime(canvas,bundle){
  function snapshot(){const bones={};for(const name of ['hips','spine','chest','neck','head','leftShoulder','rightShoulder','leftUpperArm','rightUpperArm','leftLowerArm','rightLowerArm','leftHand','rightHand','leftUpperLeg','rightUpperLeg','leftLowerLeg','rightLowerLeg','leftFoot','rightFoot']){const b=wardrobe.master.humanoid.getRawBoneNode(name);if(!b)continue;b.getWorldPosition(v);const world=v.toArray(),screen=v.clone().project(camera);bones[name]={world,screen:[(screen.x+1)*width/2,(1-screen.y)*height/2],quaternion:b.quaternion.toArray()};}return{...lastSnapshot,backdrop:backdrop.diagnostics(),crew:crew.diagnostics(),selection:{...wardrobe.outfit},bones,finite:Object.values(bones).every(b=>b.world.every(Number.isFinite)),face:{id:wardrobe.options.face[wardrobe.outfit.face].id,values:wardrobe.options.face[wardrobe.outfit.face].values},parts:wardrobe.variants.flatMap((v,i)=>Object.entries(v.parts).flatMap(([slot,ms])=>ms.map(m=>({slot,variant:i,visible:m.visible,meshId:m.uuid,geometryId:m.geometry.uuid,indexCount:m.geometry.index?.count||0})))).concat((wardrobe.styleParts||[]).map(p=>({slot:p.slot,variant:p.variant,donor:p.donor,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count}))).concat((wardrobe.accessoryParts||[]).map(p=>({slot:p.slot,variant:p.variant,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count}))),accessories:(wardrobe.accessoryParts||[]).map(p=>({slot:p.slot,variant:p.variant,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count})),audit:wardrobe.audit};}
  const api={draw,equip,snapshot,
  async setDuo(opts){duo=opts?{side:opts.side==='R'?'R':'L'}:null;leadX=duo?(duo.side==='L'?-SLOT_X:SLOT_X):0;await partner.setOutfit(duo?opts.partner||null:null);partner.setSpot(-leadX,setHeight(news.slug,partner.selection));},
- outfitIds(){return Object.fromEntries(['hair','top','bottom','shoes','accessory'].map(s=>[s,wardrobe.options[s]?.[wardrobe.outfit[s]]?.id??null]));},
+ // the character travels with the outfit (lobby, prep, loaded); no key = Nữ, exactly the message older builds send
+ outfitIds(){return {...Object.fromEntries(['hair','top','bottom','shoes','accessory'].map(s=>[s,wardrobe.options[s]?.[wardrobe.outfit[s]]?.id??null])),...(who.character==='nam'?{character:'nam'}:{})};},get character(){return who.character;},
  heads(){const head=wardrobe.master.humanoid.getRawBoneNode('head');let me=null;if(head){head.getWorldPosition(v);v.y+=.16*wardrobe.master.scene.scale.x;v.project(camera);me=[(v.x+1)/2*width,(1-v.y)/2*height];}return{me,partner:duo?partner.headScreen(camera,width,height):null};},
  async setSong(moves,chart){const request=++songRequest,entry=beautyDemo?null:performances.find(chart),loaded=entry?await performances.load(entry):null;if(request!==songRequest)return false;
  // Backups wear theme outfits that are built on demand (lazy wardrobe): sew them before the crew rigs clone the meshes.
@@ -226,14 +232,14 @@ export async function createRuntime(canvas,bundle){
  for(const c of crewEntry?.crew||[])if(c.outfit)await wardrobe.prepareOutfit(c.outfit);if(request!==songRequest)return false;
  captured=loaded?.lead?createCapturedMotion(loaded.lead):defaultCaptured;captureAsset=loaded?.lead?entry.lead:defaultCaptureAsset;
  capturedIndex=new Map(captured?.boneNames.map((n,i)=>[n,i])||[]);captureReferenceOffset=wardrobe.variants.find(v=>v.spec.id===captured?.referenceVariant)?.restOffset||0;
- songMoves=moves;news.slug=chart?.slug||Object.keys(raw.performances||{}).find(k=>raw.performances[k]===entry)||null;backdrop.setSong(chart);{const tint=backdrop.tint?.();if(tint){disc.material.color.set(tint.disc);ring.material.color.set(tint.ring);}}motion.setSong(moves,chart);const matched=captured?.setSong(moves,chart);if(loaded?.lead&&!matched)throw Error('Lead track song identity mismatch');{const keep=leadFace?.selected;if(keep&&keep!=='original')leadFace.apply('original');crew.setSong(chart,crewEntry,loaded?.crewData);if(keep&&keep!=='original')leadFace.apply(keep);}leadHeight=crewEntry?.leadHeight||1;partner.setSpot(-leadX,setHeight(news.slug,partner.selection));bakeCapturedFades();lastTime=null;idleStart=performance.now();return true;},outfits:presets,get outfit(){const i=presets.findIndex((_,i)=>physicalSlots.every(s=>wardrobe.variantFor(s,wardrobe.outfit[s])===i&&!wardrobe.options[s][wardrobe.outfit[s]].style));return i>=0&&!(wardrobe.outfit.accessory>0)?presets[i].id:'mixed';},setOutfit(id){const i=presets.findIndex(p=>p.id===id);if(i>=0){physicalSlots.forEach(s=>{const choice=wardrobe.options?.[s]?.findIndex(o=>o.variant===i)??i;if(choice>=0)equip(s,choice);});if(wardrobe.slots.includes('accessory'))equip('accessory',0);}},mountWardrobe(container){refresh=mountWardrobe(container,config,equipFromUI,()=>wardrobe.outfit,name=>bundle.files['wardrobe/icons/'+name+'.webp']||null);},test:{wardrobe,camera,scene,renderer,motion,poseBank,crew,captured,partner,config,look}};
+ songMoves=moves;news.slug=chart?.slug||Object.keys(raw.performances||{}).find(k=>raw.performances[k]===entry)||null;backdrop.setSong(chart);{const tint=backdrop.tint?.();if(tint){disc.material.color.set(tint.disc);ring.material.color.set(tint.ring);}}motion.setSong(moves,chart);const matched=captured?.setSong(moves,chart);if(loaded?.lead&&!matched)throw Error('Lead track song identity mismatch');{const keep=leadFace?.selected;if(keep&&keep!=='original')leadFace.apply('original');crew.setSong(chart,crewEntry,loaded?.crewData);if(keep&&keep!=='original')leadFace.apply(keep);}leadHeight=crewEntry?.leadHeight||1;partner.setSpot(-leadX,setHeight(news.slug,partner.selection));bakeCapturedFades();lastTime=null;idleStart=performance.now();return true;},outfits:presets,get outfit(){const i=presets.findIndex((_,i)=>physicalSlots.every(s=>wardrobe.variantFor(s,wardrobe.outfit[s])===i&&!wardrobe.options[s][wardrobe.outfit[s]].style));return i>=0&&!(wardrobe.outfit.accessory>0)?presets[i].id:'mixed';},setOutfit(id){const i=presets.findIndex(p=>p.id===id);if(i>=0){physicalSlots.forEach(s=>{const choice=wardrobe.options?.[s]?.findIndex(o=>o.variant===i)??i;if(choice>=0)equip(s,choice);});if(wardrobe.slots.includes('accessory'))equip('accessory',0);}},mountWardrobe(container){refresh=mountWardrobe(container,who.uiConfig,equipFromUI,()=>wardrobe.outfit,name=>(who.character==='nam'&&bundle.files['wardrobe/icons/nam-'+name+'.webp'])||bundle.files['wardrobe/icons/'+name+'.webp']||null);},test:{wardrobe,camera,scene,renderer,motion,poseBank,crew,captured,partner,config,look,who,profile:()=>leadFace?.selected??null}};
  // Warm both crew costumes while the loading state is still visible. Otherwise
  // their first shader compilation can stall the first audible dance beat.
  // Owner 2026-11-09: trying clothes on must not wait. Sew the shop (set items first) while the loading screen is up, for
  // at most 4 s, then keep sewing the rest of the shop in the background ahead of the crew looks. Priority 99 pauses
  // while a song plays; a tap on an unsewn item still jumps the queue at 100.
- {const shop=[],seen=new Set(),add=(slot,i)=>{const o=wardrobe.options?.[slot]?.[i],k=slot+':'+i;if(o?.style&&!o.crewOnly&&!seen.has(k)){seen.add(k);shop.push({[slot]:i});}};
-  for(const set of config.sets||[])for(const [slot,i] of Object.entries(set.selection||{}))add(slot,i);
+ {const shop=[],seen=new Set(),add=(slot,i)=>{const o=wardrobe.options?.[slot]?.[i],k=slot+':'+i;if(o?.style&&who.isShop(slot,i)&&!seen.has(k)){seen.add(k);shop.push({[slot]:i});}};
+  for(const set of who.sets)for(const [slot,i] of Object.entries(set.selection||{}))add(slot,i);
   for(const [slot,items] of Object.entries(wardrobe.options||{}))items.forEach((_,i)=>add(slot,i));
   const t0=performance.now(),st=wardrobe.styles;if(st?.ensureStyle)for(const x of shop){if(performance.now()-t0>4000)break;const [slot,i]=Object.entries(x)[0];try{st.ensureStyle(slot,i);}catch(e){console.warn('shop sew',e);}}
   if(wardrobe.prepareOutfit)shop.forEach((x,k)=>wardrobe.prepareOutfit(x,{priority:99}).catch(e=>console.warn('shop sew',e)));}
@@ -242,6 +248,6 @@ export async function createRuntime(canvas,bundle){
  renderer.render(scene,camera);crew.update(false,null,width/height);draw(null);
  // iPad memory (owner 2026-11-11): the crew-only looks of every song (mostly the Secret singers' hair) held ~290 MB sewn
  // ahead; they are sewn when their song opens (setSong waits for them). The shop itself stays sewn: try-on must not wait.
- setTimeout(()=>{try{wardrobe.prewarmOutfits?.((config.sets||[]).map(x=>x.selection),{everything:false});}catch(e){console.warn('prewarm',e);}},2500);
+ setTimeout(()=>{try{wardrobe.prewarmOutfits?.(who.sets.map(x=>x.selection),{everything:false});}catch(e){console.warn('prewarm',e);}},2500);
  return api;
 }
