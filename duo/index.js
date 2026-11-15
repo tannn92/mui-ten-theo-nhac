@@ -1,9 +1,9 @@
 // Two-iPad play (duo): entry point, loaded only when "Chơi 2 người" is tapped (index.html). startDuo(game) gives a controller
 // to host or join a room; openDuo(game) shows the screens (ui.js) on top of it. Test switches: ?duoTransport=broadcast (two
 // pages of one browser, no PeerJS server) and ?duoVersion=X (pretend another build).
-import {openLink, peerTransport, broadcastTransport} from './link.js?v=1411.2316';
-import {createSession} from './session.js?v=1411.2316';
-import {createUI} from './ui.js?v=1411.2316';
+import {openLink, peerTransport, broadcastTransport} from './link.js?v=1511.0454';
+import {createSession} from './session.js?v=1511.0454';
+import {createUI} from './ui.js?v=1511.0454';
 
 export async function startDuo(game, opts = {}) {
   const q = new URLSearchParams(location.search);

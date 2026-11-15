@@ -1,6 +1,6 @@
 import * as T from 'three';
-import {fitPoint,fitSection,armShell} from './body-fit.js?v=1411.2316';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1411.2316';
+import {fitPoint,fitSection,armShell} from './body-fit.js?v=1511.0454';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1511.0454';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // "꽃 (FLOWER)" (JISOO). Dance from the DANCE PERFORMANCE VIDEO; costumes from the OFFICIAL MV's dance scenes (owner
 // 2026-11-14: "lấy quần áo từ những đoạn dance trong MV chính thức"): the first-chorus street dance (MV 1:05-1:33). Jisoo in a

@@ -1,6 +1,6 @@
 import * as T from 'three';
-import {fitPoint,fitSection,armShell} from './body-fit.js?v=1411.2316';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1411.2316';
+import {fitPoint,fitSection,armShell} from './body-fit.js?v=1511.0454';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1511.0454';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // "Pink Venom" (BLACKPINK). Looks from the official MV's group dance in the white marble hall (second chorus, MV 2:02-2:20;
 // crops from MV 2:04.5 and 2:16): white columns, two white stag statues, a round clock window, red petals on a white floor.
@@ -135,12 +135,21 @@ for(const slot of ['top','bottom','shoes'])for(const[index,opt]of(options[slot]|
 
  if(slot==='bottom'){
   if(spec.bottom==='shorts'){
-   // shorts (Jennie's denim romper / Jisoo's black shorts): her hip/thigh skin lifted to upper thigh, a hem ring per leg, a
-   // waistband and her thigh skin below
-   const hemY=waist-.120,off=.011,sm=spec.shortsPrint==='denim'?cloth(spec.shortsColor,'denim'):mat(spec.shortsColor,{roughness:.6,clearcoat:.2});
-   register(shell('pv-shortsonly',(x,y)=>y<waist+.008&&y>hemY,off),sm,false);
-   register(shell('pv-thigh-short',(x,y)=>y>hip.y-.165&&y<hemY+.012,.0095),skin,false);
-   for(const side of ['left','right'])ring(side,hemY+.006,off+.002,.012,sm);
+   // shorts (Jennie's denim romper / Jisoo's black shorts). 2026-11-15 (orchestrator, the child can wear them now): the skin-
+   // lifted shell showed the crotch/gusset shape, so they are built like How You Like That's loose shorts: a lining (her hip
+   // skin lifted, continuous through the crotch, hidden inside), a loose band round the hips and a loose tube per leg, so the
+   // shorts never show the body's shape. Same colour/texture, length, waistband and roll-up hem ring; her thigh skin below.
+   const hemY=waist-.120,sm=spec.shortsPrint==='denim'?cloth(spec.shortsColor,'denim'):mat(spec.shortsColor,{roughness:.6,clearcoat:.2});
+   register(shell('pv-shorts-in',(x,y)=>y<waist+.006&&y>hemY+.004,.010),sm,false);
+   register(shell('pv-thigh-short',(x,y)=>y>hip.y-.165&&y<hemY+.014,.0095),skin,false);
+   // the band runs down past the crotch (as HYLT), so the front reads flat across it; slimmer ease than HYLT's high-waisted
+   // pair, so these short shorts keep their own fitted line; the roll-up hem ring sits on the tube's hem
+   const bandLow=Math.max(hip.y-.058,hemY+.010),legTop=Math.min(bandLow+.012,hemY+.040);
+   // the grids' uv run once round the body: tile them so the denim grain is as fine as on her skin-lifted lining
+   const tile=g=>{const uv=g.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*3,uv.getY(i)*.35);return g;};
+   weighted(tile(grid(4,48,(u,v)=>fitted(T.MathUtils.lerp(waist+.004,bandLow,u),v*Math.PI*2,.011+.006*u))),sm,'hips');
+   for(const side of ['left','right'])skinLike(tile(grid(6,28,(u,v)=>{const y=T.MathUtils.lerp(legTop,hemY,u),q=legSection(side,y,.010),a=v*Math.PI*2,g=.012+.004*u;return q?V().set(q.cx+Math.cos(a)*(q.rx+g),y,q.cz+Math.sin(a)*(q.rz+g)):V().set(0,y,hip.z);})),sm,side);
+   for(const side of ['left','right'])ring(side,hemY+.005,.019,.010,sm);
    weighted(grid(3,48,(u,v)=>{const a=v*Math.PI*2,q=fitted(waist,a,.018);q.y=waist+.008-u*.018;return q;}),spec.shortsPrint==='denim'?sm:mat('#26262b',{roughness:.5}),'hips');
   }else{
    // cargo trousers: her leg skin lifted from the waist to the ankle (a little loose), a hem ring per leg, a waistband, a

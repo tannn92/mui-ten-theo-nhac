@@ -1,6 +1,6 @@
 import * as T from 'three';
-import {fitPoint,fitSection,armShell,armRadius} from './body-fit.js?v=1411.2316';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1411.2316';
+import {fitPoint,fitSection,armShell,armRadius} from './body-fit.js?v=1511.0454';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1511.0454';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 const caches=new WeakMap();
 const V=()=>new T.Vector3();
@@ -75,7 +75,7 @@ if(spec.top==='pinafore'){cloth.color.set('#c5a57f');bottom.color.set('#c5a57f')
     const inner=spec.shirt?mat(spec.shirt,.6):white;if(spec.shirt){inner.map=fabric('denim');inner.emissive.copy(inner.color);inner.emissiveIntensity=.08;}
     grid(12,36,(u,v)=>shirt(T.MathUtils.lerp(waist-.012,high,u),v*Math.PI*2),inner);
     grid(12,36,(u,v)=>shirt(T.MathUtils.lerp(hip.y+.020,high-.004,u),Math.PI/2+(spec.top==='leather'?.065:spec.top==='knit'?.18+.40*u:.42)+v*(Math.PI*2-2*(spec.top==='leather'?.065:spec.top==='knit'?.18+.40*u:.42)),.007),cloth);
-    register(shell('secret-boy-shoulder-cover',(x,y)=>Math.abs(x)<.165&&y>neck.y-.085&&y<neck.y+.015,.010),cloth,false);
+    register(spec.top==='leather'?shell('secret-boy-shoulder-cover',(x,y)=>Math.abs(x)<.165&&y>neck.y-.085&&y<neck.y+.015,.010):shell('secret-boy-shoulder-cover-open',(x,y,z)=>Math.abs(x)<.165&&y>neck.y-.085&&y<neck.y+.015&&!(z>hip.z+.02&&Math.abs(x)<.030),.010),cloth,false);// open fronts (owner 2026-11-14 nam-chest): no cover over the tee, it poked through as a dark triangle
     for(const side of ['left','right'])sleeves(side,cloth,false,false);collar(spec.collar==='white'?white:spec.shirt?inner:spec.top==='leather'?cloth:white);
     if(spec.collar==='white')for(const sign of [-1,1])grid(8,6,(u,v)=>{const y=neck.y-.010-u*.052,x=sign*(.014+u*.030+(v-.5)*(.040*(1-u)+.004)),q=shirt(y,Math.acos(T.MathUtils.clamp(x/(.092+.012),-1,1)),.016);q.z+=.004*Math.sin(u*Math.PI);return q;},white);
     if(spec.scarf){const red=mat(spec.scarf,.55);red.emissive.copy(red.color);red.emissiveIntensity=.08;const yN=neck.y-.010,ring=[];for(let j=0;j<=24;j++){const a=j/24*Math.PI*2+Math.PI/2;ring.push(shirt(yN,a,.016));}curve(ring,.008,red);

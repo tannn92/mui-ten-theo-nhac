@@ -1,19 +1,19 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=1411.2316';
-import {createSongBackgrounds} from './song-backgrounds.js?v=1411.2316';
-import {loadWardrobe} from './wardrobe.js?v=1411.2316';
-import {createChoreography} from './choreography.js?v=1411.2316';
-import {createPoseBank} from './pose-bank.js?v=1411.2316';
-import {applyFaceExpression} from './face-expressions.js?v=1411.2316';
-import {createCrew} from './crew.js?v=1411.2316';
-import {newspaperProps} from './newspaper-prop.js?v=1411.2316';
-import {applyHeadScale} from './head-scale.js?v=1411.2316';
-import {createDancerProfiles,resolveDancerProfile} from './dancer-profiles.js?v=1411.2316';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1411.2316';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1411.2316';
-import {createPartner} from './partner.js?v=1411.2316';
-import {shrinkLargeTextures,sweepGpu} from './texture-budget.js?v=1411.2316';
-import {characterView,normCharacter} from './characters.js?v=1411.2316';
+import {createPerformanceLibrary} from './performance-library.js?v=1511.0454';
+import {createSongBackgrounds} from './song-backgrounds.js?v=1511.0454';
+import {loadWardrobe} from './wardrobe.js?v=1511.0454';
+import {createChoreography} from './choreography.js?v=1511.0454';
+import {createPoseBank} from './pose-bank.js?v=1511.0454';
+import {applyFaceExpression} from './face-expressions.js?v=1511.0454';
+import {createCrew} from './crew.js?v=1511.0454';
+import {newspaperProps} from './newspaper-prop.js?v=1511.0454';
+import {applyHeadScale} from './head-scale.js?v=1511.0454';
+import {createDancerProfiles,resolveDancerProfile} from './dancer-profiles.js?v=1511.0454';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1511.0454';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1511.0454';
+import {createPartner} from './partner.js?v=1511.0454';
+import {shrinkLargeTextures,sweepGpu} from './texture-budget.js?v=1511.0454';
+import {characterView,normCharacter} from './characters.js?v=1511.0454';
 export async function createRuntime(canvas,bundle,opts={}){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
@@ -149,10 +149,10 @@ export async function createRuntime(canvas,bundle,opts={}){
     // two players: the backups are the characters NEITHER player is; a backup left without a character steps out (a true
     // trio). By CHARACTER, whatever the theme of the set (owner 2026-11-11: Golden Zoey + HUNTR/X Rumi in Takedown showed
     // Mira and a second Zoey): one character or the same one twice -> 2 backups, two different ones -> 1.
-    worn=duo?[mine,characterOf(partner.selection)].filter(Boolean):[],rest=worn.length?sets.filter(x=>!worn.includes(characterOfSet(x))):sets.filter(x=>x!==(wearing||sets[0]));// Character heights (owner 2026-11-10 "chiều cao các nhân vật chưa cân xứng": Mira ~170 cm, Rumi ~165, Zoey ~153):
+    worn=duo?(spec.everyPlayerIsMember?bothMembers(sets,mine,characterOf(partner.selection)):[mine,characterOf(partner.selection)].filter(Boolean)):[],rest=worn.length?sets.filter(x=>!worn.includes(characterOfSet(x))):sets.filter(x=>x!==(wearing||sets[0]));// Character heights (owner 2026-11-10 "chiều cao các nhân vật chưa cân xứng": Mira ~170 cm, Rumi ~165, Zoey ~153):
    // spec.heights = {rumi:1, mira:1.036, zoey:.93} by name in the set id; the child takes the height of the set she wears.
-   const hOf=x=>{for(const [k,v] of Object.entries(spec.heights||{}))if(x?.id?.includes(k))return v;return 1;};
-   if(rest.length){const list=duo?entry.crew.slice(0,rest.length):entry.crew;return {...entry,...(duo?{crewCount:list.length}:{}),leadHeight:wearing?hOf(wearing):1,crew:list.map((c,i)=>{const set=rest[i%rest.length],k=hOf(set);return {...c,variant:1,outfit:{...set.selection},face:(/^(?:huntrix|golden|wisl)-(rumi|mira|zoey)/.exec(set.id)||[])[1]||'original',scale:(c.scale??1)*k,moves:c.moves?.map(m=>m.scale!=null?{...m,scale:m.scale*k}:m)};})};}}}const pool=(Array.isArray(config.crewOutfits?.[slug])?config.crewOutfits[slug]:[]).map(s=>({s,sel:crewSelection(s)})).filter(x=>x.sel);if(!entry?.crew?.length||!pool.length)return entry;
+   const hOf=x=>{if(x?.member&&Number.isFinite(spec.heights?.[x.member]))return spec.heights[x.member];for(const [k,v] of Object.entries(spec.heights||{}))if(x?.id?.includes(k))return v;return 1;};
+   if(rest.length){const list=duo?entry.crew.slice(0,rest.length):entry.crew;return {...entry,...(duo?{crewCount:list.length}:{}),leadHeight:wearing?hOf(wearing):1,crew:list.map((c,i)=>{const set=rest[i%rest.length],k=hOf(set);return {...c,variant:1,outfit:lookOf(spec,set),face:(/^(?:huntrix|golden|wisl)-(rumi|mira|zoey)/.exec(set.id)||[])[1]||'original',scale:(c.scale??1)*k,moves:c.moves?.map(m=>m.scale!=null?{...m,scale:m.scale*k}:m)};})};}}}const pool=(Array.isArray(config.crewOutfits?.[slug])?config.crewOutfits[slug]:[]).map(s=>({s,sel:crewSelection(s)})).filter(x=>x.sel);if(!entry?.crew?.length||!pool.length)return entry;
   for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
   // Boy slots get boy looks and girl slots girl looks (role, default girl); a role without looks borrows from the whole pool.
   const byRole=new Map(),used=new Map();for(const x of pool){const r=x.s.role||'girl';if(!byRole.has(r))byRole.set(r,[]);byRole.get(r).push(x);}
@@ -189,7 +189,13 @@ export async function createRuntime(canvas,bundle,opts={}){
  // HUNTR/X character heights for a selection (the set it wears in that song), as for the child (leadHeight)
  // HUNTR/X character of an outfit (slot -> option index): the top and bottom of any Rumi/Mira/Zoey set, whatever its theme
  // (huntrix-, golden-, wisl-). Used for the trio backups and the heights; the face uses resolveDancerProfile (same sets).
- function characterOfSet(x){return (/^(?:huntrix|golden|wisl)-(rumi|mira|zoey)$/.exec(x?.id||'')||[])[1]||null;}
+ function characterOfSet(x){return (/^(?:huntrix|golden|wisl)-(rumi|mira|zoey)$/.exec(x?.id||'')||[])[1]||x?.member||null;}
+ // BLACKPINK (owner 2026-11-15 "bé chỉ là 1 trong 4 member blackpink thôi"): a set may name its group member (`member`); the
+ // spec flag everyPlayerIsMember makes BOTH players members in two-player play: a player in none of the song's member sets
+ // takes the default (the first set) or, if the partner already is it, the next free member; the backups are the rest.
+ function bothMembers(sets,mine,theirs){const order=sets.map(characterOfSet),own=c=>order.includes(c)?c:null;let a=own(mine),b=own(theirs);if(!a)a=order.find(c=>c!==b)||null;if(!b)b=order.find(c=>c!==a)||null;return [a,b].filter(Boolean);}
+ // the backup playing a member wears that member's approved crew look (spec.looks, by member) when there is one, else the set
+ function lookOf(spec,set){const m=characterOfSet(set),look=m&&Array.isArray(spec.looks)?spec.looks.find(l=>l.member===m):null,sel=look?crewSelection(look):null;return sel||{...set.selection};}
  function characterOf(sel){if(!sel)return null;for(const x of config.sets||[]){const c=characterOfSet(x);if(c&&['top','bottom'].every(k=>x.selection?.[k]===sel[k]))return c;}return null;}
  function setHeight(slug,sel){const spec=config.crewOutfits?.[slug];if(!sel||!spec||Array.isArray(spec)||spec.mode!=='complement')return 1;const c=characterOf(sel);return c&&Number.isFinite(spec.heights?.[c])?spec.heights[c]:1;}
  let bgPlaying=null,lastSweep=0,paceLast=0,paceSum=0,paceN=0;

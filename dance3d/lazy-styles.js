@@ -1,49 +1,50 @@
-import {buildJfStyles} from './jisoo-flower-styles.js?v=1411.2316';
-import {buildPvStyles} from './pink-venom-styles.js?v=1411.2316';
-import {buildPvHair} from './pink-venom-hair.js?v=1411.2316';
-import {buildHyltStyles} from './how-you-like-that-styles.js?v=1411.2316';
-import {buildHyltHair} from './how-you-like-that-hair.js?v=1411.2316';
-import {buildKtlStyles} from './kill-this-love-styles.js?v=1411.2316';
-import {buildKtlHair} from './kill-this-love-hair.js?v=1411.2316';
-import {buildDduStyles} from './ddu-du-ddu-du-styles.js?v=1411.2316';
-import {buildDduHair} from './ddu-du-ddu-du-hair.js?v=1411.2316';
-import {buildRolyPolyStyles} from './roly-poly-styles.js?v=1411.2316';
-import {buildDayByDayStyles} from './day-by-day-styles.js?v=1411.2316';
-import {buildTtlStyles} from './ttl-time-to-love-styles.js?v=1411.2316';
-import {buildSuperJuniorUStyles} from './super-junior-u-styles.js?v=1411.2316';
-import {buildLaviemStars} from './laviem-stars.js?v=1411.2316';
-import {buildLaviemHair} from './laviem-hair.js?v=1411.2316';
-import {buildTimEmStyles} from './tim-em-styles.js?v=1411.2316';
-import {buildGoldenStageStyles} from './golden-stage-styles.js?v=1411.2316';
-import {buildSecretStyles} from './secret-styles.js?v=1411.2316';
-import {buildSecretStars} from './secret-stars.js?v=1411.2316';
-import {buildSecretHair} from './secret-hair.js?v=1411.2316';
-import {buildBoyHair} from './boy-hair.js?v=1411.2316';
-import {buildStarHair} from './star-hair.js?v=1411.2316';
-import {buildWislStyles} from './wisl-styles.js?v=1411.2316';
-import {buildGoldenHair} from './golden-hair.js?v=1411.2316';
-import {buildHuntrixHair} from './huntrix-hair.js?v=1411.2316';
-import {buildHuntrixTrioStyles} from './huntrix-trio-styles.js?v=1411.2316';
-import {buildTaiSinhCrewStyles} from './tai-sinh-crew-styles.js?v=1411.2316';
-import {buildTaiSinhHair} from './tai-sinh-hair.js?v=1411.2316';
-import {buildTaiSinhStyles} from './tai-sinh-styles.js?v=1411.2316';
-import {buildGirlXinhBoyStyles} from './girl-xinh-boys-styles.js?v=1411.2316';
-import {buildGirlXinhHair} from './girl-xinh-hair.js?v=1411.2316';
-import {buildGirlXinhLeadStyles} from './girl-xinh-lead.js?v=1411.2316';
-import {buildDolceCrewHair} from './dolce-hair.js?v=1411.2316';
-import {buildDolceCrewStyles} from './dolce-crew-styles.js?v=1411.2316';
-import {buildHatMuaCrewHair} from './crew-hair.js?v=1411.2316';
-import {buildHatMuaCrewStyles} from './crew-styles.js?v=1411.2316';
-import {buildClothingStyles} from './clothing-styles.js?v=1411.2316';
-import {buildHuntrixStyles} from './huntrix-styles.js?v=1411.2316';
-import {buildHatMuaStyles} from './hat-mua-styles.js?v=1411.2316';
+import {buildJfStyles} from './jisoo-flower-styles.js?v=1511.0454';
+import {buildPvStyles} from './pink-venom-styles.js?v=1511.0454';
+import {buildPvHair} from './pink-venom-hair.js?v=1511.0454';
+import {buildHyltStyles} from './how-you-like-that-styles.js?v=1511.0454';
+import {buildHyltHair} from './how-you-like-that-hair.js?v=1511.0454';
+import {buildKtlStyles} from './kill-this-love-styles.js?v=1511.0454';
+import {buildKtlHair} from './kill-this-love-hair.js?v=1511.0454';
+import {buildDduStyles} from './ddu-du-ddu-du-styles.js?v=1511.0454';
+import {buildDduHair} from './ddu-du-ddu-du-hair.js?v=1511.0454';
+import {buildRolyPolyStyles} from './roly-poly-styles.js?v=1511.0454';
+import {buildDayByDayStyles} from './day-by-day-styles.js?v=1511.0454';
+import {buildTtlStyles} from './ttl-time-to-love-styles.js?v=1511.0454';
+import {buildSuperJuniorUStyles} from './super-junior-u-styles.js?v=1511.0454';
+import {buildLaviemStars} from './laviem-stars.js?v=1511.0454';
+import {buildLaviemHair} from './laviem-hair.js?v=1511.0454';
+import {buildTimEmStyles} from './tim-em-styles.js?v=1511.0454';
+import {buildGoldenStageStyles} from './golden-stage-styles.js?v=1511.0454';
+import {buildSecretStyles} from './secret-styles.js?v=1511.0454';
+import {buildSecretStars} from './secret-stars.js?v=1511.0454';
+import {buildSecretHair} from './secret-hair.js?v=1511.0454';
+import {buildBoyHair} from './boy-hair.js?v=1511.0454';
+import {buildStarHair} from './star-hair.js?v=1511.0454';
+import {buildWislStyles} from './wisl-styles.js?v=1511.0454';
+import {buildGoldenHair} from './golden-hair.js?v=1511.0454';
+import {buildHuntrixHair} from './huntrix-hair.js?v=1511.0454';
+import {buildHuntrixTrioStyles} from './huntrix-trio-styles.js?v=1511.0454';
+import {buildTaiSinhCrewStyles} from './tai-sinh-crew-styles.js?v=1511.0454';
+import {buildTaiSinhHair} from './tai-sinh-hair.js?v=1511.0454';
+import {buildTaiSinhStyles} from './tai-sinh-styles.js?v=1511.0454';
+import {buildGirlXinhBoyStyles} from './girl-xinh-boys-styles.js?v=1511.0454';
+import {buildGirlXinhHair} from './girl-xinh-hair.js?v=1511.0454';
+import {buildGirlXinhLeadStyles} from './girl-xinh-lead.js?v=1511.0454';
+import {buildDolceCrewHair} from './dolce-hair.js?v=1511.0454';
+import {buildDolceCrewStyles} from './dolce-crew-styles.js?v=1511.0454';
+import {buildHatMuaCrewHair} from './crew-hair.js?v=1511.0454';
+import {buildHatMuaCrewStyles} from './crew-styles.js?v=1511.0454';
+import {buildClothingStyles} from './clothing-styles.js?v=1511.0454';
+import {buildHuntrixStyles} from './huntrix-styles.js?v=1511.0454';
+import {buildHatMuaStyles} from './hat-mua-styles.js?v=1511.0454';
+import {boyVariants} from './boy-body.js?v=1511.0454';
 
 // Every cooperative step is a synchronous rest-pose transaction. The renderer
 // always sees the live pose, never a donor left at rest across an event-loop yield.
 function capture(nodes){return nodes.map(node=>({node,position:node.position.clone(),quaternion:node.quaternion.clone(),scale:node.scale.clone(),matrix:node.matrix.clone(),matrixWorld:node.matrixWorld.clone(),dirty:node.matrixWorldNeedsUpdate}));}
 function save(states){for(const s of states){s.position.copy(s.node.position);s.quaternion.copy(s.node.quaternion);s.scale.copy(s.node.scale);s.matrix.copy(s.node.matrix);s.matrixWorld.copy(s.node.matrixWorld);s.dirty=s.node.matrixWorldNeedsUpdate;}return states;}
 function restore(states){for(const s of states){s.node.position.copy(s.position);s.node.quaternion.copy(s.quaternion);s.node.scale.copy(s.scale);s.node.matrix.copy(s.matrix);s.node.matrixWorld.copy(s.matrixWorld);s.node.matrixWorldNeedsUpdate=s.dirty;}}
-export function createLazyStyles(variants,options){
+export function createLazyStyles(variants,options,male=new Set()){
  const nodes=new Set();
  for(const {vrm} of variants){vrm.scene.traverse(node=>nodes.add(node));for(let node=vrm.scene.parent;node;node=node.parent)nodes.add(node);}
  const nodeList=[...nodes],rest=capture(nodeList),liveState=capture(nodeList),parts=[],records=new Map(),built=new Set(),pending=new Map();
@@ -64,7 +65,7 @@ export function createLazyStyles(variants,options){
   let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});
   // Sync fallback callers may have no async consumer; still propagate via throw.
   promise.catch(()=>{});
-  task={key,slot,index,priority,sequence:sequence++,iterator:factory(variants,selected),promise,resolve,reject,milliseconds:0};pending.set(key,task);return task;
+  task={key,slot,index,priority,sequence:sequence++,iterator:factory(male.has(option.id)?boyVariants(variants):variants,selected),promise,resolve,reject,milliseconds:0};pending.set(key,task);return task;
  }
  function step(task){
   const start=performance.now(),live=save(liveState);let result;
