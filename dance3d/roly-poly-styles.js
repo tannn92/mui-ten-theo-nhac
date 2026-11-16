@@ -1,6 +1,6 @@
 import * as T from 'three';
-import {fitPoint,fitSection,armShell} from './body-fit.js?v=1511.0454';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1511.0454';
+import {fitPoint,fitSection,armShell} from './body-fit.js?v=1611.0354';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1611.0354';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // "Roly Poly" (T-ara), official MV (Dance Version), 70s disco club. Looks from the MV's club scenes: a red-white striped
 // jacket over a mint polka-dot shirt with a red collar, polka-dot blouses with neck bows, denim vests, high-waist red / white /

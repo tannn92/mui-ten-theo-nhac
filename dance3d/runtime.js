@@ -1,19 +1,22 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=1511.0454';
-import {createSongBackgrounds} from './song-backgrounds.js?v=1511.0454';
-import {loadWardrobe} from './wardrobe.js?v=1511.0454';
-import {createChoreography} from './choreography.js?v=1511.0454';
-import {createPoseBank} from './pose-bank.js?v=1511.0454';
-import {applyFaceExpression} from './face-expressions.js?v=1511.0454';
-import {createCrew} from './crew.js?v=1511.0454';
-import {newspaperProps} from './newspaper-prop.js?v=1511.0454';
-import {applyHeadScale} from './head-scale.js?v=1511.0454';
-import {createDancerProfiles,resolveDancerProfile} from './dancer-profiles.js?v=1511.0454';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1511.0454';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1511.0454';
-import {createPartner} from './partner.js?v=1511.0454';
-import {shrinkLargeTextures,sweepGpu} from './texture-budget.js?v=1511.0454';
-import {characterView,normCharacter} from './characters.js?v=1511.0454';
+import {createPerformanceLibrary} from './performance-library.js?v=1611.0354';
+import {createSongBackgrounds} from './song-backgrounds.js?v=1611.0354';
+import {loadWardrobe} from './wardrobe.js?v=1611.0354';
+import {createChoreography} from './choreography.js?v=1611.0354';
+import {createPoseBank} from './pose-bank.js?v=1611.0354';
+import {applyFaceExpression} from './face-expressions.js?v=1611.0354';
+import {createCrew} from './crew.js?v=1611.0354';
+import {newspaperProps} from './newspaper-prop.js?v=1611.0354';
+import {applyHeadScale} from './head-scale.js?v=1611.0354';
+import {createDancerProfiles,resolveDancerProfile} from './dancer-profiles.js?v=1611.0354';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1611.0354';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1611.0354';
+import {createPartner} from './partner.js?v=1611.0354';
+import {shrinkLargeTextures,sweepGpu} from './texture-budget.js?v=1611.0354';
+import {characterView,normCharacter} from './characters.js?v=1611.0354';
+import {leadArmCollision} from './arm-collision.js?v=1611.0354';// arm-collision
+import {createMvLook} from './mv-look.js?v=1611.0354';
+import {pathAt,castMembers,nudgeTrack,centreHint,leadOverlay,leadArchBody,armIK,archWeightOf,archTargets,windowWeight} from './formation.js?v=1611.0354';// centre rotation
 export async function createRuntime(canvas,bundle,opts={}){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
@@ -29,7 +32,7 @@ export async function createRuntime(canvas,bundle,opts={}){
  // (paceCheck, called from draw). Screens below 2× (desktop, the review/promo captures) keep MSAA as before.
  const renderer=new T.WebGLRenderer({canvas,antialias:(devicePixelRatio||1)<2,alpha:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.outputColorSpace=T.SRGBColorSpace;
  const scene=new T.Scene();scene.background=new T.Color('#f4e4ed');const backdrop=createSongBackgrounds(scene);const camera=new T.OrthographicCamera(-1.6,1.6,1.12,-1.12,.01,20);camera.position.set(0,.75,5);camera.lookAt(0,.75,0);
- scene.add(new T.HemisphereLight(0xffffff,0x997c94,1.35));const light=new T.DirectionalLight(0xfff5ef,1.1);light.position.set(-2,4,5);scene.add(light);
+ const hemi=new T.HemisphereLight(0xffffff,0x997c94,1.35);scene.add(hemi);const light=new T.DirectionalLight(0xfff5ef,1.1);light.position.set(-2,4,5);scene.add(light);
  // Look previews (owner 2026-11-11 "Ok vụ improvement", reports/look-options/HANDOFF.md): OFF unless ?look=… or
  // localStorage 'spike-look' names them (read once). Defaults since 2026-11-11 (owner "làm như bạn đề xuất đi"): shade, lead-dim,
  // lead-pool, lanes, burst — the same list as LOOK_DEFAULT in index.html; ?look=none restores the old look.
@@ -65,7 +68,9 @@ export async function createRuntime(canvas,bundle,opts={}){
  const crew=createCrew(scene,wardrobe);const news=newspaperProps(scene);// hand-held newspapers (Secret opening)
  // Two-iPad play: the other player's dancer (partner.js) stands at the other front-row spot; the child moves to her side
  // (host left, guest right, on both iPads). duo = null in one-player play.
- const partner=createPartner(scene,wardrobe,config),SLOT_X=.33;let duo=null,leadX=0;
+ const partner=createPartner(scene,wardrobe,config),SLOT_X=.33;let duo=null,leadX=0,baseLeadX=0,form=null;// form: centre rotation state of the song (formation.js), null elsewhere
+ // MV look (reports/mv-look): play-mode perspective camera director, set, lights, shadows, grade. view = the camera drawn with.
+ const mv=createMvLook({scene,renderer,camera,wardrobe,crew,partner,backdrop,disc,ring,key:light,hemi});let view=camera;crew.setArchPartner(()=>partner.humanoid,()=>form?.pScale||1);// centre rotation: the other player may stand under the arch
  const poseBank=createPoseBank(data,wardrobe.variants);
  const look=(()=>{if(!LOOK.size)return{frame(){},beat(){},on:[]};
   const SKIN=/skin|face|eye|mouth|brow|lash|teeth|tooth|cheek/i,shaded=new WeakSet(),rimOrig=new WeakMap(),dimOf=new WeakMap(),dims=new WeakSet(),RIM=new T.Color(0xff9fcb);
@@ -91,7 +96,7 @@ export async function createRuntime(canvas,bundle,opts={}){
    const tex=new T.CanvasTexture(c);tex.colorSpace=T.SRGBColorSpace;glow=new T.Mesh(new T.PlaneGeometry(1.15,.34),new T.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,opacity:0}));glow.position.set(0,.02,-.3);glow.renderOrder=-2;glow.visible=false;scene.add(glow);}
   return{on:[...LOOK],beat(p){beat=Number.isFinite(p)?p:null;},
    frame(playing,x){if(n++%30===0)sweep();if(!glow)return;glow.visible=playing;if(!playing)return;const k=beatOn&&beat!=null?Math.pow(1-beat,2):0;
-    glow.position.x=x;glow.material.opacity=Math.min(1,(pool?.6:0)+.4*k);glow.scale.setScalar(1+.08*k);}};})();
+    if(view!==camera){glow.rotation.x=-Math.PI/2;glow.position.set(x,-.004,0);glow.scale.set(1.2,2.6,1);}else{glow.rotation.x=0;glow.position.set(x,.02,-.3);}glow.position.x=x;glow.material.opacity=Math.min(1,(pool?.6:0)+.4*k);if(view===camera)glow.scale.setScalar(1+.08*k);}};})();
  let capturedIndex=new Map(captured?.boneNames.map((n,i)=>[n,i])||[]);
  let captureReferenceOffset=wardrobe.variants.find(v=>v.spec.id===captured?.referenceVariant)?.restOffset||0;
  // Bake only the two transition windows. Unwrapping the relative rotation
@@ -152,6 +157,7 @@ export async function createRuntime(canvas,bundle,opts={}){
     worn=duo?(spec.everyPlayerIsMember?bothMembers(sets,mine,characterOf(partner.selection)):[mine,characterOf(partner.selection)].filter(Boolean)):[],rest=worn.length?sets.filter(x=>!worn.includes(characterOfSet(x))):sets.filter(x=>x!==(wearing||sets[0]));// Character heights (owner 2026-11-10 "chiều cao các nhân vật chưa cân xứng": Mira ~170 cm, Rumi ~165, Zoey ~153):
    // spec.heights = {rumi:1, mira:1.036, zoey:.93} by name in the set id; the child takes the height of the set she wears.
    const hOf=x=>{if(x?.member&&Number.isFinite(spec.heights?.[x.member]))return spec.heights[x.member];for(const [k,v] of Object.entries(spec.heights||{}))if(x?.id?.includes(k))return v;return 1;};
+   if(entry.formation)return formationCrew(entry,spec,sets,mine,wearing,hOf);
    if(rest.length){const list=duo?entry.crew.slice(0,rest.length):entry.crew;return {...entry,...(duo?{crewCount:list.length}:{}),leadHeight:wearing?hOf(wearing):1,crew:list.map((c,i)=>{const set=rest[i%rest.length],k=hOf(set);return {...c,variant:1,outfit:lookOf(spec,set),face:(/^(?:huntrix|golden|wisl)-(rumi|mira|zoey)/.exec(set.id)||[])[1]||'original',scale:(c.scale??1)*k,moves:c.moves?.map(m=>m.scale!=null?{...m,scale:m.scale*k}:m)};})};}}}const pool=(Array.isArray(config.crewOutfits?.[slug])?config.crewOutfits[slug]:[]).map(s=>({s,sel:crewSelection(s)})).filter(x=>x.sel);if(!entry?.crew?.length||!pool.length)return entry;
   for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
   // Boy slots get boy looks and girl slots girl looks (role, default girl); a role without looks borrows from the whole pool.
@@ -160,6 +166,50 @@ export async function createRuntime(canvas,bundle,opts={}){
   // each singer has his own slot and staging) always wears that pool entry.
   const count=new Map();
   return {...entry,crew:entry.crew.map(c=>{const list=byRole.get(c.role||'girl')||pool;let n=used.get(list)||0,x=c.look?pool.find(y=>y.s.id===c.look)||null:null;const pinned=!!x;if(!pinned)for(let k=0;k<list.length;k++){const cand=list[(n+k)%list.length];if((count.get(cand)||0)<(cand.s.max??Infinity)){x=cand;n+=k;break;}}if(!x)x=list.filter(y=>y.s.max==null)[0]||list[n%list.length];if(!pinned)used.set(list,n+1);count.set(x,(count.get(x)||0)+1);const hk=x.s.height||1;return {...c,variant:x.s.variant??1,outfit:x.sel,...(x.s.face?{face:x.s.face}:{}),...(x.s.expr?{expr:x.s.expr}:{}),...(hk!==1?{scale:(c.scale??1)*hk,moves:c.moves?.map(m=>m.scale!=null?{...m,scale:m.scale*hk}:m)}:{})};})};}
+ // Centre rotation (performances[slug].formation, formation.js): every group member walks her own path from the dance clip.
+// The child is her member (the default set's member when she wears none), the backups are the other members in their
+// looks; two players are two members (the host's pick first). Contact moves (the HYLT arch) and per-window motion tracks
+// (kneels, tableaux, a member who waits) go by member.
+function formationCrew(entry,spec,sets,mine,wearing,hOf){const F=entry.formation,order=sets.map(characterOfSet),cast=castMembers(order,mine,duo?characterOf(partner.selection):null,duo);
+  const setOf=m=>sets.find(x=>characterOfSet(x)===m),o={},at=(m,t)=>pathAt(F.members[m],t,o),A=F.arch||null;
+  const players=[cast.me,cast.partner].filter(Boolean),archOK=!!A&&(!duo||!A.makers.some(m=>players.includes(m)));
+  const tm=A?(A.in[1]+A.out[0])/2:0,role=m=>m===cast.me?'lead':m===cast.partner?'partner':m;
+  const archOf=m=>{if(!archOK||!A.makers.includes(m))return null;const ox=at(A.over,tm).x,oz=o.z,mx=at(m,tm).x;return {...A.params,in:A.in,out:A.out,side:mx<ox?1:-1,over:role(A.over),cx:ox,zOver:oz};};
+  const kinds=(m,k)=>(F.windows||[]).filter(w=>w.tracks?.[m]===k).map(w=>[w.t0,w.t1]);
+  const crew=cast.crew.map(m=>{const set=setOf(m),k=hOf(set),P=F.members[m],arch=archOf(m),groove=kinds(m,'groove'),ready=kinds(m,'ready'),
+   windowAssets=(F.windows||[]).filter(w=>{const a=w.tracks?.[m];return a&&a!=='lead'&&a!=='groove'&&a!=='ready';}).map(w=>({t0:w.t0,t1:w.t1,asset:w.tracks[m]}));
+   return {id:m,member:m,asset:entry.lead,variant:1,role:'girl',outfit:lookOf(spec,set),face:(/^(?:huntrix|golden|wisl)-(rumi|mira|zoey)/.exec(set?.id||'')||[])[1]||'original',scale:k,rootScale:[.2,1,.2],
+    anchor:[P.start[0],0,P.start[2]],moves:P.moves.map(x=>({...x,to:[x.to[0],0,x.to[2]]})),...(groove.length?{groove}:{}),...(ready.length?{ready}:{}),...(windowAssets.length?{windowAssets}:{}),...(arch?{arch}:{})};});
+  const leadArch=archOK&&A.makers.includes(cast.me)?archOf(cast.me):null;
+  return {...entry,crewCount:crew.length,leadHeight:wearing?hOf(wearing):1,crew,formationCast:{...cast,leadArch}};}
+ // Per song: the child's (and partner's) path, nudge, windows and arch, as pure functions of song time.
+ function buildForm(entry,crewEntry,chart,loaded){const F=entry.formation,cast=crewEntry.formationCast,dur=Number(chart?.duration)||entry.duration||200;
+  const assets=new Map([[entry.lead,loaded?.lead]]);(entry.crew||[]).forEach((c,i)=>{if(c.asset&&loaded?.crewData?.[i])assets.set(c.asset,loaded.crewData[i]);});
+  const caps=new Map([[entry.lead,captured]]);const capOf=a=>{if(caps.has(a))return caps.get(a);const d=assets.get(a);let c=null;if(d){try{c=createCapturedMotion(d);if(!c.setSong(songMoves,chart))c=null;}catch(e){console.warn('formation track',a,e);c=null;}}caps.set(a,c);return c;};
+  const paths=F.members,nudge=F.nudge===false?null:{};if(nudge)for(const m of [cast.me,cast.partner].filter(Boolean))nudge[m]=nudgeTrack(paths,m,dur,{...(F.nudge||{}),skip:F.arch?[[F.arch.in[0],F.arch.out[1]]]:[]});
+  const win=(m,k)=>(F.windows||[]).filter(w=>w.tracks?.[m]===k).map(w=>[w.t0,w.t1]);
+  const leadWins=(F.windows||[]).map(w=>{const a=w.tracks?.[cast.me];if(!a||a==='lead'||a==='groove'||a==='ready')return null;const cap=capOf(a);return cap?{t0:w.t0,t1:w.t1,cap,idx:new Map(cap.boneNames.map((n,i)=>[n,i]))}:null;}).filter(Boolean);
+  // the child's own capture root keeps its fast sway; its slow travel (the clip centre's own walking) is damped like the
+  // backups' (rootScale .2): the formation path does the travelling now. 10 Hz, pure.
+  const DT=.1,N=Math.ceil((dur+3)/DT)+1,sx=new Float32Array(N),sz=new Float32Array(N);{const rx=new Float32Array(N),rz=new Float32Array(N);for(let i=0;i<N;i++){const c=captured?.sample(i*DT-1);const w=c?.weight||0;rx[i]=w*(c?.root[0]||0);rz[i]=w*(c?.root[2]||0);}
+   const R=12;for(let i=0;i<N;i++){let a=0,b=0,ws=0;for(let k=-R;k<=R;k++){const j=Math.min(N-1,Math.max(0,i+k)),g=Math.exp(-.5*(k/6)**2);a+=rx[j]*g;b+=rz[j]*g;ws+=g;}sx[i]=a/ws;sz[i]=b/ws;}}
+  const slow=(arr,t)=>{const f=Math.min(N-1,Math.max(0,(t+1)/DT)),i=Math.floor(f),j=Math.min(N-1,i+1);return arr[i]+(arr[j]-arr[i])*(f-i);};
+  const ready=win(cast.me,'ready'),groove=win(cast.me,'groove'),A=cast.leadArch,overActor=()=>{if(!A)return null;if(A.over==='partner')return {h:partner.humanoid,s:pScale};const x=crew.independent.find(c=>c.spec.member===A.over);return x?{h:x.rig.humanoid,s:x.rig.root.scale.y}:null;};
+  const pScale=duo?setHeight(news.slug,partner.selection):1,o={},p={},out={};
+  // crew: the asset of each per-window track, resolved to a shared captured motion
+  const crewSpecs=crewEntry.crew.map(c=>({...c,...(c.asset===entry.lead?{rootScale:[1,1,1],rootDetrend:t=>[.8*slow(sx,t),.8*slow(sz,t)]}:{}),...(c.windowAssets?{windowTracks:c.windowAssets.map(w=>({t0:w.t0,t1:w.t1,cap:capOf(w.asset)})).filter(w=>w.cap)}:{})}));
+  return {me:cast.me,partner:cast.partner,depth:Number.isFinite(F.depth)?F.depth:.2,crewSpecs,tracks:crewSpecs.map(c=>({shared:capOf(c.asset)})),pScale,arch:A,overActor,
+   xAt:t=>pathAt(paths[cast.me],t,o).x+(nudge?.[cast.me]?.(t)||0),
+   partnerXAt:cast.partner?(t=>pathAt(paths[cast.partner],t,o).x+(nudge?.[cast.partner]?.(t)||0)):null,
+   players:t=>{let dy=0;for(const w of leadWins){const k=windowWeight(t,w.t0,w.t1);if(k>0){const a=w.cap.sample(t),c=captured?.sample(t);if(a&&c)dy=Math.min(dy,k*(a.root[1]-c.root[1]));}}// a kneel window lowers the hips
+    return [cast.me,cast.partner].filter(Boolean).map(m=>{pathAt(paths[m],t,o);return [o.x+(nudge?.[m]?.(t)||0),.6+dy,Math.min(0,o.z+(nudge?.[m]?.z(t)||0))];});},
+   slowX:t=>slow(sx,t),slowZ:t=>slow(sz,t),
+   centre:centreHint(F,paths,nudge||{}),
+   at(t){pathAt(paths[cast.me],t,o);out.x=o.x+(nudge?.[cast.me]?.(t)||0);out.z=Math.min(0,o.z+(nudge?.[cast.me]?.z(t)||0))+(o.z>0?o.z:0);out.walk=o.walk;out.phase=o.phase;out.quick=o.quick;out.yaw=duo?0:o.yaw*.5;
+    let st=0;for(const [a,b] of ready)st=Math.max(st,windowWeight(t,a,b));for(const [a,b] of groove)st=Math.max(st,.6*windowWeight(t,a,b));out.stand=st;
+    out.win=null;out.winW=0;for(const w of leadWins){const k=windowWeight(t,w.t0,w.t1);if(k>out.winW){out.winW=k;out.win=w;}}
+    out.archW=A?archWeightOf(A,t):0;out.slowX=slow(sx,t);out.slowZ=slow(sz,t);
+    if(cast.partner){pathAt(paths[cast.partner],t,p);out.px=p.x+(nudge?.[cast.partner]?.(t)||0);out.pz=Math.min(0,p.z+(nudge?.[cast.partner]?.z(t)||0))+(p.z>0?p.z:0);}return out;}};}
  // Two-iPad play: no backup may stand where the partner dances. Any spot in the front row (z > -0.3, |x| < 0.75) moves out
  // to x = ±0.95 on its own side (Secret: the singer who comes up beside the child stands beside the pair instead).
  // Two players (owner 2026-11-11: "2 bé che luôn hoàn toàn 2 phụ hoạ đứng sau, mà đoạn giữa 2 bé thì trống trơn"). The solo
@@ -172,7 +222,8 @@ export async function createRuntime(canvas,bundle,opts={}){
   if(z>.3)return ax<.75?[.95*s,y,z]:p;
   if(z>-.3)return ax<.75?[s*(.66+Math.max(0,ax-.45)*1.2),y,z]:p;
   return ax<.52?[x*.36,y,z]:p;};
- const frontRowOut=c=>({...c,...(c.anchor?{anchor:duoSpot(c.anchor)}:{}),...(c.moves?{moves:c.moves.map(m=>m.to?{...m,to:duoSpot(m.to)}:m)}:{})});
+ // two players: no arch (HYLT) - the side members stand beside the pair, too far to reach over a child's head
+ const frontRowOut=c=>({...c,arch:undefined,...(c.anchor?{anchor:duoSpot(c.anchor)}:{}),...(c.moves?{moves:c.moves.map(m=>m.to?{...m,to:duoSpot(m.to)}:m)}:{})});
  // The gap between the children holds one dancer a side: when two backups of the same side close in to it (their home
  // spots within 0.1 of each other), the one further back steps out (off stage on its side) instead of hiding behind the
  // other (Dolce, Tái Sinh, Girl Xinh: the M2 pair behind B1). Tracks stay matched to their dancers (no one is removed).
@@ -198,47 +249,60 @@ export async function createRuntime(canvas,bundle,opts={}){
  function lookOf(spec,set){const m=characterOfSet(set),look=m&&Array.isArray(spec.looks)?spec.looks.find(l=>l.member===m):null,sel=look?crewSelection(look):null;return sel||{...set.selection};}
  function characterOf(sel){if(!sel)return null;for(const x of config.sets||[]){const c=characterOfSet(x);if(c&&['top','bottom'].every(k=>x.selection?.[k]===sel[k]))return c;}return null;}
  function setHeight(slug,sel){const spec=config.crewOutfits?.[slug];if(!sel||!spec||Array.isArray(spec)||spec.mode!=='complement')return 1;const c=characterOf(sel);return c&&Number.isFinite(spec.heights?.[c])?spec.heights[c]:1;}
+ // The lead's root path for the MV director (x and hips height, 10 Hz, the same blend as draw): a pure function of song time
+ let mvInfo=null;function leadPath(chart){const dur=Math.min(900,Number(chart?.duration)||200),dt=.1,t0=-2,n=Math.ceil((dur-t0)/dt)+1,x=new Float32Array(n),y=new Float32Array(n),ys=[];
+  for(let i=0;i<n;i++){const c=t0+i*dt,sample=motion.sample(c),capture=captured?.sample(captured.t0===0&&c<0?0:c),w=capture?.weight||0,src=poseBank.root(sample);
+   const ax=.3*Math.tanh(((sample.rootX||0)+src[0]*.5)/.3);x[i]=T.MathUtils.lerp(ax,capture?.root[0]||0,w);if(form)x[i]+=form.xAt(c)-.8*form.slowX(c);y[i]=w*((capture?.root[1]||0)-captureReferenceOffset);if(w>0)ys.push(y[i]);}
+  ys.sort((a,b)=>a-b);const mid=ys.length?ys[ys.length>>1]:0;for(let i=0;i<n;i++)y[i]=(.62+(y[i]-(y[i]?mid:0)))*leadHeight;return {t0,dt,x,y};}
  let bgPlaying=null,lastSweep=0,paceLast=0,paceSum=0,paceN=0;
  // paceCheck: a device that cannot draw the full density fast enough (frames over 22 ms on average for ~4 s of play) goes
  // back to 1.5× for the rest of the session. Gaps over 100 ms (tab hidden, pauses) are not counted.
  function paceCheck(playing,now){if(!playing||renderer.getPixelRatio()<=1.5){paceLast=0;return;}if(paceLast&&now-paceLast<100){paceSum+=now-paceLast;paceN++;}paceLast=now;
-  if(paceN>=240){if(paceSum/paceN>22){renderer.setPixelRatio(1.5);console.info('render density 1.5 (frames '+(paceSum/paceN).toFixed(1)+' ms)');}paceSum=0;paceN=0;}}
- function draw(t){const started=performance.now();resize();const playing=t!=null&&Number.isFinite(t);paceCheck(playing,started);{const lh=playing?leadHeight:1;for(const v of wardrobe.variants)if(v.vrm.scene.scale.x!==lh)v.vrm.scene.scale.setScalar(lh);}if(playing!==bgPlaying){bgPlaying=playing;try{wardrobe.setBackgroundPaused?.(playing);}catch(e){}}const clock=playing?t:(performance.now()-idleStart)/1000;const delta=lastTime==null?0:clock-lastTime,seek=lastMode!==playing||delta<0||delta>.15,dt=seek?0:Math.min(.05,Math.max(0,delta));lastTime=clock;lastMode=playing;const menu=document.querySelector('#menu'),menuOpen=menu&&!menu.hidden&&!menu.classList.contains('hide')&&menu.style.display!=='none',crewVisible=playing&&!menuOpen,needed=new Set([0]);if(crewVisible)for(const i of crew.sharedVariants())needed.add(i);for(const slot of physicalSlots){const i=wardrobe.variantFor?wardrobe.variantFor(slot,wardrobe.outfit[slot]):wardrobe.outfit[slot];if(Number.isInteger(i))needed.add(i);}const activeVariants=wardrobe.variants.filter((_,i)=>needed.has(i));const sample=motion.sample(playing?clock:clock*.5),capture=playing?captured?.sample(captured.t0===0&&clock<0?0:clock):null,captureWeight=capture?.weight||0,fadePose=captureWeight>0&&captureWeight<1?fadePoseAt(clock):null,sourceRoot=poseBank.root(sample),authoredRootX=.3*Math.tanh(((sample.rootX||0)+sourceRoot[0]*.5)/.3),authoredRootZ=T.MathUtils.clamp((sample.rootZ||0)+sourceRoot[2]*.5,-.13,.13),rootX=T.MathUtils.lerp(authoredRootX,capture?.root[0]||0,captureWeight),rootZ=T.MathUtils.lerp(authoredRootZ,capture?.root[2]||0,captureWeight),rootYaw=(sample.yaw||0)*(1-captureWeight);
- for(const variant of wardrobe.variants){variant.vrm.scene.position.x=rootX+leadX;variant.vrm.scene.position.z=rootZ;variant.vrm.scene.rotation.y=rootYaw;}
+  if(paceN>=240){if(paceSum/paceN>22){if(mv.active&&mv.level<2){mv.degrade(mv.level+1);console.info('mv look level '+mv.level+' (frames '+(paceSum/paceN).toFixed(1)+' ms)');}else{renderer.setPixelRatio(1.5);console.info('render density 1.5 (frames '+(paceSum/paceN).toFixed(1)+' ms)');}}paceSum=0;paceN=0;}}
+ function draw(t){const started=performance.now();resize();const playing=t!=null&&Number.isFinite(t);paceCheck(playing,started);const F=form&&playing?form.at(t):null,dk=F&&!mv.active?form.depth:0;{const lh=(playing?leadHeight:1)*(dk?1+dk*F.z:1);for(const v of wardrobe.variants)if(v.vrm.scene.scale.x!==lh)v.vrm.scene.scale.setScalar(lh);}if(playing!==bgPlaying){bgPlaying=playing;try{wardrobe.setBackgroundPaused?.(playing);}catch(e){}}const clock=playing?t:(performance.now()-idleStart)/1000;const delta=lastTime==null?0:clock-lastTime,seek=lastMode!==playing||delta<0||delta>.15,dt=seek?0:Math.min(.05,Math.max(0,delta));lastTime=clock;lastMode=playing;const menu=document.querySelector('#menu'),menuOpen=menu&&!menu.hidden&&!menu.classList.contains('hide')&&menu.style.display!=='none',crewVisible=playing&&!menuOpen,needed=new Set([0]);if(crewVisible)for(const i of crew.sharedVariants())needed.add(i);for(const slot of physicalSlots){const i=wardrobe.variantFor?wardrobe.variantFor(slot,wardrobe.outfit[slot]):wardrobe.outfit[slot];if(Number.isInteger(i))needed.add(i);}const activeVariants=wardrobe.variants.filter((_,i)=>needed.has(i));const sample=motion.sample(playing?clock:clock*.5),capture=playing?captured?.sample(captured.t0===0&&clock<0?0:clock):null,captureWeight=capture?.weight||0,fadePose=captureWeight>0&&captureWeight<1?fadePoseAt(clock):null,sourceRoot=poseBank.root(sample),authoredRootX=.3*Math.tanh(((sample.rootX||0)+sourceRoot[0]*.5)/.3),authoredRootZ=T.MathUtils.clamp((sample.rootZ||0)+sourceRoot[2]*.5,-.13,.13),rootX=T.MathUtils.lerp(authoredRootX,capture?.root[0]||0,captureWeight),rootZ=T.MathUtils.lerp(authoredRootZ,capture?.root[2]||0,captureWeight),rootYaw=(sample.yaw||0)*(1-captureWeight);
+ // centre rotation: the child walks her member's path (her capture's slow travel damped), per-window tracks, arch turn-in
+ const wP=F?.win?F.win.cap.sample(clock):null,wW=wP?F.winW*wP.weight:0;let rX=rootX,rZ=rootZ,leadZ=0,fYaw=0;leadX=F?F.x:baseLeadX;
+ if(F){rX-=.8*F.slowX;rZ-=.8*F.slowZ;leadZ=F.z;fYaw=F.yaw;if(F.archW>0&&form.arch)fYaw+=F.archW*form.arch.side*(form.arch.yaw??70)*Math.PI/180;}
+ for(const variant of wardrobe.variants){variant.vrm.scene.position.x=rX+leadX;variant.vrm.scene.position.z=rZ+leadZ;variant.vrm.scene.rotation.y=rootYaw+fYaw;}
  for(const variant of activeVariants){
   // Captured poses are source-time stabilized; stock power and anatomy guards
   // must not overwrite the actual choreography inside the captured interval.
   if(fadePose){variant.vrm.humanoid.getNormalizedBoneNode('hips').position.copy(variant.baseHips);variant.vrm.humanoid.getNormalizedBoneNode('hips').position.y+=fadePose.bob;for(const e of variant.entries)e.bone.quaternion.fromArray(fadePose.q,e.index*4);}
   else if(captureWeight===1){variant.vrm.humanoid.getNormalizedBoneNode('hips').position.copy(variant.baseHips);for(const e of variant.entries){const index=capturedIndex.get(e.name);if(index==null)e.bone.quaternion.identity();else e.bone.quaternion.fromArray(capture.q,index*4);}}
   else poseBank.apply(variant,sample);
+  if(F){const hu=variant.vrm.humanoid;if(wW>0)for(const e of variant.entries){const i=F.win.idx.get(e.name);if(i!=null)e.bone.quaternion.slerp(fadeQ.fromArray(wP.q,i*4),wW);}
+   leadOverlay(hu,F.walk*(F.quick?.75:1),F.phase,F.quick,F.stand);if(F.archW>0&&form.arch)leadArchBody(hu,form.arch,F.archW);}
   variant.vrm.humanoid.update();variant.vrm.scene.updateMatrixWorld(true);
  }
- const capturedY=(capture?.root[1]||0)-captureReferenceOffset;let groundedY=capturedY;
+ leadArmCollision(wardrobe,activeVariants,who.character,F?1-F.archW:1);// arm-collision: arms never pass through the body (after every motion layer, before vrm.update)
+ const capturedY=(wW>0?T.MathUtils.lerp(capture?.root[1]||0,wP.root[1],wW):(capture?.root[1]||0))-captureReferenceOffset;let groundedY=capturedY;const liftY=F?(dk?-dk*F.z:0)+(F.archW>0&&form.arch?F.archW*(form.arch.lift||0):0):0;
  if(captureWeight<1){let low=Infinity;for(const side of ['left','right']){wardrobe.master.humanoid.getRawBoneNode(side+'Foot').getWorldPosition(v);low=Math.min(low,v.y);}const authoredY=wardrobe.master.scene.position.y+.075-low;groundedY=T.MathUtils.lerp(authoredY,capturedY,captureWeight);}
- for(let i=0;i<wardrobe.variants.length;i++){const variant=wardrobe.variants[i],vrm=variant.vrm;vrm.scene.position.y=groundedY+(variant.restOffset||0);const active=needed.has(i);if(active){vrm.scene.updateMatrixWorld(true);if(seek||!variant.wasActive)vrm.springBoneManager?.reset();applyFaceExpression(vrm,wardrobe.options.face[wardrobe.outfit.face],clock);vrm.update(dt);}variant.wasActive=active;}
+ const ov=F&&F.archW>0&&form.arch?form.overActor():null,archT=ov?.h?{}:null;
+ for(let i=0;i<wardrobe.variants.length;i++){const variant=wardrobe.variants[i],vrm=variant.vrm;vrm.scene.position.y=groundedY+(variant.restOffset||0)+liftY;const active=needed.has(i);if(active){vrm.scene.updateMatrixWorld(true);if(seek||!variant.wasActive)vrm.springBoneManager?.reset();applyFaceExpression(vrm,wardrobe.options.face[wardrobe.outfit.face],clock);vrm.update(dt);
+  if(archT){vrm.scene.updateMatrixWorld(true);if(!archT.hands)archTargets(form.arch,form.arch.side,ov.h.getRawBoneNode('head'),ov.s||1,vrm.humanoid,archT);for(const k of [0,1])armIK(vrm.humanoid,k?'right':'left',archT.hands[k],archT.pole,F.archW);}}variant.wasActive=active;}
  const side=menuOpen&&width<1000&&width>height&&height<=600,compact=menuOpen&&width<1000&&!side;camera.zoom=compact?.55:1;camera.updateProjectionMatrix();
   // landscape phone: the menu panel covers the right part, so centre the dancer in the free strip on the left
-  camera.position.x=menuOpen&&width>=1000?.47:side?(1-(width-10-Math.min(470,width*.58))/width)*1.12*width/height:0;camera.position.y=compact?-.4:.75;camera.lookAt(camera.position.x,camera.position.y,0);news.hideAll();if(crewVisible)news.update('lead',wardrobe.master.humanoid,news.slug,t);crew.update(crewVisible,playing?t:null,width/height,captureWeight===1&&capture?.root?capture.root:null);partner.update(!!duo,clock,leadX,playing);if(crewVisible&&partner.visible)news.update('partner',partner.humanoid,news.slug,t,'lead');look.frame(crewVisible,rootX+leadX);renderer.render(scene,camera);
+  camera.position.x=menuOpen&&width>=1000?.47:side?(1-(width-10-Math.min(470,width*.58))/width)*1.12*width/height:0;camera.position.y=compact?-.4:.75;camera.lookAt(camera.position.x,camera.position.y,0);news.hideAll();if(crewVisible)news.update('lead',wardrobe.master.humanoid,news.slug,t);crew.setDepthLook(dk);crew.update(crewVisible,playing?t:null,width/height,captureWeight===1&&capture?.root?capture.root:null,F?[leadX,liftY,leadZ,fYaw]:null);if(F&&form.partner)partner.setSpot(F.px,form.pScale,F.pz);partner.update(!!duo,clock,leadX,playing,leadZ);if(crewVisible&&partner.visible)news.update('partner',partner.humanoid,news.slug,t,'lead');view=mv.frame(crewVisible?t:null,width,height);look.frame(crewVisible,rX+leadX);renderer.render(scene,view);
   // Away from a song, every 3 s, free the GPU copies of what nobody shows (outfits tried on before). See texture-budget.js.
   if(!playing&&started-lastSweep>3000){lastSweep=started;try{sweepGpu(scene,leadFace?.resources?.()||[]);}catch(e){console.warn('gpu sweep',e);}}
- lastSnapshot={time:playing?t:null,motionSource:captureWeight===1?'captured':captureWeight>0?'blend':'authored',captured:{asset:captureAsset,available:!!captured,matched:captured?.matched||false,active:captureWeight>0,weight:captureWeight,source:'cac-center',transition:'continuous-relative-120hz',sourceTime:capture?.sourceTime??null,localTime:capture?.localTime??null,index:capture?.index??null,next:capture?.next??null,alpha:capture?.alpha??null,t0:captured?.t0??null,duration:captured?.duration??null,entryFade:captured?.entryFade??null,exitFade:captured?.exitFade??null},activeVariants:[...needed].sort((a,b)=>a-b),source:captureWeight>0?capture.localTime:sample.layers[0]?.time,layers:[...sample.layers.map(l=>({...l,weight:l.weight*(1-captureWeight)})).filter(l=>l.weight>0),...(captureWeight>0?[{clip:'cac-center',time:capture.localTime,weight:captureWeight}]:[])],clipIds:captureWeight===1?['cac-center']:captureWeight>0?['cac-center',...sample.layers.map(l=>l.clip)]:sample.layers.map(l=>l.clip),mode:sample.mode,phraseId:sample.phraseId,energy:sample.energy,amplitude:sample.amplitude,rootX,rootZ,leadX,sourceRoot,speed:sample.phaseRate,phaseRate:sample.phaseRate,rootVelocity:sample.rootVelocity,beatPhase:sample.beatPhase,rootPosition:[rootX,wardrobe.master.scene.position.y,rootZ],yaw:rootYaw,seek,drawMs:performance.now()-started,triangles:renderer.info.render.triangles,calls:renderer.info.render.calls};
+ lastSnapshot={time:playing?t:null,motionSource:captureWeight===1?'captured':captureWeight>0?'blend':'authored',captured:{asset:captureAsset,available:!!captured,matched:captured?.matched||false,active:captureWeight>0,weight:captureWeight,source:'cac-center',transition:'continuous-relative-120hz',sourceTime:capture?.sourceTime??null,localTime:capture?.localTime??null,index:capture?.index??null,next:capture?.next??null,alpha:capture?.alpha??null,t0:captured?.t0??null,duration:captured?.duration??null,entryFade:captured?.entryFade??null,exitFade:captured?.exitFade??null},activeVariants:[...needed].sort((a,b)=>a-b),source:captureWeight>0?capture.localTime:sample.layers[0]?.time,layers:[...sample.layers.map(l=>({...l,weight:l.weight*(1-captureWeight)})).filter(l=>l.weight>0),...(captureWeight>0?[{clip:'cac-center',time:capture.localTime,weight:captureWeight}]:[])],clipIds:captureWeight===1?['cac-center']:captureWeight>0?['cac-center',...sample.layers.map(l=>l.clip)]:sample.layers.map(l=>l.clip),mode:sample.mode,phraseId:sample.phraseId,energy:sample.energy,amplitude:sample.amplitude,rootX,rootZ,leadX,leadZ,formation:F?{member:form.me,partner:form.partner,x:+F.x.toFixed(4),z:+F.z.toFixed(4),walk:+F.walk.toFixed(3),stand:+F.stand.toFixed(3),archW:+F.archW.toFixed(3),window:F.win?{t0:F.win.t0,t1:F.win.t1,w:+wW.toFixed(3)}:null,px:F.px??null,pz:F.pz??null}:null,sourceRoot,speed:sample.phaseRate,phaseRate:sample.phaseRate,rootVelocity:sample.rootVelocity,beatPhase:sample.beatPhase,rootPosition:[rootX,wardrobe.master.scene.position.y,rootZ],yaw:rootYaw,seek,drawMs:performance.now()-started,triangles:renderer.info.render.triangles,calls:renderer.info.render.calls};
  }
- function snapshot(){const bones={};for(const name of ['hips','spine','chest','neck','head','leftShoulder','rightShoulder','leftUpperArm','rightUpperArm','leftLowerArm','rightLowerArm','leftHand','rightHand','leftUpperLeg','rightUpperLeg','leftLowerLeg','rightLowerLeg','leftFoot','rightFoot']){const b=wardrobe.master.humanoid.getRawBoneNode(name);if(!b)continue;b.getWorldPosition(v);const world=v.toArray(),screen=v.clone().project(camera);bones[name]={world,screen:[(screen.x+1)*width/2,(1-screen.y)*height/2],quaternion:b.quaternion.toArray()};}return{...lastSnapshot,backdrop:backdrop.diagnostics(),crew:crew.diagnostics(),selection:{...wardrobe.outfit},bones,finite:Object.values(bones).every(b=>b.world.every(Number.isFinite)),face:{id:wardrobe.options.face[wardrobe.outfit.face].id,values:wardrobe.options.face[wardrobe.outfit.face].values},parts:wardrobe.variants.flatMap((v,i)=>Object.entries(v.parts).flatMap(([slot,ms])=>ms.map(m=>({slot,variant:i,visible:m.visible,meshId:m.uuid,geometryId:m.geometry.uuid,indexCount:m.geometry.index?.count||0})))).concat((wardrobe.styleParts||[]).map(p=>({slot:p.slot,variant:p.variant,donor:p.donor,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count}))).concat((wardrobe.accessoryParts||[]).map(p=>({slot:p.slot,variant:p.variant,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count}))),accessories:(wardrobe.accessoryParts||[]).map(p=>({slot:p.slot,variant:p.variant,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count})),audit:wardrobe.audit};}
+ function snapshot(){const bones={};for(const name of ['hips','spine','chest','neck','head','leftShoulder','rightShoulder','leftUpperArm','rightUpperArm','leftLowerArm','rightLowerArm','leftHand','rightHand','leftUpperLeg','rightUpperLeg','leftLowerLeg','rightLowerLeg','leftFoot','rightFoot']){const b=wardrobe.master.humanoid.getRawBoneNode(name);if(!b)continue;b.getWorldPosition(v);const world=v.toArray(),screen=v.clone().project(view);bones[name]={world,screen:[(screen.x+1)*width/2,(1-screen.y)*height/2],quaternion:b.quaternion.toArray()};}return{...lastSnapshot,backdrop:backdrop.diagnostics(),crew:crew.diagnostics(),selection:{...wardrobe.outfit},bones,finite:Object.values(bones).every(b=>b.world.every(Number.isFinite)),face:{id:wardrobe.options.face[wardrobe.outfit.face].id,values:wardrobe.options.face[wardrobe.outfit.face].values},parts:wardrobe.variants.flatMap((v,i)=>Object.entries(v.parts).flatMap(([slot,ms])=>ms.map(m=>({slot,variant:i,visible:m.visible,meshId:m.uuid,geometryId:m.geometry.uuid,indexCount:m.geometry.index?.count||0})))).concat((wardrobe.styleParts||[]).map(p=>({slot:p.slot,variant:p.variant,donor:p.donor,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count}))).concat((wardrobe.accessoryParts||[]).map(p=>({slot:p.slot,variant:p.variant,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count}))),accessories:(wardrobe.accessoryParts||[]).map(p=>({slot:p.slot,variant:p.variant,visible:p.mesh.visible,meshId:p.mesh.uuid,geometryId:p.mesh.geometry.uuid,indexCount:p.mesh.geometry.index?.count||p.mesh.geometry.attributes.position.count})),audit:wardrobe.audit};}
  const api={draw,equip,snapshot,
- async setDuo(opts){duo=opts?{side:opts.side==='R'?'R':'L'}:null;leadX=duo?(duo.side==='L'?-SLOT_X:SLOT_X):0;await partner.setOutfit(duo?opts.partner||null:null);partner.setSpot(-leadX,setHeight(news.slug,partner.selection));},
+ async setDuo(opts){duo=opts?{side:opts.side==='R'?'R':'L'}:null;leadX=baseLeadX=duo?(duo.side==='L'?-SLOT_X:SLOT_X):0;await partner.setOutfit(duo?opts.partner||null:null);partner.setSpot(-leadX,setHeight(news.slug,partner.selection));},
  // the character travels with the outfit (lobby, prep, loaded); no key = Nữ, exactly the message older builds send
  outfitIds(){return {...Object.fromEntries(['hair','top','bottom','shoes','accessory'].map(s=>[s,wardrobe.options[s]?.[wardrobe.outfit[s]]?.id??null])),...(who.character==='nam'?{character:'nam'}:{})};},get character(){return who.character;},
- heads(){const head=wardrobe.master.humanoid.getRawBoneNode('head');let me=null;if(head){head.getWorldPosition(v);v.y+=.16*wardrobe.master.scene.scale.x;v.project(camera);me=[(v.x+1)/2*width,(1-v.y)/2*height];}return{me,partner:duo?partner.headScreen(camera,width,height):null};},
+ heads(){const head=wardrobe.master.humanoid.getRawBoneNode('head');let me=null;if(head){head.getWorldPosition(v);v.y+=.16*wardrobe.master.scene.scale.x;v.project(view);me=[(v.x+1)/2*width,(1-v.y)/2*height];}return{me,partner:duo?partner.headScreen(view,width,height):null};},
  async setSong(moves,chart){const request=++songRequest,entry=beautyDemo?null:performances.find(chart),loaded=entry?await performances.load(entry):null;if(request!==songRequest)return false;
  // Backups wear theme outfits that are built on demand (lazy wardrobe): sew them before the crew rigs clone the meshes.
  // Song-themed backup outfits (config.crewOutfits[slug], crew-only garments): each backup gets a random one per song,
  // no repeats while the pool lasts. Sewn before the crew rigs clone the meshes.
  for(const v of wardrobe.variants)v.vrm.scene.scale.setScalar(1);leadHeight=1;
- let crewEntry=themedCrew(entry,chart);if(duo&&crewEntry?.crew)crewEntry={...crewEntry,crew:crewEntry.crewCount===1&&crewEntry.crew.length===1?crewEntry.crew.map(centred):duoCrew(crewEntry.crew)};
+ let crewEntry=themedCrew(entry,chart);form=null;if(duo&&crewEntry?.crew&&!crewEntry.formationCast)crewEntry={...crewEntry,crew:crewEntry.crewCount===1&&crewEntry.crew.length===1?crewEntry.crew.map(centred):duoCrew(crewEntry.crew)};
  for(const c of crewEntry?.crew||[])if(c.outfit)await wardrobe.prepareOutfit(c.outfit);if(request!==songRequest)return false;
  captured=loaded?.lead?createCapturedMotion(loaded.lead):defaultCaptured;captureAsset=loaded?.lead?entry.lead:defaultCaptureAsset;
  capturedIndex=new Map(captured?.boneNames.map((n,i)=>[n,i])||[]);captureReferenceOffset=wardrobe.variants.find(v=>v.spec.id===captured?.referenceVariant)?.restOffset||0;
- songMoves=moves;news.slug=chart?.slug||Object.keys(raw.performances||{}).find(k=>raw.performances[k]===entry)||null;backdrop.setSong(chart);{const tint=backdrop.tint?.();if(tint){disc.material.color.set(tint.disc);ring.material.color.set(tint.ring);}}motion.setSong(moves,chart);const matched=captured?.setSong(moves,chart);if(loaded?.lead&&!matched)throw Error('Lead track song identity mismatch');{const keep=leadFace?.selected;if(keep&&keep!=='original')leadFace.apply('original');crew.setSong(chart,crewEntry,loaded?.crewData);if(keep&&keep!=='original')leadFace.apply(keep);}leadHeight=crewEntry?.leadHeight||1;partner.setSpot(-leadX,setHeight(news.slug,partner.selection));bakeCapturedFades();lastTime=null;idleStart=performance.now();return true;},outfits:presets,get outfit(){const i=presets.findIndex((_,i)=>physicalSlots.every(s=>wardrobe.variantFor(s,wardrobe.outfit[s])===i&&!wardrobe.options[s][wardrobe.outfit[s]].style));return i>=0&&!(wardrobe.outfit.accessory>0)?presets[i].id:'mixed';},setOutfit(id){const i=presets.findIndex(p=>p.id===id);if(i>=0){physicalSlots.forEach(s=>{const choice=wardrobe.options?.[s]?.findIndex(o=>o.variant===i)??i;if(choice>=0)equip(s,choice);});if(wardrobe.slots.includes('accessory'))equip('accessory',0);}},mountWardrobe(container){refresh=mountWardrobe(container,who.uiConfig,equipFromUI,()=>wardrobe.outfit,name=>(who.character==='nam'&&bundle.files['wardrobe/icons/nam-'+name+'.webp'])||bundle.files['wardrobe/icons/'+name+'.webp']||null);},test:{wardrobe,camera,scene,renderer,motion,poseBank,crew,captured,partner,config,look,who,profile:()=>leadFace?.selected??null}};
+ songMoves=moves;news.slug=chart?.slug||Object.keys(raw.performances||{}).find(k=>raw.performances[k]===entry)||null;backdrop.setSong(chart);{const tint=backdrop.tint?.();if(tint){disc.material.color.set(tint.disc);ring.material.color.set(tint.ring);}}motion.setSong(moves,chart);const matched=captured?.setSong(moves,chart);if(loaded?.lead&&!matched)throw Error('Lead track song identity mismatch');let crewTracks=loaded?.crewData;if(crewEntry?.formationCast&&entry?.formation){form=buildForm(entry,crewEntry,chart,loaded);crewEntry={...crewEntry,crew:form.crewSpecs};crewTracks=form.tracks;}{const keep=leadFace?.selected;if(keep&&keep!=='original')leadFace.apply('original');crew.setSong(chart,crewEntry,crewTracks);if(keep&&keep!=='original')leadFace.apply(keep);}leadHeight=crewEntry?.leadHeight||1;partner.setSpot(-leadX,setHeight(news.slug,partner.selection));bakeCapturedFades();try{mvInfo=mv.setSong({chart,slug:news.slug,crew:crewEntry,duo:duo?{slotX:SLOT_X,...(form?.partnerXAt?{partnerX:form.partnerXAt}:{})}:null,lead:leadPath(chart),...(form?{centre:form.centre,players:form.players}:{})});}catch(e){console.warn('mv director',e);}lastTime=null;idleStart=performance.now();return true;},outfits:presets,get outfit(){const i=presets.findIndex((_,i)=>physicalSlots.every(s=>wardrobe.variantFor(s,wardrobe.outfit[s])===i&&!wardrobe.options[s][wardrobe.outfit[s]].style));return i>=0&&!(wardrobe.outfit.accessory>0)?presets[i].id:'mixed';},setOutfit(id){const i=presets.findIndex(p=>p.id===id);if(i>=0){physicalSlots.forEach(s=>{const choice=wardrobe.options?.[s]?.findIndex(o=>o.variant===i)??i;if(choice>=0)equip(s,choice);});if(wardrobe.slots.includes('accessory'))equip('accessory',0);}},mountWardrobe(container){refresh=mountWardrobe(container,who.uiConfig,equipFromUI,()=>wardrobe.outfit,name=>(who.character==='nam'&&bundle.files['wardrobe/icons/nam-'+name+'.webp'])||bundle.files['wardrobe/icons/'+name+'.webp']||null);},test:{mv,get mvInfo(){return mvInfo;},get view(){return view;},wardrobe,camera,scene,renderer,motion,poseBank,crew,captured,partner,config,look,who,profile:()=>leadFace?.selected??null}};
  // Warm both crew costumes while the loading state is still visible. Otherwise
  // their first shader compilation can stall the first audible dance beat.
  // Owner 2026-11-09: trying clothes on must not wait. Sew the shop (set items first) while the loading screen is up, for
@@ -249,9 +313,9 @@ export async function createRuntime(canvas,bundle,opts={}){
   for(const [slot,items] of Object.entries(wardrobe.options||{}))items.forEach((_,i)=>add(slot,i));
   const t0=performance.now(),st=wardrobe.styles;if(st?.ensureStyle)for(const x of shop){if(performance.now()-t0>4000)break;const [slot,i]=Object.entries(x)[0];try{st.ensureStyle(slot,i);}catch(e){console.warn('shop sew',e);}}
   if(wardrobe.prepareOutfit)shop.forEach((x,k)=>wardrobe.prepareOutfit(x,{priority:99}).catch(e=>console.warn('shop sew',e)));}
- draw(null);crew.update(true,0,width/height);
+ draw(null);crew.update(true,0,width/height);const mvUnwarm=mv.warm();
  if(renderer.compileAsync)await renderer.compileAsync(scene,camera);else renderer.compile(scene,camera);
- renderer.render(scene,camera);crew.update(false,null,width/height);draw(null);
+ renderer.render(scene,camera);mvUnwarm();crew.update(false,null,width/height);draw(null);
  // iPad memory (owner 2026-11-11): the crew-only looks of every song (mostly the Secret singers' hair) held ~290 MB sewn
  // ahead; they are sewn when their song opens (setSong waits for them). The shop itself stays sewn: try-on must not wait.
  setTimeout(()=>{try{wardrobe.prewarmOutfits?.(who.sets.map(x=>x.selection),{everything:false});}catch(e){console.warn('prewarm',e);}},2500);

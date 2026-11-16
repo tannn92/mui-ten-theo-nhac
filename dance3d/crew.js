@@ -1,17 +1,18 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=1511.0454';
-import {createDancerProfiles} from './dancer-profiles.js?v=1511.0454';
-import {hideNativeCrewSafety} from './crew-styles.js?v=1511.0454';
-import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=1511.0454';
-import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1511.0454';
-import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=1511.0454';
-import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1511.0454';
-import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=1511.0454';
-import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1511.0454';
-import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1511.0454';
-import {hideNativeWislSafety} from './wisl-styles.js?v=1511.0454';
-import {hideNativeSecretSafety} from './secret-styles.js?v=1511.0454';
-import {newspaperProps,paperState} from './newspaper-prop.js?v=1511.0454';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=1611.0354';
+import {createDancerProfiles} from './dancer-profiles.js?v=1611.0354';
+import {hideNativeCrewSafety} from './crew-styles.js?v=1611.0354';
+import {hideNativeDolceSafety} from './dolce-crew-styles.js?v=1611.0354';
+import {hideNativeGirlXinhSafety} from './girl-xinh-lead.js?v=1611.0354';
+import {hideNativeGirlXinhBoySafety} from './girl-xinh-boys-styles.js?v=1611.0354';
+import {hideNativeTaiSinhSafety} from './tai-sinh-styles.js?v=1611.0354';
+import {hideNativeTaiSinhCrewSafety} from './tai-sinh-crew-styles.js?v=1611.0354';
+import {hideNativeHuntrixTrioSafety} from './huntrix-trio-styles.js?v=1611.0354';
+import {hideNativeGoldenStageSafety} from './golden-stage-styles.js?v=1611.0354';
+import {hideNativeWislSafety} from './wisl-styles.js?v=1611.0354';
+import {hideNativeSecretSafety} from './secret-styles.js?v=1611.0354';
+import {newspaperProps,paperState} from './newspaper-prop.js?v=1611.0354';
+import {rigArmCollision} from './arm-collision.js?v=1611.0354';// arm-collision
 
 // Four background performers reuse the live A/B skeletons, geometry, materials
 // and morph arrays. Detached binding applies a crew transform AFTER skinning;
@@ -43,7 +44,7 @@ export function createCrew(scene,wardrobe){
   }
   return{index,source,root,meshes,spec};
  });
- const point=new T.Vector3(),bonePoint=new T.Vector3();let visible=false,lastTime=null,activeIndices=[0,1,2,3],independent=[];
+ const point=new T.Vector3(),bonePoint=new T.Vector3();let depthLook=0,archPartner=null,archPartnerScale=null;let visible=false,lastTime=null,activeIndices=[0,1,2,3],independent=[];
  // Frame guard: if a slow device drops under ~45 fps for 3 s while 3+ own-motion backups dance, the outer
  // ones (crew entries 3 and 4) are hidden for the rest of the song; the inner pair keeps dancing.
  let lastWall=null,slowFor=0,emaMs=16.7,reduced=false,reducedLevel=0;
@@ -57,11 +58,12 @@ export function createCrew(scene,wardrobe){
    if(i>=activeIndices.length)break;
    const source=wardrobe.variants[spec.variant??1];if(!source)throw Error('Crew donor is missing');
    const rig=createIndependentCrewRig(source);let selected=source.meshes.filter(m=>m.isSkinnedMesh&&!m.userData.requiredBottomStyle);
-   if(spec.outfit){selected=[...source.parts.face,...(source.boyUpper&&wardrobe.maleTop?.(spec.outfit.top)?source.boyUpper:source.parts.upper),...source.parts.lower,...source.parts.feet];for(const slot of ['hair','top','bottom','shoes']){const choice=spec.outfit[slot]??(spec.variant??1),option=wardrobe.options[slot][choice];if(!option||wardrobe.variants[option.variant]!==source)throw Error('Independent crew outfit must use its donor rig');selected.push(...(wardrobe.styles.meshesFor(slot,choice)||source.parts[slot]));}const acc=spec.outfit.accessory,accOpt=acc!=null?wardrobe.options.accessory?.[acc]:null;if(accOpt?.style)selected.push(...(wardrobe.styles.meshesFor('accessory',acc)||[]));}
+   if(spec.outfit){selected=[...source.parts.face,...(source.boyUpper&&wardrobe.maleTop?.(spec.outfit.top)?source.boyUpper:source.parts.upper),...(source.boyLower&&wardrobe.maleBottom?.(spec.outfit.bottom)?source.boyLower:source.parts.lower),...source.parts.feet];for(const slot of ['hair','top','bottom','shoes']){const choice=spec.outfit[slot]??(spec.variant??1),option=wardrobe.options[slot][choice];if(!option||wardrobe.variants[option.variant]!==source)throw Error('Independent crew outfit must use its donor rig');selected.push(...(wardrobe.styles.meshesFor(slot,choice)||source.parts[slot]));}const acc=spec.outfit.accessory,accOpt=acc!=null?wardrobe.options.accessory?.[acc]:null;if(accOpt?.style)selected.push(...(wardrobe.styles.meshesFor('accessory',acc)||[]));}
    if(spec.outfit&&wardrobe.options.bottom[spec.outfit.bottom]?.style?.startsWith('huntrix-'))selected=selected.filter(m=>!m.userData.excludeHuntrix);if(spec.outfit){const bottomOption=wardrobe.options.bottom[spec.outfit.bottom];selected=selected.filter(m=>!hideNativeCrewSafety(m,bottomOption)&&!hideNativeDolceSafety(m,bottomOption)&&!hideNativeGirlXinhSafety(m,bottomOption)&&!hideNativeGirlXinhBoySafety(m,bottomOption)&&!hideNativeTaiSinhSafety(m,bottomOption)&&!hideNativeTaiSinhCrewSafety(m,bottomOption)&&!hideNativeHuntrixTrioSafety(m,bottomOption)&&!hideNativeGoldenStageSafety(m,bottomOption)&&!hideNativeWislSafety(m,bottomOption)&&!hideNativeSecretSafety(m,bottomOption));}rig.setMeshes(selected);
    // Same as the shared crew: small background figures skip the MToon outline pass (half the draw calls).
    for(const m of rig.meshes)if(m.visible&&Array.isArray(m.material)&&m.material.length===2&&m.material[1].isOutline)m.material=m.material[0];
-   rig.setMotion(tracks[i],null,chart);if(spec.rootScale)rig.setRootScale(spec.rootScale);rig.setMirror(!!spec.mirror);group.add(rig.root);
+   rig.setMotion(tracks[i],null,chart);if(spec.windowTracks)rig.setWindows(spec.windowTracks);if(spec.rootDetrend)rig.setRootDetrend(spec.rootDetrend);/* centre rotation: per-window member tracks, root detrend (formation.js) */rig.setArmCollision((h,w)=>rigArmCollision(rig,w,source));// arm-collision: own body + clothes
+   if(spec.rootScale)rig.setRootScale(spec.rootScale);rig.setMirror(!!spec.mirror);group.add(rig.root);
    const sign=i%2===0?-1:1,anchor=spec.anchor||[sign*.59,.18,-.85],scale=spec.scale??.8;
    if(anchor.length!==3||!anchor.every(Number.isFinite)||!Number.isFinite(scale)||scale<=0)throw Error('Invalid crew placement');
    const moves=[...(spec.moves||[])].sort((p,q)=>p.at-q.at);for(const r of spec.ready||[])if(!(Array.isArray(r)&&r.length===2&&r.every(Number.isFinite)&&r[0]<r[1]))throw Error('Invalid crew ready interval');for(const m of moves){if(!Number.isFinite(m.at)||!(m.dur>0)||(m.to!=null&&!(m.to.length===3&&m.to.every(Number.isFinite)))||(m.yaw!=null&&!Number.isFinite(m.yaw))||(m.scale!=null&&!(m.scale>0)))throw Error('Invalid crew move');}
@@ -76,7 +78,7 @@ export function createCrew(scene,wardrobe){
  // Fcl_EYE_Close (hooded lids) stays under the blink.
  function expression(actor,t){const tt=t??performance.now()/1000,b=Math.pow(Math.max(0,Math.sin(tt*1.8+actor.blink)),40);
   for(const m of actor.faceMorph){const d=m.morphTargetDictionary,inf=m.morphTargetInfluences;let shut=0,lid=0;for(const [n,w] of actor.expr){const k=d[n];if(k==null)continue;inf[k]=w;if(n==='Fcl_EYE_Close')lid=w;else if(/^Fcl_EYE_(Joy|Fun)/.test(n))shut+=w;}const c=d.Fcl_EYE_Close;if(c!=null)inf[c]=Math.min(1,lid+b*Math.max(0,1-shut-lid));}}
- function update(show,t,aspect,leadRoot=null){
+ function update(show,t,aspect,leadRoot=null,leadOff=null){
   visible=!!show;group.visible=visible;lastTime=t;
   // Landscape iPad keeps the authored spacing. Narrow windows pull the row
   // inward instead of losing the outer two dancers beyond the camera edges.
@@ -85,7 +87,7 @@ export function createCrew(scene,wardrobe){
   const now=performance.now();
   const keep=CREW_LIMITS[reducedLevel];if(visible&&t!=null&&independent.length>keep&&reducedLevel<CREW_LIMITS.length-1){if(lastWall!=null){const dt=now-lastWall;if(dt<250){emaMs+=(dt-emaMs)*.05;slowFor=emaMs>22?slowFor+dt:0;if(slowFor>3000){do reducedLevel++;while(reducedLevel<CREW_LIMITS.length-1&&CREW_LIMITS[reducedLevel]>=independent.length);reduced=true;slowFor=0;emaMs=16.7;}}}lastWall=now;}else if(t==null)lastWall=null;
   for(const [k,actor]of independent.entries()){actor.rig.root.visible=visible&&k<CREW_LIMITS[reducedLevel];if(!actor.rig.root.visible)continue;place(actor,t,spacing);// off-stage (|x|>3, beyond every screen width): hidden and not animated
-   if(actor.offstage){actor.rig.root.visible=false;continue;}actor.rig.update(t==null?t:t+(actor.spec.timeOffset||0),wardrobe.master.humanoid,actor.ovr,leadRoot);if(actor.expr)expression(actor,t);if(visible)news.update(actor.spec.id,actor.rig.humanoid,news.slug,t);}
+   if(actor.offstage){actor.rig.root.visible=false;continue;}actor.rig.update(t==null?t:t+(actor.spec.timeOffset||0),wardrobe.master.humanoid,actor.ovr,leadRoot,actor.archW>0?archFor(actor):null,leadOff);if(actor.expr)expression(actor,t);if(visible)news.update(actor.spec.id,actor.rig.humanoid,news.slug,t);}
   group.updateMatrixWorld(true);
  }
  // Formation changes over the song (e.g. the ring around the center): each move eases from the current spot to
@@ -94,14 +96,34 @@ export function createCrew(scene,wardrobe){
  function angLerp(a,b,u){const d=((b-a+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;return a+d*u;}
  // `walk` moves: walk at constant speed facing the way they go (turn 0.35 s at each end), legs stepping with the distance
  // walked (no foot sliding); `ready` intervals: stand still facing front until the cue, then dance.
- function place(actor,t,spacing){let [x,y,z]=actor.anchor,yaw=0,sc=actor.scale,ww=0,phase=0;if(t!=null)for(const m of actor.moves){if(m.walk&&t>=m.at-.25&&t<m.at)ww=Math.max(ww,T.MathUtils.smoothstep(t,m.at-.25,m.at));if(t<m.at)break;const to=m.to||actor.anchor,ty=(m.yaw??0)*Math.PI/180,ts=m.scale??actor.scale;
-  if(m.walk){const fx=x,fz=z,dx=to[0]-fx,dz=to[2]-fz,L=Math.hypot(dx,dz),tau=t-m.at,u=trapz(tau,m.dur),travel=Math.atan2(dx,dz),y0=yaw;x=fx+dx*u;y+=(to[1]-y)*u;z=fz+dz*u;sc+=(ts-sc)*u;
-   yaw=tau>=m.dur?ty:tau<.35?angLerp(y0,travel,T.MathUtils.smoothstep(tau,0,.35)):tau>m.dur-.35?angLerp(travel,ty,T.MathUtils.smoothstep(tau,m.dur-.35,m.dur)):travel;
-   if(tau<m.dur+.3){ww=Math.max(ww,tau<m.dur?1:1-T.MathUtils.smoothstep(tau,m.dur,m.dur+.3));phase=2*Math.PI*L*u/(.62*sc);}}
+ // Arch (crew spec `arch`, How You Like That 2:13-2:18, owner 2026-11-15 "dựng riêng tư thế tay cho hai bạn chạm tay trên
+ // đầu bé"): the two side members turn in (yaw), settle and lean, and their wrists go (IK) to just above the child's head,
+ // fingertips meeting over it. Weight eases in over arch.in and out over arch.out; nothing changes outside them.
+ const archTop=new T.Vector3(),archTgt=new T.Vector3(),archP=new T.Vector3(),archS=new T.Vector3();
+ function archWeight(spec,t){const a=spec.arch;if(!a||t==null)return 0;return T.MathUtils.smootherstep(t,a.in[0],a.in[1])*(1-T.MathUtils.smootherstep(t,a.out[0],a.out[1]));}
+ function archFor(actor){const a=actor.spec.arch,side=actor.archSide,m=wardrobe.master;
+  // the member under the arch: the child (default), the other player (duo) or a backup (centre rotation, `over` = member)
+  const o=a.over&&a.over!=='lead'?(a.over==='partner'?{h:archPartner?.(),s:archPartnerScale?.()||1}:(()=>{const x=independent.find(b=>b.spec.member===a.over);return x?{h:x.rig.humanoid,s:x.rig.root.scale.y}:null;})()):null;
+  const h=(o?.h||m.humanoid).getRawBoneNode('head');h.getWorldPosition(archTop);
+  const ls=o?o.s:(m.scene.scale.y||1),c0=a.cx||0,cx=c0+T.MathUtils.clamp(archTop.x-c0,-(a.follow??.05),a.follow??.05),y=(a.wristY??1.18)*ls,z=(a.zOver||0)+(a.z??-.15);
+  actor.rig.humanoid.getRawBoneNode(side>0?'leftUpperArm':'rightUpperArm')?.getWorldPosition(archS);
+  const reach=a.gap??.06,hands=[0,1].map(k=>new T.Vector3(cx-side*reach,y,z+(k?1:-1)*side*(a.spread??.035)));
+  archP.set(archS.x-side*.25,archS.y-.10,archS.z);
+  return {w:actor.archW,hands,pole:archP,lean:a.lean??8,toe:a.toe??0,lift:a.lift??0};}
+ function place(actor,t,spacing){let [x,y,z]=actor.anchor,yaw=0,sc=actor.scale,ww=0,phase=0,quick=false;if(t!=null)for(const m of actor.moves){if(m.walk&&t>=m.at-.25&&t<m.at){ww=Math.max(ww,T.MathUtils.smoothstep(t,m.at-.25,m.at));quick=m.pace==='quick';}if(t<m.at)break;const to=m.to||actor.anchor,ty=(m.yaw??0)*Math.PI/180,ts=m.scale??actor.scale;
+  if(m.walk){const fx=x,fz=z,dx=to[0]-fx,dz=to[2]-fz,L=Math.hypot(dx,dz),tau=t-m.at,u=trapz(tau,m.dur),travel=Math.atan2(dx,dz),y0=yaw,q=m.pace==='quick';x=fx+dx*u;y+=(to[1]-y)*u;z=fz+dz*u;sc+=(ts-sc)*u;
+   // pace 'quick' (centre rotation: a fast swap kept at the clip's timing): a quick side step facing front, arms keep dancing
+   yaw=q?ty:tau>=m.dur?ty:tau<.35?angLerp(y0,travel,T.MathUtils.smoothstep(tau,0,.35)):tau>m.dur-.35?angLerp(travel,ty,T.MathUtils.smoothstep(tau,m.dur-.35,m.dur)):travel;
+   if(tau<m.dur+.3){const w=tau<m.dur?1:1-T.MathUtils.smoothstep(tau,m.dur,m.dur+.3);if(w>=ww){ww=w;quick=q;}phase=2*Math.PI*L*u/((q?.42:.62)*sc);}}
   else{const p=T.MathUtils.smootherstep(t,m.at,m.at+m.dur);x+=(to[0]-x)*p;y+=(to[1]-y)*p;z+=(to[2]-z)*p;yaw+=(ty-yaw)*p;sc+=(ts-sc)*p;}}
   let wr=0;if(t!=null)for(const [a,b] of actor.spec.ready||[])if(t>a-.3&&t<b+.3)wr=Math.max(wr,T.MathUtils.smoothstep(t,a-.3,a)*(1-T.MathUtils.smoothstep(t,b,b+.3)));
-  const o=Math.min(1,ww+wr),ps=t!=null?paperState(news.slug,actor.spec.id,t):null,keepArms=!!(ps&&ps.w>0),face=ps?.arms||0;// holding the paper: the arms stay on the paper (base pose), face windows lift it in front of the face
-  actor.ovr=o>0||face>0?{o,m:ww/((ww+wr)||1),phase,keepArms,face}:null;
+  // groove (centre rotation: a member who is not in the clip there waits at the back, dancing lightly): 60 % standing
+  let wg=0;if(t!=null)for(const [a,b] of actor.spec.groove||[])if(t>a-.3&&t<b+.3)wg=Math.max(wg,.6*T.MathUtils.smoothstep(t,a-.3,a)*(1-T.MathUtils.smoothstep(t,b,b+.3)));
+  const o=Math.min(1,ww*(quick?.75:1)+Math.max(wr,wg)),ps=t!=null?paperState(news.slug,actor.spec.id,t):null,keepArms=!!(ps&&ps.w>0)||(quick&&ww>0),face=ps?.arms||0;// holding the paper: the arms stay on the paper (base pose), face windows lift it in front of the face
+  actor.ovr=o>0||face>0?{o,m:ww/((ww+Math.max(wr,wg))||1),phase,keepArms,face}:null;
+  actor.archW=archWeight(actor.spec,t);if(actor.archW>0){actor.archSide=actor.spec.arch.side??(actor.anchor[0]<0?1:-1);yaw=angLerp(yaw,actor.archSide*(actor.spec.arch.yaw??70)*Math.PI/180,actor.archW);}
+  // ortho depth look (centre rotation; off under the MV camera): further back = a little higher and smaller
+  if(depthLook&&actor.spec.member){y+=-depthLook*z;sc*=1+depthLook*z;}
   actor.offstage=Math.abs(x)>2.25;actor.rig.root.position.set(x*spacing,y,z);actor.rig.root.rotation.set(0,yaw,0);actor.rig.root.scale.setScalar(sc);}
  function diagnostics(){return{count:activeIndices.length,reduced,reducedLevel,frameEmaMs:+emaMs.toFixed(1),independent:independent.map(a=>({index:a.index,id:a.spec.id,face:a.spec.face||'original',outfit:a.spec.outfit||null,position:a.rig.root.position.toArray(),scale:a.rig.root.scale.x,feetWorld:['left','right'].map(side=>a.rig.humanoid.getRawBoneNode(side+'Foot').getWorldPosition(new T.Vector3()).toArray()),...a.rig.diagnostics()})),visible,sharedSkinning:independent.length===0,outlinePass:false,time:lastTime,dancers:dancers.filter(d=>activeIndices.includes(d.index)&&!independent.some(a=>a.index===d.index)).map(d=>{
   d.source.vrm.humanoid.getRawBoneNode('leftHand').getWorldPosition(bonePoint);
@@ -110,5 +132,5 @@ export function createCrew(scene,wardrobe){
    sharedGeometry:d.meshes.every((m,i)=>m.geometry===d.source.meshes.filter(x=>x.isSkinnedMesh)[i].geometry),
    sharedSkeleton:d.meshes.every((m,i)=>m.skeleton===d.source.meshes.filter(x=>x.isSkinnedMesh)[i].skeleton)};
  })};}
- return{update,setSong,diagnostics,group,dancers,sharedVariants(){return [...new Set(dancers.filter(d=>activeIndices.includes(d.index)&&!independent.some(a=>a.index===d.index)).map(d=>d.spec.variant))];},get independent(){return independent;}};
+ return{update,setSong,diagnostics,group,dancers,setDepthLook(k){depthLook=Number.isFinite(k)?k:0;},setArchPartner(h,s){archPartner=h;archPartnerScale=s;},sharedVariants(){return [...new Set(dancers.filter(d=>activeIndices.includes(d.index)&&!independent.some(a=>a.index===d.index)).map(d=>d.spec.variant))];},get independent(){return independent;}};
 }

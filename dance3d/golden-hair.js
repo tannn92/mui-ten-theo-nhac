@@ -1,4 +1,4 @@
-import {buildHair,options} from './hair-core.js?v=1511.0454';
+import {buildHair,options} from './hair-core.js?v=1611.0354';
 export const goldenHairOptions=()=>({hair:options.hair.filter(o=>o.id.startsWith('golden-'))});
 export function* buildGoldenHair(v,o){return yield* buildHair(v,o,'golden');}
 export function createGoldenHair(...a){const g=buildGoldenHair(...a);let s;do{s=g.next();}while(!s.done);return s.value;}

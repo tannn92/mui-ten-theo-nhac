@@ -1,7 +1,8 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=1511.0454';
-import {createDancerProfiles,resolveDancerProfile,dancerProfiles} from './dancer-profiles.js?v=1511.0454';
-import {applyHeadScale} from './head-scale.js?v=1511.0454';
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=1611.0354';
+import {createDancerProfiles,resolveDancerProfile,dancerProfiles} from './dancer-profiles.js?v=1611.0354';
+import {applyHeadScale} from './head-scale.js?v=1611.0354';
+import {setPartnerArmSource} from './arm-collision.js?v=1611.0354';// arm-collision
 // Two-iPad play: the other player's dancer (owner 2026-11-10 "vũ công thứ 2 cũng y hệt thế, đa phần phân biệt nhau qua
 // quần áo và mũi tên chỉ trên đầu"). The same child model in the other player's outfit, at the other front-row spot, with
 // the child's exact pose, eyelids and mouth every frame. Built like the child herself (wardrobe.visibleParts): one
@@ -11,8 +12,9 @@ const SLOTS=['hair','top','bottom','shoes','accessory'];
 const POSE_BONES=['hips','spine','chest','neck','head','leftUpperArm','rightUpperArm','leftLowerArm','rightLowerArm','leftUpperLeg','rightUpperLeg','leftLowerLeg','rightLowerLeg'];
 export function createPartner(scene,wardrobe,config){
  const group=new T.Group();group.name='duo-partner';group.visible=false;scene.add(group);
- let rigs=[],face=null,faceId='original',sel=null,who='nu',spotX=0,scale=1,request=0,shown=false,faceMap=[],accessories=0;
+ let rigs=[],face=null,faceId='original',sel=null,who='nu',spotX=0,spotZ=0,scale=1,request=0,shown=false,faceMap=[],accessories=0;
  const v=new T.Vector3();
+ setPartnerArmSource(()=>shown&&rigs.length?request*2+(who==='nam'?1:0):0,()=>({meshes:rigs.flatMap(r=>r.rig.meshes.filter(m=>m.visible)),donor:wardrobe.variants[rigs[0].i],boy:who==='nam'}));// arm-collision: the child's solve also clears the partner's body + outfit (the partner copies her exact pose)
  // wardrobe option ids (what goes over the line) -> option indices on this iPad; an unknown id keeps the default item
  function selectionOf(ids){const out={};for(const slot of SLOTS){const list=wardrobe.options[slot]||[],i=list.findIndex(o=>o.id===ids?.[slot]);out[slot]=i>=0?i:(wardrobe.defaults?.[slot]??0);}return out;}
  function clear(){for(const r of rigs){r.rig.root.removeFromParent();try{r.rig.dispose?.();}catch(e){}}rigs=[];try{face?.dispose?.();}catch(e){}face=null;faceMap=[];accessories=0;}
@@ -44,12 +46,12 @@ export function createPartner(scene,wardrobe,config){
    if(acc.id==='cowboy'&&Number.isFinite(c.userData.baseY)){c.position.y=c.userData.baseY+(s.hair===0?-.045:0);c.scale.set(s.hair===1?1.10:1,1,s.hair===1?1.07:1);}   // same fit rule as accessories.equip
    bone.add(c);accessories++;}
  }
- function setSpot(x,s=1){spotX=x;scale=s;}
+ function setSpot(x,s=1,z=0){spotX=x;scale=s;spotZ=z;}// z: centre rotation (her member's path depth)
  // after the child is posed for this frame. leadX = the child's own side offset; playing: heights apply only in a song
- function update(visible,clock,leadX,playing=true){
+ function update(visible,clock,leadX,playing=true,leadZ=0){
   shown=!!visible&&rigs.length>0;group.visible=shown;if(!shown)return;
   const s=playing?scale:1;
-  for(const r of rigs){r.rig.root.position.set(spotX-s*leadX,0,0);r.rig.root.scale.setScalar(s);r.rig.update(clock,wardrobe.master.humanoid,null,null);}
+  for(const r of rigs){r.rig.root.position.set(spotX-s*leadX,0,spotZ-s*leadZ);r.rig.root.scale.setScalar(s);r.rig.update(clock,wardrobe.master.humanoid,null,null);}
   for(const [m,c] of faceMap){const a=m.morphTargetInfluences,b=c.morphTargetInfluences;for(let k=0;k<a.length&&k<b.length;k++)b[k]=a[k];}
  }
  function headScreen(camera,width,height){const head=rigs[0]?.rig.humanoid.getRawBoneNode('head');if(!shown||!head)return null;head.getWorldPosition(v);v.y+=.16*rigs[0].rig.root.scale.x;v.project(camera);return[(v.x+1)/2*width,(1-v.y)/2*height];}
@@ -57,7 +59,7 @@ export function createPartner(scene,wardrobe,config){
   const r=rigs[0],hips=r?.rig.humanoid.getRawBoneNode('hips'),pose={};
   if(r)for(const n of POSE_BONES){const b=r.rig.humanoid.getNormalizedBoneNode(n);if(b)pose[n]=b.quaternion.toArray();}
   const eye=faceMap.find(([,c])=>c.morphTargetDictionary?.Fcl_EYE_Close!=null)?.[1];
-  return{visible:shown,character:who,rigs:rigs.length,donors:rigs.map(x=>x.i),meshes:rigs.reduce((a,x)=>a+x.rig.meshes.filter(m=>m.visible).length,0),face:faceId,x:spotX,scale,hipsWorld:hips?hips.getWorldPosition(new T.Vector3()).toArray():null,pose,eyeClose:eye?eye.morphTargetInfluences[eye.morphTargetDictionary.Fcl_EYE_Close]:null,accessories};
+  return{visible:shown,character:who,rigs:rigs.length,donors:rigs.map(x=>x.i),meshes:rigs.reduce((a,x)=>a+x.rig.meshes.filter(m=>m.visible).length,0),face:faceId,x:spotX,z:spotZ,scale,hipsWorld:hips?hips.getWorldPosition(new T.Vector3()).toArray():null,pose,eyeClose:eye?eye.morphTargetInfluences[eye.morphTargetDictionary.Fcl_EYE_Close]:null,accessories};
  }
  return{setOutfit,setSpot,update,headScreen,diagnostics,selectionOf,dispose(){clear();group.removeFromParent();},get humanoid(){return rigs[0]?.rig.humanoid||null;},get visible(){return shown;},get selection(){return sel;}};
 }

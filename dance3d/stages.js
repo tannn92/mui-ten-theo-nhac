@@ -1,0 +1,22 @@
+// Every song's stage module (stage-<id>.js), keyed by the backdrop id of selectBackdrop (song-backgrounds.js). mv-look 2026-11-15.
+import * as s0 from './stage-golden.js?v=1611.0354';
+import * as s1 from './stage-sounds.js?v=1611.0354';
+import * as s2 from './stage-secret.js?v=1611.0354';
+import * as s3 from './stage-timem.js?v=1611.0354';
+import * as s4 from './stage-laviem.js?v=1611.0354';
+import * as s5 from './stage-sju.js?v=1611.0354';
+import * as s6 from './stage-ttl.js?v=1611.0354';
+import * as s7 from './stage-dbd.js?v=1611.0354';
+import * as s8 from './stage-rolypoly.js?v=1611.0354';
+import * as s9 from './stage-ddudu.js?v=1611.0354';
+import * as s10 from './stage-ktl.js?v=1611.0354';
+import * as s11 from './stage-hylt.js?v=1611.0354';
+import * as s12 from './stage-pv.js?v=1611.0354';
+import * as s13 from './stage-jf.js?v=1611.0354';
+import * as s14 from './stage-dolce.js?v=1611.0354';
+import * as s15 from './stage-rain.js?v=1611.0354';
+import * as s16 from './stage-takedown.js?v=1611.0354';
+import * as s17 from './stage-how.js?v=1611.0354';
+import * as s18 from './stage-girl.js?v=1611.0354';
+import * as s19 from './stage-taisinh.js?v=1611.0354';
+export const STAGES={golden:s0,sounds:s1,secret:s2,timem:s3,laviem:s4,sju:s5,ttl:s6,dbd:s7,rolypoly:s8,ddudu:s9,ktl:s10,hylt:s11,pv:s12,jf:s13,dolce:s14,rain:s15,takedown:s16,how:s17,girl:s18,taisinh:s19};

@@ -1,6 +1,6 @@
 import * as T from 'three';
-import {fitPoint,fitSection,armShell} from './body-fit.js?v=1511.0454';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1511.0454';
+import {fitPoint,fitSection,armShell} from './body-fit.js?v=1611.0354';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1611.0354';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // "Kill This Love" (BLACKPINK). Looks from the official MV's main group dance, the final chorus in the red palace hall with
 // the organ pipes and the marching band (MV 2:50-3:08; crops from MV 3:01): Jennie's red knit one-strap dress (a red knit top

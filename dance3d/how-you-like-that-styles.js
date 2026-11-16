@@ -1,6 +1,6 @@
 import * as T from 'three';
-import {fitPoint,fitSection,armShell} from './body-fit.js?v=1511.0454';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1511.0454';
+import {fitPoint,fitSection,armShell} from './body-fit.js?v=1611.0354';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1611.0354';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // "How You Like That" (BLACKPINK). v2 looks (2026-11-14) from the owner's photo of the four members in the song's hanbok stage
 // looks (left to right Lisa, Jisoo, Jennie, Rosé), clearer than the MV crops used for v1:
