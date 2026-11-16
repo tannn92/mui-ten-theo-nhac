@@ -1,5 +1,5 @@
 import * as T from 'three';
-import {STAGES} from './stages.js?v=1611.0354';
+import {STAGES} from './stages.js?v=1611.0956';
 
 // Locally drawn scenery: no reference photos, people, logos, or network assets.
 // One background texture, painted only on song/viewport changes; no per-frame work.

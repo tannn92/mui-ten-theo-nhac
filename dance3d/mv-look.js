@@ -1,7 +1,7 @@
 import * as T from 'three';
-import {createDirector} from './mv-director.js?v=1611.0354';
-import {MV_ENERGY} from './mv-energy.js?v=1611.0354';
-import {STAGES} from './stages.js?v=1611.0354';
+import {createDirector} from './mv-director.js?v=1611.0956';
+import {MV_ENERGY} from './mv-energy.js?v=1611.0956';
+import {STAGES} from './stages.js?v=1611.0956';
 // MV look (owner 2026-11-15 "tôi muốn game trông điện ảnh hơn, như đang enjoy 1 cái mv vậy", reports/mv-look/HANDOFF.md).
 // PLAY MODE ONLY: menu, shop, results and the duo room keep today's orthographic framing and look (everything here is hidden
 // or neutral there: zero-intensity lights, hidden meshes, materials restored).

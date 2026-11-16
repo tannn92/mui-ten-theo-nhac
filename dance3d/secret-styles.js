@@ -1,6 +1,6 @@
 import * as T from 'three';
-import {fitPoint,fitSection,armShell,armRadius} from './body-fit.js?v=1611.0354';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1611.0354';
+import {fitPoint,fitSection,armShell,armRadius} from './body-fit.js?v=1611.0956';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1611.0956';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 const caches=new WeakMap();
 const V=()=>new T.Vector3();
@@ -69,14 +69,20 @@ if(spec.top==='pinafore'){cloth.color.set('#c5a57f');bottom.color.set('#c5a57f')
   function tie(){const high=neck.y-.025;grid(8,4,(u,v)=>{const y=high-u*.120,w=.0065*(1-.60*Math.pow(u,8)),q=fitted(y,Math.PI/2,.020);q.x=(v-.5)*w*2;return q;},brown);sphere(fitted(high,Math.PI/2,.021),[.006,.008,.004],brown);}
   function buttonRow(m,low,high,x=0){for(let j=0;j<5;j++){const y=T.MathUtils.lerp(low,high,j/4),q=fitted(y,Math.acos(T.MathUtils.clamp(x/(section(y)[0]+.01),-1,1)),.017);sphere(q,[.0028,.0028,.002],m);}}
   if(slot==='top'){
-   register(shell('secret-skin-upper',(x,y)=>y>hip.y-.025&&y<neck.y+.035,.0015),skin,false);
+   // boys (owner 2026-11-16, longer neck): the flat-colour skin copy stops below the neck base, so the visible neck is the body's
+   // own textured skin (the copy showed as a pale patch with a stepped edge on the side of the neck)
+   register(shell(boy?'secret-skin-upper-boy':'secret-skin-upper',(x,y)=>y>hip.y-.025&&y<(boy?neck.y-.004:neck.y+.035),.0015),skin,false);
    const high=neck.y-.018,low=waist-.012;
    if(boy){const shirt=(y,a,e=0)=>{const t=T.MathUtils.smoothstep(y,high-.055,high),rx=T.MathUtils.lerp(.092,.038,t)+e,z=Math.sin(a),depth=T.MathUtils.lerp(z>=0?.088:.056,z>=0?.043:.036,t)+e;return V().set(Math.cos(a)*rx,y,hip.z+Math.sign(z)*Math.pow(Math.abs(z),.65)*depth);};
     const inner=spec.shirt?mat(spec.shirt,.6):white;if(spec.shirt){inner.map=fabric('denim');inner.emissive.copy(inner.color);inner.emissiveIntensity=.08;}
     grid(12,36,(u,v)=>shirt(T.MathUtils.lerp(waist-.012,high,u),v*Math.PI*2),inner);
     grid(12,36,(u,v)=>shirt(T.MathUtils.lerp(hip.y+.020,high-.004,u),Math.PI/2+(spec.top==='leather'?.065:spec.top==='knit'?.18+.40*u:.42)+v*(Math.PI*2-2*(spec.top==='leather'?.065:spec.top==='knit'?.18+.40*u:.42)),.007),cloth);
     register(spec.top==='leather'?shell('secret-boy-shoulder-cover',(x,y)=>Math.abs(x)<.165&&y>neck.y-.085&&y<neck.y+.015,.010):shell('secret-boy-shoulder-cover-open',(x,y,z)=>Math.abs(x)<.165&&y>neck.y-.085&&y<neck.y+.015&&!(z>hip.z+.02&&Math.abs(x)<.030),.010),cloth,false);// open fronts (owner 2026-11-14 nam-chest): no cover over the tee, it poked through as a dark triangle
-    for(const side of ['left','right'])sleeves(side,cloth,false,false);collar(spec.collar==='white'?white:spec.shirt?inner:spec.top==='leather'?cloth:white);
+    for(const side of ['left','right'])sleeves(side,cloth,false,false);
+    // open jacket over a tee (b2, m3): a clean crew neck. The tee fabric fills the front from the jacket's collar band down into the
+    // tee (no skin strip, no white shirt-collar flaps, which crumpled into a jagged edge once the neck showed)
+    if(spec.top==='open'&&!spec.collar)register(shell('secret-boy-tee-neck',(x,y,z)=>y>neck.y-.034&&y<neck.y-.004&&z>hip.z+.01&&Math.abs(x)<.040,.006),inner,false);
+    else collar(spec.collar==='white'?white:spec.shirt?inner:spec.top==='leather'?cloth:white);
     if(spec.collar==='white')for(const sign of [-1,1])grid(8,6,(u,v)=>{const y=neck.y-.010-u*.052,x=sign*(.014+u*.030+(v-.5)*(.040*(1-u)+.004)),q=shirt(y,Math.acos(T.MathUtils.clamp(x/(.092+.012),-1,1)),.016);q.z+=.004*Math.sin(u*Math.PI);return q;},white);
     if(spec.scarf){const red=mat(spec.scarf,.55);red.emissive.copy(red.color);red.emissiveIntensity=.08;const yN=neck.y-.010,ring=[];for(let j=0;j<=24;j++){const a=j/24*Math.PI*2+Math.PI/2;ring.push(shirt(yN,a,.016));}curve(ring,.008,red);
      grid(6,6,(u,v)=>{const q=shirt(yN-.006-u*.042,Math.PI/2,.020);q.x+=(v-.5)*.040*(1-u);q.z+=.004*u;return q;},red);

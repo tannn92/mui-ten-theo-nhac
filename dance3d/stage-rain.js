@@ -9,5 +9,5 @@ export const tint={disc:0xe0c3d5,ring:0xfffbfe};
 export const mv={key:0xf2f4ff,rim:0xb0c8ff,sky:0xeef2ff,gnd:0x3a4050,beam:0xd0dcff,dust:0xe8eeff,floor:0x161a22,gc:0xf6f8ff,ge:0x4a5268,wall:.9};
 // MV camera hints (optional): force:[{from,to,kind}] (kind: wide crane full hero side close arch), noClose:[[from,to]]
 export const hints={};
-import {paintGeneric} from './stage-generic.js?v=1611.0354';
+import {paintGeneric} from './stage-generic.js?v=1611.0956';
 export function paint(c,tools){paintGeneric(c,tools,'rain');}

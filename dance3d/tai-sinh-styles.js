@@ -1,5 +1,5 @@
 import * as T from 'three';
-import {fitPoint,fitSection} from './body-fit.js?v=1611.0354';
+import {fitPoint,fitSection} from './body-fit.js?v=1611.0956';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 const caches=new WeakMap();
 const V=()=>new T.Vector3();

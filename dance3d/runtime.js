@@ -1,22 +1,22 @@
 import * as T from 'three';
-import {createPerformanceLibrary} from './performance-library.js?v=1611.0354';
-import {createSongBackgrounds} from './song-backgrounds.js?v=1611.0354';
-import {loadWardrobe} from './wardrobe.js?v=1611.0354';
-import {createChoreography} from './choreography.js?v=1611.0354';
-import {createPoseBank} from './pose-bank.js?v=1611.0354';
-import {applyFaceExpression} from './face-expressions.js?v=1611.0354';
-import {createCrew} from './crew.js?v=1611.0354';
-import {newspaperProps} from './newspaper-prop.js?v=1611.0354';
-import {applyHeadScale} from './head-scale.js?v=1611.0354';
-import {createDancerProfiles,resolveDancerProfile} from './dancer-profiles.js?v=1611.0354';
-import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1611.0354';
-import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1611.0354';
-import {createPartner} from './partner.js?v=1611.0354';
-import {shrinkLargeTextures,sweepGpu} from './texture-budget.js?v=1611.0354';
-import {characterView,normCharacter} from './characters.js?v=1611.0354';
-import {leadArmCollision} from './arm-collision.js?v=1611.0354';// arm-collision
-import {createMvLook} from './mv-look.js?v=1611.0354';
-import {pathAt,castMembers,nudgeTrack,centreHint,leadOverlay,leadArchBody,armIK,archWeightOf,archTargets,windowWeight} from './formation.js?v=1611.0354';// centre rotation
+import {createPerformanceLibrary} from './performance-library.js?v=1611.0956';
+import {createSongBackgrounds} from './song-backgrounds.js?v=1611.0956';
+import {loadWardrobe} from './wardrobe.js?v=1611.0956';
+import {createChoreography} from './choreography.js?v=1611.0956';
+import {createPoseBank} from './pose-bank.js?v=1611.0956';
+import {applyFaceExpression} from './face-expressions.js?v=1611.0956';
+import {createCrew} from './crew.js?v=1611.0956';
+import {newspaperProps} from './newspaper-prop.js?v=1611.0956';
+import {applyHeadScale,setNeckLift,neckLift} from './head-scale.js?v=1611.0956';
+import {createDancerProfiles,resolveDancerProfile} from './dancer-profiles.js?v=1611.0956';
+import {createCapturedMotion,CAPTURE_ASSET,FULL_CAPTURE_ASSET} from './captured-motion.js?v=1611.0956';
+import {readWardrobe,saveWardrobe,mountWardrobe} from './wardrobe-ui.js?v=1611.0956';
+import {createPartner} from './partner.js?v=1611.0956';
+import {shrinkLargeTextures,sweepGpu} from './texture-budget.js?v=1611.0956';
+import {characterView,normCharacter} from './characters.js?v=1611.0956';
+import {leadArmCollision} from './arm-collision.js?v=1611.0956';// arm-collision
+import {createMvLook} from './mv-look.js?v=1611.0956';
+import {pathAt,castMembers,nudgeTrack,centreHint,leadOverlay,leadArchBody,armIK,archWeightOf,archTargets,windowWeight} from './formation.js?v=1611.0956';// centre rotation
 export async function createRuntime(canvas,bundle,opts={}){
  const [raw,data]=await Promise.all([bundle.json('wardrobe/config.json'),bundle.json('wardrobe/motion-bank.json')]);
  const beautyDemo=new URLSearchParams(location.search).get('dance')==='beauty';
@@ -52,7 +52,8 @@ export async function createRuntime(canvas,bundle,opts={}){
  // Smaller head (owner 2026-11-10 "tỉ lệ cái đầu đang hơi to"; Codex chose 0.85): uniform raw-head scale on every donor, once,
  // AFTER the lazy styles captured the unscaled rest pose (their build steps restore it) and BEFORE any crew rig is cloned
  // (clones inherit the scale, the canonical baseline and the scaled head colliders/hair hit radii).
- {const hs=Number.isFinite(raw.headScale)?raw.headScale:1;if(hs!==1)for(const v of wardrobe.variants)applyHeadScale(v.vrm,hs);}
+ // Longer neck (owner 2026-11-16, +1 cm, config neckLift): applied with the head scale (head-scale.js), same moment and reason.
+ {const hs=Number.isFinite(raw.headScale)?raw.headScale:1;setNeckLift(raw.neckLift);if(hs!==1||neckLift())for(const v of wardrobe.variants)applyHeadScale(v.vrm,hs);}
  // HUNTR/X faces (owner 2026-11-10 "mặt gốc vẫn giữ, mà với set huntrix thì thay cả mặt"): wearing a full Rumi/Mira/Zoey set
  // (top+bottom+shoes of a huntrix-/golden-/wisl- set) gives the child that character's face and head shape; anything else keeps the
  // original face (Codex dancer-profiles.js; absolute head scales, original .85). Built on demand, outside the draw loop.
