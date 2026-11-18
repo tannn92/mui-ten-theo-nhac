@@ -1,5 +1,5 @@
 import * as T from 'three';
-import {boyDonor} from './boy-body.js?v=1611.0956';
+import {boyDonor} from './boy-body.js?v=1611.2031';
 
 // Arms never pass through the body (owner 2026-11-15 "nhiều đoạn di chuyển vung tay... cảm giác vẫn cứ có tình trạng tay xuyên
 // qua người"). One pass on a rig's FINAL normalized pose (after every motion layer: capture, pose bank, fades, crew/partner

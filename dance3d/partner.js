@@ -1,8 +1,8 @@
 import * as T from 'three';
-import {createIndependentCrewRig} from './independent-crew-rig.js?v=1611.0956';
-import {createDancerProfiles,resolveDancerProfile,dancerProfiles} from './dancer-profiles.js?v=1611.0956';
-import {applyHeadScale} from './head-scale.js?v=1611.0956';
-import {setPartnerArmSource} from './arm-collision.js?v=1611.0956';// arm-collision
+import {createIndependentCrewRig} from './independent-crew-rig.js?v=1611.2031';
+import {createDancerProfiles,resolveDancerProfile,dancerProfiles} from './dancer-profiles.js?v=1611.2031';
+import {applyHeadScale} from './head-scale.js?v=1611.2031';
+import {setPartnerArmSource} from './arm-collision.js?v=1611.2031';// arm-collision
 // Two-iPad play: the other player's dancer (owner 2026-11-10 "vũ công thứ 2 cũng y hệt thế, đa phần phân biệt nhau qua
 // quần áo và mũi tên chỉ trên đầu"). The same child model in the other player's outfit, at the other front-row spot, with
 // the child's exact pose, eyelids and mouth every frame. Built like the child herself (wardrobe.visibleParts): one

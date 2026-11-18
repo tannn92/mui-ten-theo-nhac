@@ -1,5 +1,5 @@
 import * as T from 'three';
-import {STAGES} from './stages.js?v=1611.0956';
+import {STAGES} from './stages.js?v=1611.2031';
 
 // Locally drawn scenery: no reference photos, people, logos, or network assets.
 // One background texture, painted only on song/viewport changes; no per-frame work.
@@ -11,6 +11,7 @@ export function selectBackdrop(chart={}) {
  if(/how[- _]you[- _]like[- _]that/.test(text))return 'hylt';
  if(/pink[- _]venom/.test(text))return 'pv';
  if(/jisoo[- _]flower|flower \(jisoo\)/.test(text))return 'jf';
+ if(/u[- _]r[- _]man/.test(text))return 'urman';
  if(/roly[- _]poly/.test(text))return 'rolypoly';
  if(/super[- _]junior/.test(text))return 'sju';
  if(/ttl-time-to-love|time to love/.test(text))return 'ttl';
@@ -28,7 +29,7 @@ export function selectBackdrop(chart={}) {
  return 'dolce';
 }
 export function createSongBackgrounds(scene){
- let active='dolce',width=0,height=0,texture=null,paints=0;
+ let active='dolce',width=0,height=0,texture=null,paints=0,section=null;   // section: a stage's colour key by song time (stage sectionAt, u-r-man)
  function paint(){
   const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
   const c=canvas.getContext('2d');c.scale(width/1600,height/1000);
@@ -42,9 +43,9 @@ export function createSongBackgrounds(scene){
   const clear=h=>/^#[0-9a-f]{6}$/i.test(h)?`rgba(${parseInt(h.slice(1,3),16)},${parseInt(h.slice(3,5),16)},${parseInt(h.slice(5,7),16)},0)`:'transparent';
   const soft=(x,y,r,color,alpha=.5)=>{c.save();c.globalAlpha=alpha;const g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,color);g.addColorStop(1,clear(color));c.fillStyle=g;c.fillRect(x-r,y-r,r*2,r*2);c.restore();};
   // each song's painter lives in its own stage-<id>.js (stages.js); the dedicated ones get the soft glow as glow
-  (STAGES[active]||STAGES.dolce).paint(c,{rect,path,glow:soft,glowPlain:glow,dot,line,lamp,rnd});
+  (STAGES[active]||STAGES.dolce).paint(c,{rect,path,glow:soft,glowPlain:glow,dot,line,lamp,rnd},section??undefined);
   finish(canvas);
  }
  function finish(canvas){const next=new T.CanvasTexture(canvas);next.colorSpace=T.SRGBColorSpace;next.generateMipmaps=false;next.minFilter=T.LinearFilter;scene.background=next;texture?.dispose();texture=next;paints++;}
- return{tint(){return (STAGES[active]||STAGES.dolce).tint;},setSong(chart){const next=selectBackdrop(chart);if(next!==active){active=next;if(width)paint();}},resize(w,h){const nextW=Math.min(1600,Math.max(640,Math.round(w))),nextH=Math.min(1600,Math.max(480,Math.round(h)));if(nextW!==width||nextH!==height){width=nextW;height=nextH;paint();}},diagnostics(){return{id:active,paints,width,height};}};
+ return{tint(){return (STAGES[active]||STAGES.dolce).tint;},setSong(chart){const next=selectBackdrop(chart);if(next!==active||section!==null){active=next;section=null;if(width)paint();}},tick(t){const st=STAGES[active];if(!st?.sectionAt||!width)return;const k=st.sectionAt(t);if(k!==section){section=k;paint();}},resize(w,h){const nextW=Math.min(1600,Math.max(640,Math.round(w))),nextH=Math.min(1600,Math.max(480,Math.round(h)));if(nextW!==width||nextH!==height){width=nextW;height=nextH;paint();}},diagnostics(){return{id:active,paints,width,height};}};
 }

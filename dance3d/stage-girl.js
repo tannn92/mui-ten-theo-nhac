@@ -9,5 +9,5 @@ export const tint={disc:0xe0c3d5,ring:0xfffbfe};
 export const mv={key:0xfff4f4,rim:0xffa0c8,sky:0xfff4f8,gnd:0x5a4a5a,beam:0xffd0e8,dust:0xfff0f8,floor:0x241c24,gc:0xfff8f8,ge:0x6a5068,wall:.92};
 // MV camera hints (optional): force:[{from,to,kind}] (kind: wide crane full hero side close arch), noClose:[[from,to]]
 export const hints={};
-import {paintGeneric} from './stage-generic.js?v=1611.0956';
+import {paintGeneric} from './stage-generic.js?v=1611.2031';
 export function paint(c,tools){paintGeneric(c,tools,'girl');}

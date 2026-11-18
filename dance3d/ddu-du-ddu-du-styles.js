@@ -1,6 +1,6 @@
 import * as T from 'three';
-import {fitPoint,fitSection,armShell} from './body-fit.js?v=1611.0956';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1611.0956';
+import {fitPoint,fitSection,armShell} from './body-fit.js?v=1611.2031';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1611.2031';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // "DDU-DU DDU-DU" (BLACKPINK). Looks from the official MV's main group dance, the final chorus on the neon pyramid-temple set
 // (MV 2:50-3:24): Jennie's white crescent-moon print top + wide blue/yellow/purple graphic trousers + black boots; Jisoo's

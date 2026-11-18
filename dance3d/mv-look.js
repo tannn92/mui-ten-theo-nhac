@@ -1,7 +1,7 @@
 import * as T from 'three';
-import {createDirector} from './mv-director.js?v=1611.0956';
-import {MV_ENERGY} from './mv-energy.js?v=1611.0956';
-import {STAGES} from './stages.js?v=1611.0956';
+import {createDirector} from './mv-director.js?v=1611.2031';
+import {MV_ENERGY} from './mv-energy.js?v=1611.2031';
+import {STAGES} from './stages.js?v=1611.2031';
 // MV look (owner 2026-11-15 "tôi muốn game trông điện ảnh hơn, như đang enjoy 1 cái mv vậy", reports/mv-look/HANDOFF.md).
 // PLAY MODE ONLY: menu, shop, results and the duo room keep today's orthographic framing and look (everything here is hidden
 // or neutral there: zero-intensity lights, hidden meshes, materials restored).
@@ -125,6 +125,7 @@ export function createMvLook({scene,renderer,camera:ortho,wardrobe,crew,partner,
  function fitWall(tex){const img=tex.image,asp=(img?.width||16)/(img?.height||10),H=WALL_W/asp;for(const m of [wall,wallBlur]){m.scale.set(WALL_W,H,1);m.position.set(0,H*(.5-.6),WALL_Z);}}
  // per frame (play): grab the painted backdrop onto the wall, set lights/beams/dust/shadows, aim the camera; returns the camera to draw with
  function frame(t,width,height){
+  if(t!=null)backdrop.tick?.(t);   // u-r-man: stages with sectionAt(t) repaint their backdrop when the section colour changes
   if(!enabled||t==null){if(active)leave();return ortho;}
   if(!active)enter();
   const bg=scene.background;if(bg&&bg.isTexture&&bg!==wallTex){wallTex=bg;wallMat.map=bg;wallMat.needsUpdate=true;fitWall(bg);if(blurTex)blurTex.dispose();blurTex=blurredCopy(bg.image);wallBlurMat.map=blurTex;wallBlurMat.needsUpdate=true;}

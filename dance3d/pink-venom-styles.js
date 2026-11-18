@@ -1,6 +1,6 @@
 import * as T from 'three';
-import {fitPoint,fitSection,armShell} from './body-fit.js?v=1611.0956';
-import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1611.0956';
+import {fitPoint,fitSection,armShell} from './body-fit.js?v=1611.2031';
+import {geometryTriangles,getTriangleQuery} from './triangle-query.js?v=1611.2031';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 // "Pink Venom" (BLACKPINK). Looks from the official MV's group dance in the white marble hall (second chorus, MV 2:02-2:20;
 // crops from MV 2:04.5 and 2:16): white columns, two white stag statues, a round clock window, red petals on a white floor.
